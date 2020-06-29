@@ -1,97 +1,39 @@
-# backtrader_plotting
-Library to add extended plotting capabilities to `backtrader` (https://www.backtrader.com/). Currently the only available backend is `Bokeh` (https://bokeh.org/).
+# btplotting
+
+Library to add extended plotting capabilities to `backtrader` (<https://www.backtrader.com/>).
+
+btplotting is a fork based on the awesome `backtrader_plotting` (<https://github.com/verybadsoldier/backtrader_plotting>)
+
+**This fork has some changes compared to backtrader_plotting:**
+
+* No need for custom backtrader
+* Different naming / structure
+* Live plotting is done using an analyzer
+* Navigation in live client (Pausing, Backward, Forward)
+* Log panel to also include logging information
 
 ## Features
+
 * Interactive plots
 * Interactive `backtrader` optimization result browser (only supported for single-strategy runs)
-* Highly configurable 
+* Highly configurable
 * Different skinnable themes
 * Easy to use
 
-Feel free to test it and play with it. I am happy about feedback, critics and ideas on backtrader forum (and also in GitHub issues):
-https://community.backtrader.com/topic/813/bokeh-integration-interactive-webbrowser-plotting
-
 Needs Python >= 3.6.
-## Demos
-https://verybadsoldier.github.io/backtrader_plotting/
 
 ## Installation
-`pip install backtrader_plotting`
 
-## Quickstart
+`pip install git+https://github.com/happydasch/btplotting`
 
-```python
-from backtrader_plotting import Bokeh
-from backtrader_plotting.schemes import Tradimo
+## Live plotting
 
-<your backtrader code>
+TODO
 
-b = Bokeh(style='bar', plot_mode='single', scheme=Tradimo())
-cerebro.plot(b)
-```
+## Backtest plotting
 
-## Minimal Example
-```python
-import datetime
-
-import backtrader as bt
-
-from backtrader_plotting import Bokeh
-
-
-class TestStrategy(bt.Strategy):
-    params = (
-        ('buydate', 21),
-        ('holdtime', 6),
-    )
-
-    def next(self):
-        if len(self.data) == self.p.buydate:
-            self.buy(self.datas[0], size=None)
-
-        if len(self.data) == self.p.buydate + self.p.holdtime:
-            self.sell(self.datas[0], size=None)
-
-
-if __name__ == '__main__':
-    cerebro = bt.Cerebro()
-
-    cerebro.addstrategy(TestStrategy, buydate=3)
-
-    data = bt.feeds.YahooFinanceCSVData(
-        dataname="datas/orcl-1995-2014.txt",
-        # Do not pass values before this date
-        fromdate=datetime.datetime(2000, 1, 1),
-        # Do not pass values after this date
-        todate=datetime.datetime(2001, 2, 28),
-        reverse=False,
-        )
-    cerebro.adddata(data)
-
-    cerebro.run()
-
-    b = Bokeh(style='bar', plot_mode='single')
-    cerebro.plot(b)
-```
+TODO
 
 ## Plotting Optimization Results
-Another way to use this package is to use the `OptBrowser` to browse a `backtrader` optimization result:
 
-```python
-...
-cerebro.optstrategy(TestStrategy, buydate=range(1, 10, 1))
-cerebro.addanalyzer(bt.analyzers.SharpeRatio)
-...
-res = cerebro.run()
-bo = Bokeh()
-browser = OptBrowser(bo, result)
-browser.start()
-```
-
-This will start a Bokeh application (standalone webserver) displaying all optimization results. Different results can be selected and viewed.
-
-It is possible possible to add further user-provided columns.
-When dealing with huge amounts of optimization results the number of results can be limited and the remaining results can be sorted by a user-provided function to allow for simple selection of the best results.
-
-## Documentation
-Please refert to the Wiki for further documentation: https://github.com/verybadsoldier/backtrader_plotting/wiki
+TODO

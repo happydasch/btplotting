@@ -1,27 +1,21 @@
-import datetime
-
-import backtrader as bt
-
+from btplotting.panels.log import init_log_panel
 from btplotting import BacktraderPlotting
+import backtrader as bt
+import logging
+import datetime
 
 
 class MyStrategy(bt.Strategy):
-    def __init__(self):
-        sma1 = bt.indicators.SMA(period=11, subplot=True)
-        bt.indicators.SMA(period=17, plotmaster=sma1)
-        bt.indicators.RSI()
-
     def next(self):
-        pos = len(self.data)
-        if pos == 45 or pos == 145:
-            self.buy(self.datas[0], size=None)
-
-        if pos == 116 or pos == 215:
-            self.sell(self.datas[0], size=None)
+        print(f"close: {self.data.close[0]}")
+        logger.info(f"close: {self.data.close[0]}")
 
 
 if __name__ == '__main__':
+    logger = logging.getLogger(__name__)
     cerebro = bt.Cerebro()
+
+    init_log_panel([__name__], logging.INFO)
 
     cerebro.addstrategy(MyStrategy)
 
@@ -33,7 +27,6 @@ if __name__ == '__main__':
         swapcloses=True,
     )
     cerebro.adddata(data)
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio)
 
     cerebro.run()
 

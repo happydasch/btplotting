@@ -2,9 +2,8 @@ import datetime
 
 import backtrader as bt
 
-from backtrader_plotting import Bokeh, OptBrowser
-
-from backtrader_plotting.schemes import Tradimo
+from btplotting import BacktraderPlotting, BacktraderPlottingOptBrowser
+from btplotting.schemes import Tradimo
 
 
 class MyStrategy(bt.Strategy):
@@ -50,7 +49,8 @@ if __name__ == '__main__':
 
     usercolumns = {'Profit & Loss': df}
 
-    b = Bokeh(style='bar', scheme=Tradimo())
-    browser = OptBrowser(b, optres, usercolumns=usercolumns, sortcolumn='Profit & Loss', sortasc=False)
+    btp = BacktraderPlotting(style='bar', scheme=Tradimo())
+    browser = BacktraderPlottingOptBrowser(
+        btp, optres, usercolumns=usercolumns, sortcolumn='Profit & Loss', sortasc=False)
 
     browser.start()

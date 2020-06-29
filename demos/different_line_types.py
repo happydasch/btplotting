@@ -7,9 +7,12 @@ from btplotting import BacktraderPlotting
 
 class MyStrategy(bt.Strategy):
     def __init__(self):
-        sma1 = bt.indicators.SMA(period=11, subplot=True)
-        bt.indicators.SMA(period=17, plotmaster=sma1)
-        bt.indicators.RSI()
+        sma1 = bt.ind.SMA(period=11, subplot=True)
+        sma2 = bt.ind.SMA(period=17, plotmaster=sma1)
+        sma3 = bt.ind.SMA(sma2, period=5)
+        rsi = bt.ind.RSI()
+        cross = bt.ind.CrossOver(sma1, sma2)
+        a = bt.ind.And(sma1 > sma2, cross)
 
     def next(self):
         pos = len(self.data)
@@ -37,5 +40,5 @@ if __name__ == '__main__':
 
     cerebro.run()
 
-    p = BacktraderPlotting(style='bar', tabs='multi')
+    p = BacktraderPlotting(style='bar')
     cerebro.plot(p)

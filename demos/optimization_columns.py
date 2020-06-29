@@ -2,8 +2,8 @@ import datetime
 
 import backtrader as bt
 
-from backtrader_plotting import Bokeh, OptBrowser
-from backtrader_plotting.schemes import Tradimo
+from btplotting import BacktraderPlotting, BacktraderPlottingOptBrowser
+from btplotting.schemes import Tradimo
 
 
 class MyStrategy(bt.Strategy):
@@ -47,6 +47,7 @@ if __name__ == '__main__':
         a = strats[0].analyzers.tradeanalyzer.get_analysis()
         return a.pnl.gross.total if 'pnl' in a else 0
 
-    b = Bokeh(style='bar', scheme=Tradimo())
-    browser = OptBrowser(b, result, usercolumns=dict(pnl=get_pnl_gross), sortcolumn='pnl', sortasc=False)
+    btp = BacktraderPlotting(style='bar', scheme=Tradimo())
+    browser = BacktraderPlottingOptBrowser(btp, result, usercolumns=dict(
+        pnl=get_pnl_gross), sortcolumn='pnl', sortasc=False)
     browser.start()

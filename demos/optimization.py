@@ -2,8 +2,8 @@ import datetime
 
 import backtrader as bt
 
-from backtrader_plotting import Bokeh, OptBrowser
-from backtrader_plotting.schemes import Tradimo
+from btplotting import BacktraderPlotting, BacktraderPlottingOptBrowser
+from btplotting.schemes import Tradimo
 
 
 class MyStrategy(bt.Strategy):
@@ -43,6 +43,6 @@ if __name__ == '__main__':
 
     result = cerebro.run(optreturn=True)
 
-    b = Bokeh(style='bar', scheme=Tradimo())
-    browser = OptBrowser(b, result)
+    btp = BacktraderPlotting(style='bar', scheme=Tradimo())
+    browser = BacktraderPlottingOptBrowser(btp, result)
     browser.start()

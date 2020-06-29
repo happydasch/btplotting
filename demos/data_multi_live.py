@@ -7,12 +7,11 @@ import datetime
 
 import backtrader as bt
 import logging
-from freezegun import freeze_time
 
-try:
-    from backtrader_plotting.bokeh.live.plotlistener import PlotListener
-except AttributeError:
-    raise Exception('Plotting in live mode only supported when using modified backtrader package from this branch https://github.com/verybadsoldier/backtrader/tree/development')
+from btplotting import BacktraderPlottingLive
+from btplotting.schemes import Blackly
+from btplotting.analyzers import RecorderAnalyzer
+from btplotting.feeds import FakeFeed
 
 _logger = logging.getLogger(__name__)
 
@@ -35,10 +34,11 @@ def _run_resampler(data_timeframe,
     cerebro = bt.Cerebro()
     cerebro.addstrategy(bt.strategies.NullStrategy)
 
-    cerebro.addlistener(bt.listeners.RecorderListener)
-    cerebro.addlistener(PlotListener)
+    cerebro.addanalyzer(RecorderAnalyzer)
+    cerebro.addanalyzer(BacktraderPlottingLive, volume=False, scheme=Blackly(
+        hovertool_timeformat='%F %R:%S'), lookback=120)
 
-    data = bt.feeds.FakeFeed(timeframe=data_timeframe,
+    data = FakeFeed(timeframe=data_timeframe,
                              compression=data_compression,
                              run_duration=datetime.timedelta(seconds=runtime_seconds),
                              starting_value=starting_value,
@@ -51,7 +51,7 @@ def _run_resampler(data_timeframe,
 
     cerebro.resampledata(data, timeframe=resample_timeframe, compression=resample_compression)
 
-    data2 = bt.feeds.FakeFeed(timeframe=data_timeframe,
+    data2 = FakeFeed(timeframe=data_timeframe,
                               compression=data_compression,
                               run_duration=datetime.timedelta(seconds=runtime_seconds),
                               starting_value=starting_value,
