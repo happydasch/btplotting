@@ -46,7 +46,11 @@ class CDSHandler(logging.Handler):
             return
         self._idx[doc] = len(self._messages) - 1
         self._cds[doc].stream({'message': messages})
-        self._cds[doc].selected.indices = [self._idx[doc]]
+        # move only to last if there is a selected row
+        # when no row is selected, then don't move to new
+        # row
+        if len(self._cds[doc].selected.indices) > 0:
+            self._cds[doc].selected.indices = [self._idx[doc]]
 
 
 class CDSFilter(logging.Filter):
