@@ -151,19 +151,22 @@ def set_cds_columns_from_df(df, cds, columns=None, dropna=True):
     # remove empty rows
     if dropna:
         c_df = c_df.dropna(how='all')
+    # use text nan for nan values
+    c_df.fillna('NaN')
     # add all columns and values
     for c in c_df:
         if c not in cds.column_names and c != 'datetime':
-            cds.add(np.array(c_df.loc[:, c], dtype=c_df.dtypes[c]), c)
+            cds.add(np.array(c_df.loc[:, c]), c)
         # ensure cds contains index
     if 'index' not in cds.column_names:
-        cds.add(np.array(c_df.index, dtype=c_df.index.dtype), 'index')
+        cds.add(np.array(
+            df.loc[c_df.index, 'index'], dtype=np.int64), 'index')
     # ensure cds contains corresponding datetime entries
     cds.add(np.array(
         df.loc[c_df.index, 'datetime'], dtype=np.datetime64), 'datetime')
 
 
-def get_streamdata_from_df(df, columns=None, dropna=True):
+def get_streamdata_from_df(df, columns=None):
 
     """
     Creates stream data from df
@@ -172,9 +175,8 @@ def get_streamdata_from_df(df, columns=None, dropna=True):
     if columns is None:
         columns = list(df.columns)
     c_df = df.loc[:, columns]
-    # remove empty rows
-    if dropna:
-        c_df = c_df.dropna(how='all')
+    # use text NaN for nan values
+    c_df.fillna('NaN')
     # ensure c_df contains index
     if 'index' not in c_df.columns:
         c_df.index = df.loc[c_df.index, 'index']
@@ -198,9 +200,9 @@ def get_patchdata_from_series(series, cds, columns=None):
     # create patch or stream data based on given series
     if idx is not False:
         for c in columns:
-            if cds.data[c][idx] != series[c]:
-                val = series[c] if not pd.isna(series[c]) else 'nan'
-                p_data[c].append((idx, val))
+            if (series[c] == series[c]
+                    and series[c] != cds.data[c][idx]):
+                p_data[c].append((idx, series[c]))
         # ensure datetime is always patched
         if len(p_data) > 0 and 'datetime' not in p_data:
             p_data['datetime'].append((idx, series['datetime']))
@@ -208,7 +210,7 @@ def get_patchdata_from_series(series, cds, columns=None):
         # add all columns to stream result. This may be needed if a value
         # was nan and therefore not added before
         for c in cds.column_names:
-            val = series[c] if not pd.isna(series[c]) else 'nan'
+            val = series[c] if not pd.isna(series[c]) else 'NaN'
             s_data[c].append(val)
     return p_data, s_data
 

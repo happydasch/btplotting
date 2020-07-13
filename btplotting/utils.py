@@ -87,7 +87,7 @@ def filter_by_datadomain(obj, datadomain):
     True if it should be included, False if not
     """
 
-    if datadomain is None:
+    if datadomain is False:
         return True
 
     if isinstance(datadomain, str):

@@ -102,5 +102,5 @@ if __name__ == '__main__':
                                     tick_interval=datetime.timedelta(seconds=1),
                                     start_delays=[None, None],
                                     num_gen_bars=[0, 10],
-                                    num_data=2,
+                                    num_data=1,
                                     )

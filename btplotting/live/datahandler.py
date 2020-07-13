@@ -66,16 +66,14 @@ class LiveDataHandler:
         data = get_streamdata_from_df(
             update_df,
             figurepage.cds_cols)
-        if len(data['index']) > 0:
-            _logger.debug(f'Sending stream for figurepage: {data}')
-            figurepage.cds.stream(data, self._lookback)
+        _logger.debug(f'Sending stream for figurepage: {data}')
+        figurepage.cds.stream(data, self._datastore.shape[0])
 
         # create stream df for every figure
         for figure in figurepage.figures:
             data = get_streamdata_from_df(update_df, figure.cds_cols)
-            if len(data['index']) > 0:
-                _logger.debug(f'Sending stream for figure: {data}')
-                figure.cds.stream(data, self._lookback)
+            _logger.debug(f'Sending stream for figure: {data}')
+            figure.cds.stream(data, self._datastore.shape[0])
 
     @gen.coroutine
     def _cb_push_patches(self):

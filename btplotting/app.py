@@ -150,7 +150,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 raise RuntimeError(
                     f'Unknown config type in plotting config: {k}')
 
-    def _build_graph(self, datas, inds, obs, datadomain=None):
+    def _build_graph(self, datas, inds, obs, datadomain=False):
         data_graph = {}
         volume_graph = []
         for d in datas:
@@ -198,7 +198,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return data_graph, volume_graph
 
-    def _blueprint_strategy(self, strategy, datadomain=None, **kwargs):
+    def _blueprint_strategy(self, strategy, datadomain=False, **kwargs):
 
         if not strategy.datas:
             return
@@ -357,7 +357,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return model
 
-    def generate_model_panels(self, fp, datadomain=None):
+    def generate_model_panels(self, fp, datadomain=False):
         observers = [
             x for x in fp.figures
             if isinstance(x.master, bt.ObserverBase)]
@@ -385,7 +385,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         sorted_figs = list(itertools.chain(datas, inds, observers))
 
         # 3. filter datadomains
-        if datadomain is not None:
+        if datadomain is not False:
             filtered = []
             for f in sorted_figs:
                 lgs = f.get_datadomains()
@@ -460,64 +460,74 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def savefig(self, fig, filename, width, height, dpi, tight):
         self._generate_output(fig, filename)
 
-    def get_last_idx(self, strategy, datadomain=None):
-        if datadomain is not None:
+    def get_last_idx(self, strategy, datadomain=False):
+        if datadomain is not False:
             data = strategy.getdatabyname(datadomain)
             return len(data) - 1
         return len(strategy) - 1
 
-    def get_clock_generator(self, strategy, datadomain=None):
-        if datadomain is not None:
+    def get_clock_generator(self, strategy, datadomain=False):
+        if datadomain is not False:
             data = strategy.getdatabyname(datadomain)
             return ClockGenerator(data.datetime, data._tz)
         return ClockGenerator(strategy.datetime, strategy.datas[0]._tz)
 
     def build_data(self, strategy, start=None, end=None, back=None,
-                   datadomain=None, preserveidx=False):
+                   datadomain=False, preserveidx=False):
 
         clock_values = {}
-        # generate strategy clock
-        generator = self.get_clock_generator(strategy)
-        clock_values[False] = generator.get_clock_values(
+        # create the main clock for data alignment
+        generator = self.get_clock_generator(strategy, datadomain)
+        clock_values[datadomain] = generator.get_clock(
             start, end, back)
-        # generate clock values for data sources in use
+        # get start and end values from main clock
+        clk, _, _ = clock_values[datadomain]
+        if len(clk) > 0:
+            clkstart, clkend = clk[0], clk[-1]
+            if end is None:
+                clkend = None
+        else:
+            clkstart, clkend = None, None
+
+        # generate additional clocks
+        if datadomain is not False:
+            # ensure we have strategies clock if a datadomain is set
+            generator = self.get_clock_generator(strategy)
+            clock_values[False] = generator.get_clock(
+                clkstart, clkend)
         for data in strategy.datas:
-            if datadomain is None or datadomain == data._name:
+            if datadomain is False or data._name != datadomain:
                 generator = self.get_clock_generator(strategy, data._name)
-                clock_values[data._name] = generator.get_clock_values(
-                    start, end, back)
-        # set parent clock if no datadomain
-        parent_clk = None
-        if datadomain is None:
-            parent_clk = clock_values[False][0]
-        # generate clock handlers
+                clock_values[data._name] = generator.get_clock(
+                    clkstart, clkend)
+
         clocks = {}
+        # generate clock handlers
         for name in clock_values:
             clk, clkstart, clkend = clock_values[name]
-            clocks[name] = ClockHandler(clk, clkstart, clkend, parent_clk)
+            clocks[name] = ClockHandler(clk, clkstart, clkend)
 
-        # get clock for index
-        index_clk = (clock_values[False][0]
-                     if datadomain is None
-                     else clock_values[datadomain][0])
+        # get the clock to use to align everything to
+        clock = clocks[datadomain]
+        # get clock list for index
+        clkidx = clock.clk
+
+        # create index
         if preserveidx:
-            start = (clock_values[False][1]
-                     if datadomain is None
-                     else clock_values[datadomain][1])
-            indices = list(range(start, start + len(index_clk)))
+            idxstart = clock.start
+            indices = list(range(idxstart, idxstart + len(clkidx)))
         else:
-            indices = list(range(len(index_clk)))
+            indices = list(range(len(clkidx)))
         df = pd.DataFrame()
-        df['datetime'] = index_clk
+        df['datetime'] = clkidx
         df['index'] = indices
 
-        # get the clock to use
-        clock = clocks[datadomain]
         # append data columns
         for data in strategy.datas:
             if filter_by_datadomain(data, datadomain):
+                tmpclk = clocks[get_datadomain(data)]
                 source_id = get_source_id(data)
-                df_data = clock.get_df_from_series(data, source_id)
+                df_data = tmpclk.get_df_from_series(data, clkidx, source_id)
                 df = df.join(df_data)
                 df_colors = build_color_lines(
                     df_data,
@@ -532,11 +542,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 strategy.getindicators(),
                 strategy.getobservers()):
             if filter_by_datadomain(obj, datadomain):
+                tmpclk = clocks[get_datadomain(obj)]
                 num_lines = obj.size() if getattr(obj, 'size', None) else 1
                 for lineidx in range(num_lines):
                     line = obj.lines[lineidx]
                     source_id = get_source_id(line)
-                    new_line = clock.get_list_from_line(line)
+                    new_line = tmpclk.get_list_from_line(line, clkidx)
                     df[source_id] = new_line
 
         # apply a proper index (should be identical to 'index' column)
@@ -546,7 +557,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return df
 
     def plot(self, obj, figid=0, numfigs=1, iplot=True, start=None,
-             end=None, use=None, datadomain=None, filldata=True, **kwargs):
+             end=None, use=None, datadomain=False, filldata=True, **kwargs):
 
         """
         Plot either a strategy or an optimization result

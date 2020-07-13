@@ -53,11 +53,8 @@ def _run_resampler(data_timeframe,
                    start_delays=None,
                    num_data=1,
                    ) -> bt.Strategy:
-    _logger.info("Constructing Cerebro")
     cerebro = bt.Cerebro()
     cerebro.addstrategy(LiveDemoStrategy)
-
-    cerebro.addanalyzer(RecorderAnalyzer)
 
     cerebro.addanalyzer(BacktraderPlottingLive, volume=False, scheme=Blackly(
         hovertool_timeformat='%F %R:%S'), lookback=120)
@@ -73,7 +70,7 @@ def _run_resampler(data_timeframe,
         if num_gen_bars is not None and i <= len(num_gen_bars) and num_gen_bars[i] is not None:
             num_gen_bar = num_gen_bars[i]
 
-        data = bt.feeds.FakeFeed(timeframe=data_timeframe,
+        data = FakeFeed(timeframe=data_timeframe,
                                  compression=data_compression,
                                  run_duration=datetime.timedelta(
                                      seconds=runtime_seconds),
@@ -99,11 +96,11 @@ if __name__ == '__main__':
     cerebro, strat = _run_resampler(data_timeframe=bt.TimeFrame.Ticks,
                                     data_compression=1,
                                     resample_timeframe=bt.TimeFrame.Seconds,
-                                    resample_compression=60,
+                                    resample_compression=10,
                                     runtime_seconds=60000,
                                     tick_interval=datetime.timedelta(
                                         seconds=1),
-                                    start_delays=[10, None],
+                                    start_delays=[None, None],
                                     num_gen_bars=[0, 10],
-                                    num_data=2,
+                                    num_data=1,
                                     )

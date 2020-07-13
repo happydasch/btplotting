@@ -6,7 +6,6 @@ import threading
 import backtrader as bt
 
 import tornado.ioloop
-from bokeh.document import Document
 
 from ..app import BacktraderPlotting
 from ..webapp import Webapp
@@ -85,7 +84,7 @@ class LivePlotAnalyzer(bt.Analyzer):
                 if datadomain not in rows:
                     rows[datadomain] = self._app.build_data(
                         self.strategy,
-                        back=1,
+                        back=2,
                         preserveidx=True,
                         datadomain=datadomain)
                 c.update(rows[datadomain])

@@ -30,7 +30,7 @@ class LiveClient:
         self.doc = doc
         self.strategy = strategy
         self.figurepage = None
-        self.datadomain = None
+        self.datadomain = False
         self.app = self._app_fnc()
         self.scheme = self.app.p.scheme
         self.model = None

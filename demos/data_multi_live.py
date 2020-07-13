@@ -32,7 +32,6 @@ def _run_resampler(data_timeframe,
                    ) -> bt.Strategy:
     _logger.info("Constructing Cerebro")
     cerebro = bt.Cerebro()
-    cerebro.addstrategy(bt.strategies.NullStrategy)
 
     cerebro.addanalyzer(RecorderAnalyzer)
     cerebro.addanalyzer(BacktraderPlottingLive, volume=False, scheme=Blackly(

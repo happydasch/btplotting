@@ -295,7 +295,7 @@ class Figure(object):
         self._hoverc = hoverc
         self._coloridx = collections.defaultdict(lambda: -1)
         self._is_multidata = is_multidata
-        self._datadomain = None
+        self._datadomain = False
         self._page_cds = cds
         self.cds_cols = []
         self.cds = ColumnDataSource()
@@ -310,7 +310,7 @@ class Figure(object):
     def get_datadomains(self):
         # TODO when will a figure have more than one datadomain
         datadomains = []
-        if self._datadomain is None:
+        if self._datadomain is False:
             datadomains.append(get_datadomain(self.master))
         elif isinstance(self._datadomain, list):
             datadomains += self._datadomain
@@ -474,8 +474,8 @@ class Figure(object):
             if order is not None:
                 self.plotorder = order
             # just store the datadomain of the master for later reference
-            datadomain = getattr(obj.plotinfo, 'datadomain', None)
-            if datadomain is not None:
+            datadomain = getattr(obj.plotinfo, 'datadomain', False)
+            if datadomain is not False:
                 self._datadomain = datadomain
 
         self.datas.append(obj)
