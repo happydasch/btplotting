@@ -11,6 +11,10 @@ btplotting is a fork based on the awesome `backtrader_plotting` (<https://github
 * Live plotting is done using an analyzer
 * Navigation in live client (Pausing, Backward, Forward)
 * Log panel to also include logging information
+* Different data generation which allows to generate data for different datadomains. This is
+  useful when replaying data, to remove gaps when using multiple data sources.
+* Every figure has its own ColumnDataSource, so the live client can patch without having issues
+  with nan values
 
 ## Features
 
