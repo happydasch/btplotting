@@ -86,7 +86,7 @@ def indicator2fullid(ind):
             return datatarget2label([x])
         elif isinstance(x, bt.LineSeriesStub):
             # indicator target is one specific line of a datafeed
-            # add "[L]" at the end
+            # add " [L]" at the end
             return datatarget2label([get_clock_obj(x)]) + ' [L]'
         elif isinstance(x, bt.IndicatorBase):
             names.append(indicator2label(x))
