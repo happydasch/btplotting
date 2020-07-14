@@ -1,6 +1,6 @@
 import backtrader as bt
 
-from ..utils import get_params_str
+from ..utils import get_params_str, get_clock_obj
 
 
 def datatarget2label(datas):
@@ -31,10 +31,6 @@ def datatarget2label(datas):
                 if len(val) > 0:
                     labels.append(val)
                     break
-        elif isinstance(d, bt.Strategy):
-            # FIXME this should not be needed, added as a quick fix
-            # for CrossOver(line, 20)
-            labels.append(strategy2shortname(d))
         else:
             raise RuntimeError(f'Unexpected data type: {d.__class__}')
 
@@ -90,10 +86,8 @@ def indicator2fullid(ind):
             return datatarget2label([x])
         elif isinstance(x, bt.LineSeriesStub):
             # indicator target is one specific line of a datafeed
-            # AFAIK it's not possible to know which line it is so we
-            # only add a generic indicator "[L]"
-            # FIXME owner can be strategy, so this will throw a exception
-            return datatarget2label([x._owner]) + '[L]'
+            # add "[L]" at the end
+            return datatarget2label([get_clock_obj(x)]) + ' [L]'
         elif isinstance(x, bt.IndicatorBase):
             names.append(indicator2label(x))
     return f"({','.join(names)})"

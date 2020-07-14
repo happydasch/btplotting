@@ -60,12 +60,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     -these examples should work:
       * https://www.backtrader.com/blog/posts/2015-09-21-plotting-same-axis/plotting-same-axis/
       * https://www.backtrader.com/docu/plotting/sameaxis/plot-sameaxis/
-    -plotmaster on observer
     -data generation based on figurepage (build_data should not care about datadomain)
-    -too many palces where filter_by_datadomin is applied, look into this
     -update plot object order: by data (first None, then iterate all avail datadomains, see plotting bt)
-    -use plot generation info based on backtrader plot code
-    -fix label_resolver helper to support line based indicators
+    -add support for line operations like bt.ind.And
     """
 
     params = (

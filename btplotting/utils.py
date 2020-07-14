@@ -70,12 +70,12 @@ def get_indicator_data(indicator):
     The indicator might have been created using a specific line
     (like SMA(data.lines.close)). In this case a LineSeriesStub
     has been created for which we have to resolve the original
-    data
+    data.
     """
 
     data = indicator.data
     if isinstance(data, bt.LineSeriesStub):
-        return data._owner
+        return data._owner.data
     else:
         return data
 
@@ -100,49 +100,50 @@ def filter_by_datadomain(obj, datadomain):
 def get_datadomain(obj):
 
     """
-    Returns the datadomain for given object.
+    Returns the datadomain for given object. A datadomain
+    is basically the name of a data feed.
     If there is no datadomain -> False will be returned.
     """
 
-    if isinstance(obj, bt.AbstractDataBase):
+    if isinstance(obj, bt.Strategy):
+        # strategy will have no datadomain
+        return False
+    elif isinstance(obj, bt.AbstractDataBase):
         # data feeds are end points
         return obj._name
-    elif isinstance(obj, bt.Strategy):
-        # for strategy, the default data is the domain
-        return get_datadomain(obj.data)
-    elif isinstance(obj, bt.IndicatorBase):
-        # lets find the data the indicator is based on
-        data = get_indicator_data(obj)
-        return get_datadomain(data)
-    elif isinstance(obj, bt.ObserverBase):
-        if isinstance(obj._clock, bt.AbstractDataBase):
-            return get_datadomain(obj._clock)
-        else:
-            # for wide observers we return False which
-            # means it belongs to all logic groups
-            return False
-    elif isinstance(obj, bt.LineSingle):
-        # for LineSingle derived objects lookup owner
-        # FIXME this is a buggy fix for line issues
-        return get_datadomain(obj._owner)
+    elif isinstance(obj, (bt.IndicatorBase, bt.ObserverBase)):
+        # to get the datadomain for ind and obs, use clock
+        return get_datadomain(obj._clock)
     else:
-        raise Exception(f'Unsupported object type passed: {obj.__class__}')
+        # try to find a clock as last ressort
+        return get_datadomain(get_clock_obj(obj))
 
 
 def get_clock_obj(obj):
 
-    """ Returns a clock object to use for building data """
+    """
+    Returns a clock object to use for building data
+    """
 
-    if isinstance(obj, (bt.ObserverBase, bt.IndicatorBase)):
-        return get_clock_obj(obj._clock)
-    elif isinstance(obj, (bt.StrategyBase, bt.AbstractDataBase)):
-        clk = obj
-    elif isinstance(obj, bt.LineSingle):
-        # indicators can be created to run on a single line
-        # (instead of e.g. a data object) in that case we grab
+    if isinstance(obj, bt.LinesOperation):
+        # indicators can be created to run on a line
+        # (instead of e.g. a data object) in that case grab
         # the owner of that line to find the corresponding clock
         # also check for line actions like "macd > data[0]"
+        return get_clock_obj(obj._clock)
+    elif isinstance(obj, bt.LineSingle):
+        # if we have a line, return its owners clock
         return get_clock_obj(obj._owner)
+    elif isinstance(obj, bt.LineSeriesStub):
+        # if its a LineSeriesStub object, take the first line
+        # and get the clock from it
+        return get_clock_obj(obj.lines[0])
+    elif isinstance(obj, bt.StrategyBase):
+        clk = obj
+    elif isinstance(obj, bt.AbstractDataBase):
+        clk = obj
+    elif isinstance(obj, (bt.IndicatorBase, bt.ObserverBase)):
+        clk = obj
     else:
         raise Exception(f'Unsupported object type passed: {obj.__class__}')
     return clk
