@@ -24,8 +24,10 @@ class LiveDemoStrategy(bt.Strategy):
 
     def __init__(self):
         pass
-        #self._sma = bt.indicators.SMA(self.data0.close, subplot=True)
-        #self._sma2 = bt.indicators.SMA(self.data1.close, subplot=True)
+        sma1 = bt.indicators.SMA(self.data0.close, subplot=True)
+        sma2 = bt.indicators.SMA(self.data1.close, subplot=True)
+        rsi = bt.ind.RSI()
+        cross = bt.ind.CrossOver(sma1, sma2)
 
     def next(self):
         pos = len(self.data)
@@ -102,5 +104,5 @@ if __name__ == '__main__':
                                     tick_interval=datetime.timedelta(seconds=1),
                                     start_delays=[None, None],
                                     num_gen_bars=[0, 10],
-                                    num_data=1,
+                                    num_data=2,
                                     )
