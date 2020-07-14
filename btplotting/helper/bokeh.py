@@ -47,27 +47,24 @@ def build_color_lines(df, scheme, col_open='open', col_close='close',
     # we use the open-line as a indicator for NaN values
     nan_ref = df[col_open]
 
-    # TODO: we want to have NaN values in the color lines if the corresponding data is also NaN
-    # find better way with less isnan usage
-
     color_df = pd.DataFrame(index=df.index)
     color_df[col_prefix + 'colors_bars'] = [
-        np.nan if np.isnan(n)
+        np.nan if n != n
         else colorup if x
         else colordown
         for x, n in zip(is_up, nan_ref)]
     color_df[col_prefix + 'colors_wicks'] = [
-        np.nan if np.isnan(n)
+        np.nan if n != n
         else colorup_wick if x
         else colordown_wick
         for x, n in zip(is_up, nan_ref)]
     color_df[col_prefix + 'colors_outline'] = [
-        np.nan if np.isnan(n)
+        np.nan if n != n
         else colorup_outline if x
         else colordown_outline
         for x, n in zip(is_up, nan_ref)]
     color_df[col_prefix + 'colors_volume'] = [
-        np.nan if np.isnan(n)
+        np.nan if n != n
         else volup if x
         else voldown
         for x, n in zip(is_up, nan_ref)]
