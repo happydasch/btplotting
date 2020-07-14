@@ -207,18 +207,11 @@ class Figure(object):
         self._init_figure()
 
     def get_datadomains(self):
-        # TODO when will a figure have more than one datadomain
         datadomains = []
         if self._datadomain is False:
             datadomains.append(get_datadomain(self.master))
-        elif isinstance(self._datadomain, list):
-            datadomains += self._datadomain
-        elif isinstance(self._datadomain, str):
-            datadomains.append(self._datadomain)
         else:
-            raise Exception(
-                f'Invalid type for datadomain: {type(self._datadomain)}')
-
+            datadomains += self._datadomain
         return datadomains
 
     def _set_single_hover_renderer(self, renderer):
