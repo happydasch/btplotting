@@ -146,7 +146,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 raise RuntimeError(
                     f'Unknown config type in plotting config: {k}')
 
-    def _build_graph(self, datas, inds, obs, datadomain=False):
+    def _build_graph(self, strategy, datadomain=False):
+        datas = strategy.datas
+        inds = strategy.getindicators()
+        obs = strategy.getobservers()
         data_graph = {}
         volume_graph = []
         for d in datas:
@@ -196,17 +199,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     def _blueprint_strategy(self, strategy, datadomain=False, **kwargs):
 
-        if not strategy.datas:
-            return
-
         self._cur_figurepage.analyzers += [a for _,
                                            a in strategy.analyzers.getitems()]
 
-        data_graph, volume_graph = self._build_graph(
-            strategy.datas,
-            strategy.getindicators(),
-            strategy.getobservers(),
-            datadomain)
+        data_graph, volume_graph = self._build_graph(strategy, datadomain)
 
         # reset hover container to not mix hovers with other strategies
         hoverc = HoverContainer(
@@ -305,8 +301,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return self.figurepages[idx]
 
     def list_datadomains(self, strategy: bt.Strategy):
-        data_graph, volume_graph = self._build_graph(
-            strategy.datas, strategy.getindicators(), strategy.getobservers())
+        data_graph, volume_graph = self._build_graph(strategy)
 
         lgs = list()
         for master in itertools.chain(data_graph.keys(), volume_graph):
