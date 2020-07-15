@@ -289,15 +289,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return self.figurepages[idx]
 
     def list_datadomains(self, strategy: bt.Strategy):
-        data_graph, volume_graph = self._build_graph(strategy)
-
-        lgs = list()
-        for master in itertools.chain(data_graph.keys(), volume_graph):
-            lg = get_datadomain(master)
-            if isinstance(lg, str) and lg not in lgs:
-                lgs.append(lg)
-
-        return lgs
+        datadomains = []
+        for d in strategy.datas:
+            datadomains.append(get_datadomain(d))
+        return datadomains
 
     def generate_model(self, figurepage_idx=0):
         if figurepage_idx >= len(self.figurepages):
