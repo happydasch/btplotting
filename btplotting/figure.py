@@ -21,6 +21,15 @@ from .helper.bokeh import convert_color, sanitize_source_name, \
 from .helper.marker import get_marker_info
 
 
+class FigureType(Enum):
+    TYPE_OBS = 0,
+    TYPE_DATA = 1,
+    TYPE_VOL = 2,
+    TYPE_IND = 3,
+
+    # TODO obj to figuretype, resolve by instance
+
+
 class HoverContainer(metaclass=bt.MetaParams):
 
     """
@@ -143,20 +152,13 @@ class FigurePage(object):
     def get_datadomains(self):
         datadomain = set()
         for fe in self.figures:
-            datadomain = datadomain.union(fe.get_datadomains())
+            datadomain = datadomain.union(fe.get_datadomain())
         return list(datadomain)
 
     def set_data_from_df(self, df):
         set_cds_columns_from_df(df, self.cds, self.cds_cols)
         for f in self.figures:
             f.set_data_from_df(df)
-
-
-class FigureType(Enum):
-    TYPE_DATA = 0,
-    TYPE_VOL = 1,
-    TYPE_IND = 2,
-    TYPE_OBS = 3,
 
 
 class Figure(object):
@@ -188,14 +190,14 @@ class Figure(object):
                  plotorder, is_multidata, type):
         self._strategy = strategy
         self._scheme = scheme
-        self._type = type
         self._hover_line_set = False
         self._hover = None
         self._hoverc = hoverc
         self._coloridx = collections.defaultdict(lambda: -1)
         self._is_multidata = is_multidata
-        self._datadomain = False
         self._page_cds = cds
+        self._datadomain = False
+        self.type = type
         self.cds_cols = []
         self.cds = ColumnDataSource()
         self.figure = None
@@ -206,13 +208,10 @@ class Figure(object):
         self.datas = []
         self._init_figure()
 
-    def get_datadomains(self):
-        datadomains = []
+    def get_datadomain(self):
         if self._datadomain is False:
-            datadomains.append(get_datadomain(self.master))
-        else:
-            datadomains += self._datadomain
-        return datadomains
+            return get_datadomain(self.master)
+        return self._datadomain
 
     def _set_single_hover_renderer(self, renderer):
 
@@ -249,11 +248,11 @@ class Figure(object):
         return convert_color(self._scheme.color(self._coloridx[key]))
 
     def _init_figure(self):
-        if self._type == FigureType.TYPE_IND:
+        if self.type == FigureType.TYPE_IND:
             aspectratio = self._scheme.ind_aspectratio
-        elif self._type == FigureType.TYPE_OBS:
+        elif self.type == FigureType.TYPE_OBS:
             aspectratio = self._scheme.obs_aspectratio
-        elif self._type == FigureType.TYPE_VOL:
+        elif self.type == FigureType.TYPE_VOL:
             aspectratio = self._scheme.vol_aspectratio
         else:
             aspectratio = self._scheme.data_aspectratio
@@ -366,8 +365,7 @@ class Figure(object):
                 self.plotorder = order
             # just store the datadomain of the master for later reference
             datadomain = getattr(obj.plotinfo, 'datadomain', False)
-            if datadomain is not False:
-                self._datadomain = datadomain
+            self._datadomain = datadomain
 
         self.datas.append(obj)
 

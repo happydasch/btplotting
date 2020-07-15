@@ -61,7 +61,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
       * https://www.backtrader.com/blog/posts/2015-09-21-plotting-same-axis/plotting-same-axis/
       * https://www.backtrader.com/docu/plotting/sameaxis/plot-sameaxis/
     -data generation based on figurepage (build_data should not care about datadomain)
-    -update plot object order: by data (first None, then iterate all avail datadomains, see plotting bt)
     -add support for line operations like bt.ind.And
     """
 
@@ -345,7 +344,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             panel_log = get_log_panel(self, figurepage, None)
             panels.append(panel_log)
 
-        # set all panels (without None)
+        # set all tabs (filter out None)
         model = Tabs(tabs=list(filter(None.__ne__, panels)))
 
         # attach the model to the underlying figure for
@@ -391,6 +390,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                         filtered.append(f)
             sorted_figs = filtered
 
+        # 4. sort figures by plotorder, datadomain and type
+        data_sort = {False: 0}
+        for i, d in enumerate(datas, start=1):
+            data_sort[get_datadomain(d.master)] = i
+        sorted_figs.sort(key=lambda x: (
+            x.plotorder, data_sort[x.get_datadomain()], x.type.value))
         sorted_figs.sort(key=lambda x: x.plottab)
         tabgroups = itertools.groupby(sorted_figs, lambda x: x.plottab)
 
@@ -446,8 +451,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                          template_variables=dict(
                              stylesheet=self._output_stylesheet(),
                              show_headline=self.p.scheme.show_headline,
-                             )
                          )
+                        )
 
         with open(filename, 'w') as f:
             f.write(html)
