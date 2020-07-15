@@ -1,4 +1,4 @@
-from btplotting.panels.log import init_log_panel
+from btplotting.tabs.log import init_log_tab
 from btplotting import BacktraderPlotting
 import backtrader as bt
 import logging
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     cerebro = bt.Cerebro()
 
-    init_log_panel([__name__], logging.INFO)
+    init_log_tab([__name__], logging.INFO)
 
     cerebro.addstrategy(MyStrategy)
 

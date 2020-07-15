@@ -28,9 +28,9 @@ from .clock import ClockGenerator, ClockHandler
 from .helper.label_resolver import plotobj2label
 from .helper.bokeh import generate_stylesheet, build_color_lines, \
     sort_plotobjects, get_plotmaster
-from .panels import get_analyzer_panel, get_metadata_panel, \
+from .tabs import get_analyzer_panel, get_metadata_panel, \
     get_log_panel
-from .panels.log import is_log_panel_activated
+from .tabs.log import is_log_tab_initialized
 
 _logger = logging.getLogger(__name__)
 
@@ -61,6 +61,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
       * https://www.backtrader.com/blog/posts/2015-09-21-plotting-same-axis/plotting-same-axis/
       * https://www.backtrader.com/docu/plotting/sameaxis/plot-sameaxis/
     -data generation based on figurepage (build_data should not care about datadomain)
+    -datadomain should be cleaned up (provide one or more datadomains)
+    -should be able to update figurepages
+    -should be able to add additional tabs
     """
 
     params = (
@@ -319,6 +322,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 + f' {len(self.figurepages)}.')
 
         figurepage = self.figurepages[figurepage_idx]
+
         if not self._is_optreturn:
             panels = self.generate_model_panels(figurepage)
         else:
@@ -335,7 +339,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             panels.append(panel_metadata)
 
         # append log panel
-        if is_log_panel_activated():
+        if is_log_tab_initialized():
             panel_log = get_log_panel(self, figurepage, None)
             panels.append(panel_log)
 
@@ -413,15 +417,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             build_panel(list(figures), tabname)
 
         return panels
-
-    def plot_and_generate_optmodel(self, obj):
-        self._reset()
-        self.plot(obj)
-
-        # we support only one strategy at a time so pass fixed zero index
-        # if we ran optresults=False then we have a full strategy object
-        # -> pass it to get full plot
-        return self.generate_model(0)
 
     def _output_stylesheet(self, template="basic.css.j2"):
         return generate_stylesheet(self.p.scheme, template)
@@ -601,6 +596,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # returns current figurepage, which may not necessary have index=0
         return self._cur_figurepage
+
+    def plot_optmodel(self, obj):
+        self._reset()
+        self.plot(obj)
+
+        # we support only one strategy at a time so pass fixed zero index
+        # if we ran optresults=False then we have a full strategy object
+        # -> pass it to get full plot
+        return self.generate_model(0)
 
     def show(self):
 

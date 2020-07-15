@@ -6,9 +6,9 @@ from bokeh.layouts import column, row, layout
 from bokeh.models import Div, Select, Spacer, Tabs, Button
 
 from .datahandler import LiveDataHandler
-from ..panels import get_analyzer_panel, get_metadata_panel, \
+from ..tabs import get_analyzer_panel, get_metadata_panel, \
     get_config_panel, get_log_panel
-from ..panels.log import is_log_panel_activated
+from ..tabs.log import is_log_tab_initialized
 
 _logger = logging.getLogger(__name__)
 
@@ -17,6 +17,8 @@ class LiveClient:
 
     """
     LiveClient provides live plotting functionality.
+
+    TODO use only one instance of app, app should be able to update figurepage
     """
 
     NAV_BUTTON_WIDTH = 38
@@ -177,7 +179,7 @@ class LiveClient:
 
         # append log panel
         # check if a log panel is needed
-        if is_log_panel_activated():
+        if is_log_tab_initialized():
             panel_log = get_log_panel(self.app, self.figurepage, self)
             panels.append(panel_log)
 
@@ -185,7 +187,7 @@ class LiveClient:
         panel_config = get_config_panel(self.app, self.figurepage, self)
         panels.append(panel_config)
 
-        # set all panels (without None)
+        # set all tabs (from panels, without None)
         self._get_tabs().tabs = list(filter(None.__ne__, panels))
 
         # create new data handler

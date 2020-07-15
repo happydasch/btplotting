@@ -66,7 +66,7 @@ class CDSFilter(logging.Filter):
         return False
 
 
-def init_log_panel(names, level=logging.NOTSET):
+def init_log_tab(names, level=logging.NOTSET):
     logging.basicConfig(level=level)
     global handler
     if handler is None:
@@ -75,7 +75,7 @@ def init_log_panel(names, level=logging.NOTSET):
         logging.getLogger().addHandler(handler)
 
 
-def is_log_panel_activated():
+def is_log_tab_initialized():
     global handler
     return handler is not None
 
@@ -83,7 +83,7 @@ def is_log_panel_activated():
 def get_log_panel(app, figurepage, client):
     global handler
     if handler is None:
-        init_log_panel([])
+        init_log_tab([])
     if client is not None:
         doc = client.doc
     else:

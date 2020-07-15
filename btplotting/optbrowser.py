@@ -93,7 +93,7 @@ class OptBrowser:
             self._optresults)
 
         def _get_model(idx: int):
-            return self._app.plot_and_generate_optmodel(
+            return self._app.plot_optmodel(
                 self._optresults[idx][0])
 
         # first zero is because we show the first opt result by default
