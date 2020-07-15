@@ -126,15 +126,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             elif ctype[0] == '#':  # index
                 target_type, target_idx = target.split('-')
 
-                # TODO remove use figuretype instead
-                target_types = {
-                    'i': bt.IndicatorBase,
-                    'o': bt.ObserverBase,
-                    'd': bt.AbstractDataBase,
-                }
-
                 # check if instance type matches
-                if not isinstance(obj, target_types[target_type]):
+                if not isinstance(obj, FigureType.get_obj[target_type]):
                     continue
 
                 if int(target_idx) != idx:
@@ -217,15 +210,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         strat_figures = []
         for master, slaves in data_graph.items():
-            type = None
-            if isinstance(master, bt.AbstractDataBase):
-                type = FigureType.TYPE_DATA
-            elif isinstance(master, bt.IndicatorBase):
-                type = FigureType.TYPE_IND
-            elif isinstance(master, bt.ObserverBase):
-                type = FigureType.TYPE_OBS
-            else:
-                raise Exception('Unknown type')
+            type = FigureType.get_type(master)
             plotorder = getattr(master.plotinfo, 'plotorder', 0)
             figure = Figure(
                 strategy=strategy,
@@ -278,7 +263,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 master=v,
                 plotorder=plotorder,
                 is_multidata=len(strategy.datas) > 1,
-                type=FigureType.TYPE_VOL)
+                type=FigureType.VOL)
             figure.plot_volume(v)
             self._cur_figurepage.figures.append(figure)
 

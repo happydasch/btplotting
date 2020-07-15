@@ -22,12 +22,29 @@ from .helper.marker import get_marker_info
 
 
 class FigureType(Enum):
-    TYPE_OBS = 0,
-    TYPE_DATA = 1,
-    TYPE_VOL = 2,
-    TYPE_IND = 3,
+    (OBS, DATA, VOL, IND) = range(0, 4)
 
-    # TODO obj to figuretype, resolve by instance, use in hovercontainer
+    @classmethod
+    def get_obj(cls, name):
+        if cls.DATA.name == name:
+            return bt.AbstractDataBase
+        elif cls.IND.name == name:
+            return bt.IndicatorBase
+        elif cls.OBS.name == name:
+            return bt.ObserverBase
+        else:
+            raise Exception(f'Unknown name "{name}"')
+
+    @classmethod
+    def get_type(cls, obj):
+        if isinstance(obj, bt.AbstractDataBase):
+            return cls.DATA
+        elif isinstance(obj, bt.IndicatorBase):
+            return cls.IND
+        elif isinstance(obj, bt.ObserverBase):
+            return cls.OBS
+        else:
+            raise Exception(f'Unknown obj "{obj}"')
 
 
 class HoverContainer(metaclass=bt.MetaParams):
@@ -39,8 +56,7 @@ class HoverContainer(metaclass=bt.MetaParams):
     """
 
     params = (('hover_tooltip_config', None),
-              ('is_multidata', False)
-              )
+              ('is_multidata', False))
 
     def __init__(self):
         self._hover_tooltips = []
@@ -53,22 +69,12 @@ class HoverContainer(metaclass=bt.MetaParams):
         for c in input_config:
             if len(c) != 2:
                 raise RuntimeError(f'Invalid hover config entry "{c}"')
-            self._config.append((self._get_type(c[0]), self._get_type(c[1])))
+            self._config.append(
+                (FigureType.get_obj(c[0]), FigureType.get_obj(c[1]))
+            )
 
     def add_hovertip(self, label, tmpl, src_obj=None):
         self._hover_tooltips.append((label, tmpl, src_obj))
-
-    @staticmethod
-    def _get_type(t):
-        # TODO remove and use figuretype instead
-        if t == 'd':
-            return bt.AbstractDataBase
-        elif t == 'i':
-            return bt.IndicatorBase
-        elif t == 'o':
-            return bt.ObserverBase
-        else:
-            raise RuntimeError(f'Invalid hovertool config type: "{t}')
 
     def _apply_to_figure(self, fig, hovertool):
         # provide ordering by two groups
@@ -208,14 +214,6 @@ class Figure(object):
         self.datas = []
         self._init_figure()
 
-    def get_datadomain(self):
-
-        """
-        Returns the datadomain of the figure.
-        """
-
-        return get_datadomain(self.master)
-
     def _set_single_hover_renderer(self, renderer):
 
         """
@@ -251,15 +249,18 @@ class Figure(object):
         return convert_color(self._scheme.color(self._coloridx[key]))
 
     def _init_figure(self):
-        if self.type == FigureType.TYPE_IND:
+
+        if self.type == FigureType.IND:
             aspectratio = self._scheme.ind_aspectratio
-        elif self.type == FigureType.TYPE_OBS:
+        elif self.type == FigureType.OBS:
             aspectratio = self._scheme.obs_aspectratio
-        elif self.type == FigureType.TYPE_VOL:
+        elif self.type == FigureType.VOL:
             aspectratio = self._scheme.vol_aspectratio
-        else:
+        elif self.type == FigureType.DATA:
             aspectratio = self._scheme.data_aspectratio
-        # plot height will be set later
+        else:
+            raise Exception(f"Unknown type {self.type}")
+
         f = figure(
             tools=Figure._tools,
             x_axis_type='linear',
@@ -341,6 +342,172 @@ class Figure(object):
         self._cross = ch
         self._hover = h
         self.figure = f
+
+    def _set_yticks(self, obj):
+        yticks = obj.plotinfo._get('plotyticks', [])
+        if not yticks:
+            yticks = obj.plotinfo._get('plotyhlines', [])
+
+        if yticks:
+            self.figure.yaxis.ticker = yticks
+
+    def _plot_hlines(self, obj):
+        hlines = obj.plotinfo._get('plothlines', [])
+        if not hlines:
+            hlines = obj.plotinfo._get('plotyhlines', [])
+
+        # Horizontal Lines
+        hline_color = convert_color(self._scheme.hlinescolor)
+        for hline in hlines:
+            span = Span(location=hline,
+                        dimension='width',
+                        line_color=hline_color,
+                        line_dash=self._style_mpl2bokeh[
+                            self._scheme.hlinesstyle],
+                        line_width=self._scheme.hlineswidth)
+            self.figure.renderers.append(span)
+
+    def _figure_append_title(self, title):
+        # append to title
+        if len(self.figure.title.text) > 0:
+            self.figure.title.text += " | "
+        self.figure.title.text += title
+
+    def _plot_indicator_observer(self, obj, master):
+        pl = plotobj2label(obj)
+
+        self._figure_append_title(pl)
+        indlabel = obj.plotlabel()
+        plotinfo = obj.plotinfo
+
+        is_multiline = obj.size() > 1
+        for lineidx in range(obj.size()):
+            line = obj.lines[lineidx]
+            source_id = get_source_id(line)
+            self.cds_cols.append(source_id)
+            linealias = obj.lines._getlinealias(lineidx)
+
+            lineplotinfo = getattr(obj.plotlines, '_%d' % lineidx, None)
+            if not lineplotinfo:
+                lineplotinfo = getattr(obj.plotlines, linealias, None)
+
+            if not lineplotinfo:
+                lineplotinfo = bt.AutoInfoClass()
+
+            if lineplotinfo._get('_plotskip', False):
+                continue
+
+            marker = lineplotinfo._get("marker", None)
+            method = lineplotinfo._get('_method', "line")
+
+            color = getattr(lineplotinfo, "color", None)
+            if color is None:
+                if not lineplotinfo._get('_samecolor', False):
+                    self._nextcolor()
+                color = self._color()
+            color = convert_color(color)
+
+            kwglyphs = {'name': linealias}
+
+            # either all individual lines of are displayed in the legend
+            # or only the ind/obs as a whole
+            label = indlabel
+            if is_multiline and plotinfo.plotlinelabels:
+                label += " " + (lineplotinfo._get("_name", "") or linealias)
+            kwglyphs['legend_label'] = label
+
+            if marker is not None:
+                fnc_name, attrs, vals, updates = get_marker_info(marker)
+                if not fnc_name or not hasattr(self.figure, fnc_name):
+                    # provide alternative methods for not available methods
+                    if fnc_name == "y":
+                        fnc_name = "text"
+                        attrs = ["text_color", "text_size"]
+                        vals.update({"text": {"value": "y"}})
+                    else:
+                        raise Exception(
+                            "Sorry, unsupported marker:"
+                            + f" '{marker}'. Please report to GitHub.")
+                        return
+                # set kwglyph values
+                kwglyphs['y'] = source_id
+                for v in attrs:
+                    val = None
+                    if v in ['color', 'fill_color', 'text_color']:
+                        val = {"value": color}
+                    elif v in ['size']:
+                        val = lineplotinfo.markersize
+                    elif v in ['text_font_size']:
+                        val = {"value": "%spx" % lineplotinfo.markersize}
+                    elif v in ['text']:
+                        val = {"value": marker[1:-1]}
+                    if val is not None:
+                        kwglyphs[v] = val
+                for v in vals:
+                    val = vals[v]
+                    kwglyphs[v] = val
+                for u in updates:
+                    val = updates[u]
+                    if u in kwglyphs:
+                        kwglyphs[u] = max(
+                            1, kwglyphs[u] + val)
+                    else:
+                        raise Exception(
+                            f"{u} for {marker} is not set but needs to be set")
+                glyph_fnc = getattr(self.figure, fnc_name)
+            elif method == "bar":
+                kwglyphs['bottom'] = 0
+                kwglyphs['line_color'] = color
+                kwglyphs['fill_color'] = color
+                kwglyphs['width'] = self._bar_width
+                kwglyphs['top'] = source_id
+
+                glyph_fnc = self.figure.vbar
+            elif method == "line":
+                kwglyphs['line_width'] = 1
+                kwglyphs['color'] = color
+                kwglyphs['y'] = source_id
+
+                linestyle = getattr(lineplotinfo, "ls", None)
+                if linestyle is not None:
+                    kwglyphs['line_dash'] = self._style_mpl2bokeh[linestyle]
+                linewidth = getattr(lineplotinfo, "lw", None)
+                if linewidth is not None:
+                    kwglyphs['line_width'] = linewidth
+
+                glyph_fnc = self.figure.line
+            else:
+                raise Exception(f"Unknown plotting method '{method}'")
+
+            renderer = glyph_fnc("index", source=self.cds, **kwglyphs)
+
+            # make sure the regular y-axis only scales to the normal
+            # data (data + ind/obs) on 1st axis (not to e.g. volume
+            # data on 2nd axis)
+            self.figure.y_range.renderers.append(renderer)
+
+            # for markers add additional renderer so hover pops up for all
+            # of them
+            if marker is None:
+                self._set_single_hover_renderer(renderer)
+            else:
+                self._add_hover_renderer(renderer)
+
+            # we need no suffix if there is just one line in the indicator
+            hover_label_suffix = f" - {linealias}" if obj.size() > 1 else ""
+            hover_label = indlabel + hover_label_suffix
+            hover_data = f"@{source_id}{{{self._scheme.number_format}}}"
+            self._hoverc.add_hovertip(hover_label, hover_data, obj)
+
+        self._set_yticks(obj)
+        self._plot_hlines(obj)
+
+    def get_datadomain(self):
+        """
+        Returns the datadomain of the figure.
+        """
+
+        return get_datadomain(self.master)
 
     def set_data_from_df(self, df):
         if len(self.cds.column_names) < 1:
@@ -506,162 +673,3 @@ class Figure(object):
 
     def plot_indicator(self, obj, master):
         self._plot_indicator_observer(obj, master)
-
-    def _plot_indicator_observer(self, obj, master):
-        pl = plotobj2label(obj)
-
-        self._figure_append_title(pl)
-        indlabel = obj.plotlabel()
-        plotinfo = obj.plotinfo
-
-        is_multiline = obj.size() > 1
-        for lineidx in range(obj.size()):
-            line = obj.lines[lineidx]
-            source_id = get_source_id(line)
-            self.cds_cols.append(source_id)
-            linealias = obj.lines._getlinealias(lineidx)
-
-            lineplotinfo = getattr(obj.plotlines, '_%d' % lineidx, None)
-            if not lineplotinfo:
-                lineplotinfo = getattr(obj.plotlines, linealias, None)
-
-            if not lineplotinfo:
-                lineplotinfo = bt.AutoInfoClass()
-
-            if lineplotinfo._get('_plotskip', False):
-                continue
-
-            marker = lineplotinfo._get("marker", None)
-            method = lineplotinfo._get('_method', "line")
-
-            color = getattr(lineplotinfo, "color", None)
-            if color is None:
-                if not lineplotinfo._get('_samecolor', False):
-                    self._nextcolor()
-                color = self._color()
-            color = convert_color(color)
-
-            kwglyphs = {'name': linealias}
-
-            # either all individual lines of are displayed in the legend
-            # or only the ind/obs as a whole
-            label = indlabel
-            if is_multiline and plotinfo.plotlinelabels:
-                label += " " + (lineplotinfo._get("_name", "") or linealias)
-            kwglyphs['legend_label'] = label
-
-            if marker is not None:
-                fnc_name, attrs, vals, updates = get_marker_info(marker)
-                if not fnc_name or not hasattr(self.figure, fnc_name):
-                    # provide alternative methods for not available methods
-                    if fnc_name == "y":
-                        fnc_name = "text"
-                        attrs = ["text_color", "text_size"]
-                        vals.update({"text": {"value": "y"}})
-                    else:
-                        raise Exception(
-                            "Sorry, unsupported marker:"
-                            + f" '{marker}'. Please report to GitHub.")
-                        return
-                # set kwglyph values
-                kwglyphs['y'] = source_id
-                for v in attrs:
-                    val = None
-                    if v in ['color', 'fill_color', 'text_color']:
-                        val = {"value": color}
-                    elif v in ['size']:
-                        val = lineplotinfo.markersize
-                    elif v in ['text_font_size']:
-                        val = {"value": "%spx" % lineplotinfo.markersize}
-                    elif v in ['text']:
-                        val = {"value": marker[1:-1]}
-                    if val is not None:
-                        kwglyphs[v] = val
-                for v in vals:
-                    val = vals[v]
-                    kwglyphs[v] = val
-                for u in updates:
-                    val = updates[u]
-                    if u in kwglyphs:
-                        kwglyphs[u] = max(
-                            1, kwglyphs[u] + val)
-                    else:
-                        raise Exception(
-                            f"{u} for {marker} is not set but needs to be set")
-                glyph_fnc = getattr(self.figure, fnc_name)
-            elif method == "bar":
-                kwglyphs['bottom'] = 0
-                kwglyphs['line_color'] = color
-                kwglyphs['fill_color'] = color
-                kwglyphs['width'] = self._bar_width
-                kwglyphs['top'] = source_id
-
-                glyph_fnc = self.figure.vbar
-            elif method == "line":
-                kwglyphs['line_width'] = 1
-                kwglyphs['color'] = color
-                kwglyphs['y'] = source_id
-
-                linestyle = getattr(lineplotinfo, "ls", None)
-                if linestyle is not None:
-                    kwglyphs['line_dash'] = self._style_mpl2bokeh[linestyle]
-                linewidth = getattr(lineplotinfo, "lw", None)
-                if linewidth is not None:
-                    kwglyphs['line_width'] = linewidth
-
-                glyph_fnc = self.figure.line
-            else:
-                raise Exception(f"Unknown plotting method '{method}'")
-
-            renderer = glyph_fnc("index", source=self.cds, **kwglyphs)
-
-            # make sure the regular y-axis only scales to the normal
-            # data (data + ind/obs) on 1st axis (not to e.g. volume
-            # data on 2nd axis)
-            self.figure.y_range.renderers.append(renderer)
-
-            # for markers add additional renderer so hover pops up for all
-            # of them
-            if marker is None:
-                self._set_single_hover_renderer(renderer)
-            else:
-                self._add_hover_renderer(renderer)
-
-            # we need no suffix if there is just one line in the indicator
-            hover_label_suffix = f" - {linealias}" if obj.size() > 1 else ""
-            hover_label = indlabel + hover_label_suffix
-            hover_data = f"@{source_id}{{{self._scheme.number_format}}}"
-            self._hoverc.add_hovertip(hover_label, hover_data, obj)
-
-        self._set_yticks(obj)
-        self._plot_hlines(obj)
-
-    def _set_yticks(self, obj):
-        yticks = obj.plotinfo._get('plotyticks', [])
-        if not yticks:
-            yticks = obj.plotinfo._get('plotyhlines', [])
-
-        if yticks:
-            self.figure.yaxis.ticker = yticks
-
-    def _plot_hlines(self, obj):
-        hlines = obj.plotinfo._get('plothlines', [])
-        if not hlines:
-            hlines = obj.plotinfo._get('plotyhlines', [])
-
-        # Horizontal Lines
-        hline_color = convert_color(self._scheme.hlinescolor)
-        for hline in hlines:
-            span = Span(location=hline,
-                        dimension='width',
-                        line_color=hline_color,
-                        line_dash=self._style_mpl2bokeh[
-                            self._scheme.hlinesstyle],
-                        line_width=self._scheme.hlineswidth)
-            self.figure.renderers.append(span)
-
-    def _figure_append_title(self, title):
-        # append to title
-        if len(self.figure.title.text) > 0:
-            self.figure.title.text += " | "
-        self.figure.title.text += title
