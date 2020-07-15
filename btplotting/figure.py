@@ -27,7 +27,7 @@ class FigureType(Enum):
     TYPE_VOL = 2,
     TYPE_IND = 3,
 
-    # TODO obj to figuretype, resolve by instance
+    # TODO obj to figuretype, resolve by instance, use in hovercontainer
 
 
 class HoverContainer(metaclass=bt.MetaParams):
@@ -60,6 +60,7 @@ class HoverContainer(metaclass=bt.MetaParams):
 
     @staticmethod
     def _get_type(t):
+        # TODO remove and use figuretype instead
         if t == 'd':
             return bt.AbstractDataBase
         elif t == 'i':
@@ -196,7 +197,6 @@ class Figure(object):
         self._coloridx = collections.defaultdict(lambda: -1)
         self._is_multidata = is_multidata
         self._page_cds = cds
-        self._datadomain = False
         self.type = type
         self.cds_cols = []
         self.cds = ColumnDataSource()
@@ -209,9 +209,12 @@ class Figure(object):
         self._init_figure()
 
     def get_datadomain(self):
-        if self._datadomain is False:
-            return get_datadomain(self.master)
-        return self._datadomain
+
+        """
+        Returns the datadomain of the figure.
+        """
+
+        return get_datadomain(self.master)
 
     def _set_single_hover_renderer(self, renderer):
 
@@ -363,9 +366,6 @@ class Figure(object):
             order = getattr(obj.plotinfo, 'plotorder', None)
             if order is not None:
                 self.plotorder = order
-            # just store the datadomain of the master for later reference
-            datadomain = getattr(obj.plotinfo, 'datadomain', False)
-            self._datadomain = datadomain
 
         self.datas.append(obj)
 

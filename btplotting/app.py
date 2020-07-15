@@ -61,7 +61,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
       * https://www.backtrader.com/blog/posts/2015-09-21-plotting-same-axis/plotting-same-axis/
       * https://www.backtrader.com/docu/plotting/sameaxis/plot-sameaxis/
     -data generation based on figurepage (build_data should not care about datadomain)
-    -add support for line operations like bt.ind.And
     """
 
     params = (
@@ -124,6 +123,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             elif ctype[0] == '#':  # index
                 target_type, target_idx = target.split('-')
 
+                # TODO remove use figuretype instead
                 target_types = {
                     'i': bt.IndicatorBase,
                     'o': bt.ObserverBase,
