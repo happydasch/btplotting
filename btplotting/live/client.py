@@ -165,7 +165,7 @@ class LiveClient:
         self.figurepage = self.app.plot(
             self.strategy,
             filldata=False,
-            datadomain=self.datadomain)
+            datadomain=self.datadomain)[0]
 
         panels = self.app.generate_model_panels(self.figurepage)
 

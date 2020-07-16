@@ -241,8 +241,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # configure xaxis visibility
         if self.p.scheme.xaxis_pos == "bottom":
             for i, f in enumerate(strat_figures):
-                f.figure.xaxis.visible = False if i <= len(
-                    strat_figures) else True
+                f.figure.xaxis.visible = (
+                    False if i < len(strat_figures) - 1
+                    else True)
 
         # apply hover tooltips
         hoverc.apply_hovertips(strat_figures)
