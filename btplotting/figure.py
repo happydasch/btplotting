@@ -151,8 +151,8 @@ class FigurePage(object):
         self.cds_cols = ['datetime']
         self.cds = ColumnDataSource()
         self.figures = []
-        self.strategy = obj if isinstance(obj, bt.Strategy) else None
         self.analyzers = []
+        self.strategy = obj if isinstance(obj, bt.Strategy) else None
         # the whole generated model will we attached here after plotting
         self.model = None
 
@@ -166,6 +166,11 @@ class FigurePage(object):
         set_cds_columns_from_df(df, self.cds, self.cds_cols)
         for f in self.figures:
             f.set_data_from_df(df)
+
+    def reset(self):
+        self.cds = ColumnDataSource()
+        self.figures = []
+        self.analyzers = []
 
 
 class Figure(object):
@@ -514,10 +519,7 @@ class Figure(object):
         return get_datadomain(self.master)
 
     def set_data_from_df(self, df):
-        if len(self.cds.column_names) < 1:
-            set_cds_columns_from_df(df, self.cds, self.cds_cols)
-        else:
-            pass
+        set_cds_columns_from_df(df, self.cds, self.cds_cols)
 
     def plot(self, obj, master=None):
         if isinstance(obj, bt.AbstractDataBase):

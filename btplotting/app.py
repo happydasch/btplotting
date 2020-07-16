@@ -62,7 +62,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
       * https://www.backtrader.com/docu/plotting/sameaxis/plot-sameaxis/
     -data generation based on figurepage (build_data should not care about datadomain)
     -datadomain should be cleaned up (provide one or more datadomains)
-    -should be able to update figurepages
     -should be able to add additional tabs
     '''
 
@@ -195,8 +194,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     def _blueprint_strategy(self, strategy, datadomain=False):
 
+        self._cur_figurepage.reset()
         self._cur_figurepage.analyzers += [a for _,
-                                           a in strategy.analyzers.getitems()]
+                                          a in strategy.analyzers.getitems()]
 
         data_graph, volume_graph = self._build_graph(strategy, datadomain)
 
@@ -266,6 +266,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             figure.plot_volume(v)
             self._cur_figurepage.figures.append(figure)
 
+    def _blueprint_optreturn(self, optreturn):
+        self._cur_figurepage.reset()
+        self._cur_figurepage.analyzers += [
+            a for _, a
+            in optreturn.analyzers.getitems()]
+
     def _reset(self):
         self.figurepages = []
         self._is_optreturn = False
@@ -284,8 +290,42 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise RuntimeError(
                 f'Invalid tabs parameter "{self.p.scheme.tabs}"')
 
-    def get_figurepage(self, idx: int = 0):
+    def get_figurepage(self, idx=0):
         return self.figurepages[idx]
+
+    def create_figurepage(self, obj, start=None, end=None, datadomain=False,
+                          filldata=True):
+        '''
+        Creates new FigurePage for given obj.
+        The obj can be either an instance of bt.Strategy or bt.OptReturn
+        '''
+
+        fp = FigurePage(obj)
+        self.figurepages.append(fp)
+        self._current_fig_idx = len(self.figurepages) - 1
+        self._is_optreturn = isinstance(obj, bt.OptReturn)
+
+        if isinstance(obj, bt.Strategy):
+            self._configure_plotting(obj)
+            self._blueprint_strategy(obj, datadomain)
+            if filldata:
+                df = self.build_data(
+                    strategy=obj,
+                    start=start,
+                    end=end,
+                    datadomain=datadomain)
+                self._cur_figurepage.set_data_from_df(df)
+        elif isinstance(obj, bt.OptReturn):
+            self._blueprint_optreturn(obj)
+        else:
+            raise Exception(
+                f'Unsupported plot source object: {str(type(obj))}')
+        return self._current_fig_idx, self._cur_figurepage
+
+    def update_figurepage(self, idx=0, datadomain=False):
+        self._current_fig_idx = idx
+        if self._cur_figurepage.strategy is not None:
+            self._blueprint_strategy(self._cur_figurepage.strategy, datadomain)
 
     def generate_model(self, figurepage_idx=0):
         if figurepage_idx >= len(self.figurepages):
@@ -425,7 +465,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def savefig(self, fig, filename, width, height, dpi, tight):
         self._generate_output(fig, filename)
 
-    def list_datadomains(self, strategy: bt.Strategy):
+    def list_datadomains(self, strategy):
         datadomains = []
         for d in strategy.datas:
             datadomains.append(get_datadomain(d))
@@ -528,24 +568,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return df
 
     def plot(self, obj, figid=0, numfigs=1, iplot=True, start=None,
-             end=None, use=None, datadomain=False, filldata=True, **kwargs):
+             end=None, use=None, datadomain=False, **kwargs):
         '''
         Plot either a strategy or an optimization result
         This method is called by backtrader
         '''
-
-        # prepare new FigurePage. Every time plot is being called,
-        # a new FigurePage is added containing the blueprint for the
-        # strategy
-        fp = FigurePage(obj)
-        self.figurepages.append(fp)
-        self._current_fig_idx = len(self.figurepages) - 1
-        self._is_optreturn = isinstance(obj, bt.OptReturn)
-
-        if isinstance(obj, bt.Strategy):
-            # only configure plotting for regular
-            # backtesting (not for optimization)
-            self._configure_plotting(obj)
 
         if numfigs > 1:
             raise Exception("numfigs must be 1")
@@ -554,25 +581,14 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         self._iplot = iplot and 'ipykernel' in sys.modules
 
-        if isinstance(obj, bt.Strategy):
-            self._blueprint_strategy(obj, datadomain)
-            if filldata:
-                df = self.build_data(
-                    strategy=obj,
-                    start=start,
-                    end=end,
-                    datadomain=datadomain)
-                self._cur_figurepage.set_data_from_df(df)
-        elif isinstance(obj, bt.OptReturn):
-            # for optresults we only plot analyzers!
-            self._cur_figurepage.analyzers += [
-                a for _, a
-                in obj.analyzers.getitems()]
-        else:
-            raise Exception(
-                f'Unsupported plot source object: {str(type(obj))}')
+        # create figurepage for obj
+        self.create_figurepage(
+            obj,
+            start=start,
+            end=end,
+            datadomain=datadomain)
 
-        # returns generated figurepages
+        # returns all figurepages
         return self.figurepages
 
     def plot_optmodel(self, obj):

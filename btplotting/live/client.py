@@ -17,28 +17,28 @@ class LiveClient:
 
     '''
     LiveClient provides live plotting functionality.
-
-    TODO use only one instance of app, app should be able to update figurepage
     '''
 
     NAV_BUTTON_WIDTH = 38
 
-    def __init__(self, doc, app_fnc, strategy, lookback):
-        self._app_fnc = app_fnc
+    def __init__(self, doc, app, strategy, lookback):
         self._update_fnc = None
         self._datahandler = None
         self._lookback = lookback
         self._paused = False
         self.doc = doc
+        self.app = app
         self.strategy = strategy
+        self.figureidx = None
         self.figurepage = None
         self.datadomain = False
-        self.app = self._app_fnc()
-        self.scheme = self.app.p.scheme
         self.model = None
 
         # create model
         self.model, self._update_fnc = self._createmodel()
+        # create figurepage
+        self.figureidx, self.figurepage = self.app.create_figurepage(
+            self.strategy, filldata=False)
         # update model with current figurepage
         self._updatemodel()
 
@@ -143,7 +143,7 @@ class LiveClient:
                       btn_nav_next,
                       btn_nav_next_big])
         # tabs
-        tabs = Tabs(id="tabs", sizing_mode=self.scheme.plot_sizing_mode)
+        tabs = Tabs(id="tabs", sizing_mode=self.app.p.scheme.plot_sizing_mode)
         # model
         model = layout(
             [
@@ -159,14 +159,7 @@ class LiveClient:
         return model, partial(update, self)
 
     def _updatemodel(self):
-        self.app = self._app_fnc()
-        self.app.p.scheme = self.scheme
-
-        self.figurepage = self.app.plot(
-            self.strategy,
-            filldata=False,
-            datadomain=self.datadomain)[0]
-
+        self.app.update_figurepage(self.figureidx, self.datadomain)
         panels = self.app.generate_model_panels(self.figurepage)
 
         # append analyzer panel

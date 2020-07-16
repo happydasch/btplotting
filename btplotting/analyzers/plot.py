@@ -59,7 +59,7 @@ class LivePlotAnalyzer(bt.Analyzer):
 
     def _app_cb_build_root_model(self, doc):
         client = LiveClient(doc,
-                            self._create_app,
+                            self._create_app(),
                             self.strategy,
                             self.p.lookback)
         with self._lock:
@@ -77,14 +77,12 @@ class LivePlotAnalyzer(bt.Analyzer):
 
     def next(self):
         rows = {}
-        # don't run next while previous next is processing
-        with self._lock:
-            for c in self._clients.values():
-                datadomain = c.datadomain
-                if datadomain not in rows:
-                    rows[datadomain] = self._app.build_data(
-                        self.strategy,
-                        back=2,
-                        preserveidx=True,
-                        datadomain=datadomain)
-                c.update(rows[datadomain])
+        for c in self._clients.values():
+            datadomain = c.datadomain
+            if datadomain not in rows:
+                rows[datadomain] = self._app.build_data(
+                    self.strategy,
+                    back=1,
+                    preserveidx=True,
+                    datadomain=datadomain)
+            c.update(rows[datadomain])

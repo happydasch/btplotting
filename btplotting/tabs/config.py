@@ -7,7 +7,7 @@ from ..figure import FigureType
 def get_config_panel(app, figurepage, client):
 
     def on_button_save_config(self):
-        client.scheme.data_aspectratio = slider_data_aspectratio.value
+        app.p.scheme.data_aspectratio = slider_data_aspectratio.value
         for f in figurepage.figures:
             ftype = f.get_type()
             if ftype == FigureType.OBS:
@@ -23,19 +23,19 @@ def get_config_panel(app, figurepage, client):
 
     slider_obs_aspectratio = Slider(
         title="Observer Aspect Ratio",
-        value=client.scheme.obs_aspectratio,
+        value=app.p.scheme.obs_aspectratio,
         start=0.1, end=10.0, step=0.1)
     slider_data_aspectratio = Slider(
         title="Data Aspect Ratio",
-        value=client.scheme.data_aspectratio,
+        value=app.p.scheme.data_aspectratio,
         start=0.1, end=10.0, step=0.1)
     slider_vol_aspectratio = Slider(
         title="Volume Aspect Ratio",
-        value=client.scheme.vol_aspectratio,
+        value=app.p.scheme.vol_aspectratio,
         start=0.1, end=10.0, step=0.1)
     slider_ind_aspectratio = Slider(
         title="Indicator Aspect Ratio",
-        value=client.scheme.ind_aspectratio,
+        value=app.p.scheme.ind_aspectratio,
         start=0.1, end=10.0, step=0.1)
 
     button = Button(label="Save", button_type="success", width_policy="min")

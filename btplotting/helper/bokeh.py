@@ -149,16 +149,23 @@ def set_cds_columns_from_df(df, cds, columns=None, dropna=True):
     c_df.fillna('NaN')
     # add all columns and values
     for c in c_df:
-        if c not in cds.column_names and c != 'datetime':
-            cds.add(np.array(c_df.loc[:, c]), c)
-        # ensure cds contains index
-    if 'index' not in cds.column_names:
-        cds.add(np.array(
-            df.loc[c_df.index, 'index'], dtype=np.int64), 'index')
+        if c in ['index', 'datetime']:
+            continue
+        if c in cds.column_names:
+            cds.remove(c)
+        cds.add(np.array(c_df.loc[:, c]), c)
+    # ensure cds contains index
+    if 'index' in cds.column_names:
+        cds.remove('index')
+    cds.add(
+        np.array(df.loc[c_df.index, 'index'], dtype=np.int64),
+        'index')
     # ensure cds contains corresponding datetime entries
-    cds.add(np.array(
-        df.loc[c_df.index, 'datetime'], dtype=np.datetime64), 'datetime')
-
+    if 'datetime' in cds.column_names:
+        cds.remove('datetime')
+    cds.add(
+        np.array(df.loc[c_df.index, 'datetime'], dtype=np.datetime64),
+        'datetime')
 
 def get_streamdata_from_df(df, columns=None):
     '''
@@ -197,7 +204,7 @@ def get_patchdata_from_series(series, cds, columns=None):
                     and series[c] != cds.data[c][idx]):
                 p_data[c].append((idx, series[c]))
         # ensure datetime is always patched
-        if len(p_data) > 0 and 'datetime' not in p_data:
+        if 'datetime' not in p_data:
             p_data['datetime'].append((idx, series['datetime']))
     else:
         # add all columns to stream result. This may be needed if a value

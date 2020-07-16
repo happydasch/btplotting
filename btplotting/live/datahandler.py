@@ -54,12 +54,13 @@ class LiveDataHandler:
         '''
 
         # take all rows from datastore that were not yet streamed
-        update_df = self._datastore[self._datastore['index'] > self._last_idx]
+        last_idx = self._last_idx
+        update_df = self._datastore[self._datastore['index'] > last_idx]
         # skip if we don't have new data
         if update_df.shape[0] == 0:
             return
         # store last index of streamed data
-        self._last_idx = self._datastore['index'].iloc[-1]
+        self._last_idx = last_idx
 
         figurepage = self._client.figurepage
         # create stream data for figurepage
@@ -82,8 +83,9 @@ class LiveDataHandler:
         '''
 
         # get all rows to patch
-        patches = self._patches
-        self._patches = []
+        patches = []
+        while len(self._patches) > 0:
+            patches.append(self._patches.pop(0))
         # skip if no patches available
         if len(patches) == 0:
             return
