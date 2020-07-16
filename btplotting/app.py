@@ -195,8 +195,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def _blueprint_strategy(self, strategy, datadomain=False):
 
         self._cur_figurepage.reset()
-        self._cur_figurepage.analyzers += [a for _,
-                                          a in strategy.analyzers.getitems()]
+        self._cur_figurepage.analyzers += [
+            a for _, a in strategy.analyzers.getitems()]
 
         data_graph, volume_graph = self._build_graph(strategy, datadomain)
 
@@ -269,8 +269,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def _blueprint_optreturn(self, optreturn):
         self._cur_figurepage.reset()
         self._cur_figurepage.analyzers += [
-            a for _, a
-            in optreturn.analyzers.getitems()]
+            a for _, a in optreturn.analyzers.getitems()]
 
     def _reset(self):
         self.figurepages = []
