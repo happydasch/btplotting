@@ -41,8 +41,8 @@ class ClockGenerator:
         Generates a list with dates by converting the float datetime value
         using the tz info
         '''
-
         # don't include nan in here by checking for x == x
+        # this happens for live data with rows that are not filled yet
         clk_arr = [bt.num2date(x, self._tz) for x in self._clk.array if x == x]
         return clk_arr
 
@@ -50,7 +50,6 @@ class ClockGenerator:
         '''
         Returns the range (start, end)
         '''
-
         if start is None:
             start = 0
         elif type(start) == datetime:
@@ -76,7 +75,6 @@ class ClockGenerator:
         returned.
         If back is provided, then start will be overriden.
         '''
-
         arr = self._get_clock_array()
         start, end = self._get_clock_range(arr, start, end, back)
         arr = get_slice_with_end(arr, start, end)
@@ -101,7 +99,6 @@ class ClockHandler:
         '''
         Generates data based on given clock
         '''
-
         data = []
         c_idx = 0
         for c in clk:

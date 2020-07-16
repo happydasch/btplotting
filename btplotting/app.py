@@ -60,7 +60,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     -these examples should work:
       * https://www.backtrader.com/blog/posts/2015-09-21-plotting-same-axis/plotting-same-axis/
       * https://www.backtrader.com/docu/plotting/sameaxis/plot-sameaxis/
-    -data generation based on figurepage (build_data should not care about datadomain)
     -datadomain should be cleaned up (provide one or more datadomains)
     -should be able to add additional tabs
     '''
@@ -473,14 +472,21 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def get_last_idx(self, strategy, datadomain=False):
         if datadomain is not False:
             data = strategy.getdatabyname(datadomain)
-            return len(data) - 1
-        return len(strategy) - 1
+        else:
+            data = strategy.data
+        if data.islive():
+            # this is a workaround for live data being a strategy clock
+            # and generating a empty new row before any data is available
+            # which makes the index bigger than it actually is
+            return len(data) - 2
+        return len(data) - 1
 
     def get_clock_generator(self, strategy, datadomain=False):
         if datadomain is not False:
             data = strategy.getdatabyname(datadomain)
             return ClockGenerator(data.datetime, data._tz)
-        return ClockGenerator(strategy.datetime, strategy.datas[0]._tz)
+        # if no datadomain provided, use first data
+        return ClockGenerator(strategy.data.datetime, strategy.data._tz)
 
     def build_data(self, strategy, start=None, end=None, back=None,
                    datadomain=False, preserveidx=False):
@@ -494,6 +500,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         clk, _, _ = clock_values[datadomain]
         if len(clk) > 0:
             clkstart, clkend = clk[0], clk[-1]
+            # ensure to reset end if no end is set, so we get also new
+            # data for current candle
             if end is None:
                 clkend = None
         else:
