@@ -193,7 +193,8 @@ class Figure(object):
     _bar_width = 0.5
 
     def __init__(self, strategy, cds, hoverc, scheme, master,
-                 plotorder, is_multidata, type):
+                 plotorder, is_multidata, type=None):
+
         self._strategy = strategy
         self._scheme = scheme
         self._hover_line_set = False
@@ -201,8 +202,8 @@ class Figure(object):
         self._hoverc = hoverc
         self._coloridx = collections.defaultdict(lambda: -1)
         self._is_multidata = is_multidata
+        self._type = type
         self._page_cds = cds
-        self.type = type
         self.cds_cols = []
         self.cds = ColumnDataSource()
         self.figure = None
@@ -246,17 +247,17 @@ class Figure(object):
         return convert_color(self._scheme.color(self._coloridx[key]))
 
     def _init_figure(self):
-
-        if self.type == FigureType.IND:
+        ftype = self.get_type()
+        if ftype == FigureType.IND:
             aspectratio = self._scheme.ind_aspectratio
-        elif self.type == FigureType.OBS:
+        elif ftype == FigureType.OBS:
             aspectratio = self._scheme.obs_aspectratio
-        elif self.type == FigureType.VOL:
+        elif ftype == FigureType.VOL:
             aspectratio = self._scheme.vol_aspectratio
-        elif self.type == FigureType.DATA:
+        elif ftype == FigureType.DATA:
             aspectratio = self._scheme.data_aspectratio
         else:
-            raise Exception(f"Unknown type {self.type}")
+            raise Exception(f"Unknown type {ftype}")
 
         f = figure(
             tools=Figure._tools,
@@ -498,6 +499,11 @@ class Figure(object):
 
         self._set_yticks(obj)
         self._plot_hlines(obj)
+
+    def get_type(self):
+        if self._type is None:
+            return FigureType.get_type(self.master)
+        return self._type
 
     def get_datadomain(self):
         '''

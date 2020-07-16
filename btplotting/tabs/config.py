@@ -9,16 +9,17 @@ def get_config_panel(app, figurepage, client):
     def on_button_save_config(self):
         client.scheme.data_aspectratio = slider_data_aspectratio.value
         for f in figurepage.figures:
-            if f.type == FigureType.OBS:
+            ftype = f.get_type()
+            if ftype == FigureType.OBS:
                 f.figure.aspect_ratio = slider_obs_aspectratio.value
-            elif f.type == FigureType.DATA:
+            elif ftype == FigureType.DATA:
                 f.figure.aspect_ratio = slider_data_aspectratio.value
-            elif f.type == FigureType.VOL:
+            elif ftype == FigureType.VOL:
                 f.figure.aspect_ratio = slider_vol_aspectratio.value
-            elif f.type == FigureType.IND:
+            elif ftype == FigureType.IND:
                 f.figure.aspect_ratio = slider_ind_aspectratio.value
             else:
-                raise Exception(f"Unknown type {f.type}")
+                raise Exception(f"Unknown type {ftype}")
 
     slider_obs_aspectratio = Slider(
         title="Observer Aspect Ratio",

@@ -210,7 +210,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         strat_figures = []
         for master, slaves in data_graph.items():
-            type = FigureType.get_type(master)
             plotorder = getattr(master.plotinfo, 'plotorder', 0)
             figure = Figure(
                 strategy=strategy,
@@ -219,8 +218,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 scheme=self.p.scheme,
                 master=master,
                 plotorder=plotorder,
-                is_multidata=len(strategy.datas) > 1,
-                type=type)
+                is_multidata=len(strategy.datas) > 1)
 
             figure.plot(master, None)
 
@@ -368,7 +366,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         for i, d in enumerate(datas, start=1):
             data_sort[get_datadomain(d.master)] = i
         sorted_figs.sort(key=lambda x: (
-            x.plotorder, data_sort[x.get_datadomain()], x.type.value))
+            x.plotorder, data_sort[x.get_datadomain()], x.get_type().value))
         sorted_figs.sort(key=lambda x: x.plottab)
         tabgroups = itertools.groupby(sorted_figs, lambda x: x.plottab)
 
