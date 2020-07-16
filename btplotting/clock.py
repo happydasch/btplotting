@@ -110,12 +110,18 @@ class ClockHandler:
             for sc_idx in range(c_idx, len(llist)):
                 sc = self.clk[sc_idx]
                 # match source clock (sc) on target clock by direct hit
-                # or by passing boundry of target clock (c)
-                if sc == c or sc_prev and sc_prev < c and sc > c:
+                if sc == c:
                     # store current value and remember source clock
                     # position for next iteration (c_idx)
                     v = llist[sc_idx]
                     c_idx = sc_idx + 1
+                    break
+                # match source clock (sc) on passing boundry of
+                # target clock (c)
+                elif (sc_prev and sc_prev < c and sc > c):
+                    # get last value, current value is already on new clock pos
+                    v = llist[sc_idx - 1]
+                    c_idx = sc_idx
                     break
                 elif sc > c:
                     break
