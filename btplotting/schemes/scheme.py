@@ -217,7 +217,11 @@ class Scheme(PlotScheme):
         self.table_color_odd = '#333333'
         self.table_header_color = '#7a7a7a'
 
+        # Plot a title above the plot figure
+        self.plot_title = True
+        # Number of columns on the analyzer tab
         self.analyzer_tab_num_cols = 1
+        # Number of columns on the metadata tab
         self.metadata_tab_num_cols = 3
         self.plot_sizing_mode = "scale_width"
         self.data_aspectratio = 2.5

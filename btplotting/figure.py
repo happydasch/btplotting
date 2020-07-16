@@ -380,8 +380,11 @@ class Figure(object):
     def _plot_indicator_observer(self, obj, master):
         pl = plotobj2label(obj)
 
-        self._figure_append_title(pl)
-        indlabel = obj.plotlabel()
+        if self._scheme.plot_title:
+            self._figure_append_title(pl)
+            indlabel = obj.plotlabel()
+        else:
+            indlabel = pl
         plotinfo = obj.plotinfo
 
         is_multiline = obj.size() > 1
@@ -550,7 +553,8 @@ class Figure(object):
             'colors_outline']]
 
         title = sanitize_source_name(datatarget2label([data]))
-        self._figure_append_title(title)
+        if self._scheme.plot_title:
+            self._figure_append_title(title)
 
         if self._scheme.style == 'line':
             if data.plotinfo.plotmaster is None:
