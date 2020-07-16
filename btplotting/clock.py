@@ -37,7 +37,6 @@ class ClockGenerator:
         self._tz = tz
 
     def _get_clock_array(self):
-
         '''
         Generates a list with dates by converting the float datetime value
         using the tz info
@@ -48,10 +47,9 @@ class ClockGenerator:
         return clk_arr
 
     def _get_clock_range(self, arr, start=None, end=None, back=None):
-
-        """
+        '''
         Returns the range (start, end)
-        """
+        '''
 
         if start is None:
             start = 0
@@ -71,7 +69,6 @@ class ClockGenerator:
         return start, end
 
     def get_clock(self, start=None, end=None, back=None):
-
         '''
         Returns clock values for given start, end and back values
 
@@ -101,7 +98,6 @@ class ClockHandler:
         self.end = end
 
     def _get_data_from_list(self, llist, clk):
-
         '''
         Generates data based on given clock
         '''

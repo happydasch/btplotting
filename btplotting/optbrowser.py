@@ -76,11 +76,10 @@ class OptBrowser:
         return selector, cds
 
     def build_optresult_model(self, _=None):
-
-        """
+        '''
         Generates and returns an interactive model for an OptResult
         or an OrderedOptResult
-        """
+        '''
 
         # we have list of results, each result contains the result for
         # one strategy. we don't support having more than one strategy!

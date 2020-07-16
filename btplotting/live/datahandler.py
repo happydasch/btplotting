@@ -15,9 +15,9 @@ class UpdateType(Enum):
 
 class LiveDataHandler:
 
-    """
+    '''
     Handler for live data
-    """
+    '''
 
     def __init__(self, client, lookback, datadomain):
         self._lock = Lock()
@@ -49,9 +49,9 @@ class LiveDataHandler:
 
     @gen.coroutine
     def _cb_push_adds(self):
-        """
+        '''
         Streams new data to all ColumnDataSources
-        """
+        '''
 
         # take all rows from datastore that were not yet streamed
         update_df = self._datastore[self._datastore['index'] > self._last_idx]
@@ -77,10 +77,9 @@ class LiveDataHandler:
 
     @gen.coroutine
     def _cb_push_patches(self):
-
-        """
+        '''
         Pushes patches to all ColumnDataSources
-        """
+        '''
 
         # get all rows to patch
         patches = self._patches
@@ -143,10 +142,9 @@ class LiveDataHandler:
         self._push_adds()
 
     def update(self, rows):
-
-        """
+        '''
         Request to update data with given rows
-        """
+        '''
 
         strategy = self._client.strategy
         datadomain = self._client.datadomain

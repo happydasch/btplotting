@@ -10,11 +10,10 @@ from bokeh.models import ColumnDataSource
 
 
 def convert_color(color):
-
-    """
+    '''
     if color is a float value then it is interpreted as a shade of grey
     and converted to the corresponding html color code
-    """
+    '''
 
     try:
         val = round(float(color) * 255.0)
@@ -27,9 +26,9 @@ def convert_color(color):
 def build_color_lines(df, scheme, col_open='open', col_close='close',
                       col_prefix=''):
 
-    """
+    '''
     Creates columns with color infos for given DataFrame
-    """
+    '''
 
     # build color strings from scheme
     colorup = convert_color(scheme.barup)
@@ -77,11 +76,10 @@ def build_color_lines(df, scheme, col_open='open', col_close='close',
 
 
 def sanitize_source_name(name: str):
-
-    """
+    '''
     removes illegal characters from source name to make it
     compatible with Bokeh
-    """
+    '''
 
     forbidden_chars = ' (),.-/*:'
     for fc in forbidden_chars:
@@ -135,12 +133,11 @@ def generate_stylesheet(scheme, template="basic.css.j2"):
 
 
 def set_cds_columns_from_df(df, cds, columns=None, dropna=True):
-
-    """
+    '''
     Sets the ColumnDataSource columns based on the given DataFrame using
     the given columns. Only the given columns will be added, all will be
     added if columns=None
-    """
+    '''
 
     if columns is None:
         columns = list(df.columns)
@@ -164,10 +161,9 @@ def set_cds_columns_from_df(df, cds, columns=None, dropna=True):
 
 
 def get_streamdata_from_df(df, columns=None):
-
-    """
+    '''
     Creates stream data from df
-    """
+    '''
 
     if columns is None:
         columns = list(df.columns)

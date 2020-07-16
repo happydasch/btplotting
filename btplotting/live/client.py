@@ -15,11 +15,11 @@ _logger = logging.getLogger(__name__)
 
 class LiveClient:
 
-    """
+    '''
     LiveClient provides live plotting functionality.
 
     TODO use only one instance of app, app should be able to update figurepage
-    """
+    '''
 
     NAV_BUTTON_WIDTH = 38
 
@@ -231,10 +231,9 @@ class LiveClient:
         return self.model.select_one({"id": "tabs"})
 
     def update(self, rows):
-
-        """
+        '''
         Request for updating data with rows
-        """
+        '''
 
         if not self._paused and self._datahandler:
             self._datahandler.update(rows)

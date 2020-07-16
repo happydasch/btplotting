@@ -43,7 +43,7 @@ if 'ipykernel' in sys.modules:
 
 class BacktraderPlotting(metaclass=bt.MetaParams):
 
-    """
+    '''
     BacktraderPlotting is the main component
 
     It acts as a connection between backtrader and the plotting functionality.
@@ -64,7 +64,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     -datadomain should be cleaned up (provide one or more datadomains)
     -should be able to update figurepages
     -should be able to add additional tabs
-    """
+    '''
 
     params = (
         # scheme object for styling plots
@@ -193,7 +193,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return data_graph, volume_graph
 
-    def _blueprint_strategy(self, strategy, datadomain=False, **kwargs):
+    def _blueprint_strategy(self, strategy, datadomain=False):
 
         self._cur_figurepage.analyzers += [a for _,
                                            a in strategy.analyzers.getitems()]
@@ -287,12 +287,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     def get_figurepage(self, idx: int = 0):
         return self.figurepages[idx]
-
-    def list_datadomains(self, strategy: bt.Strategy):
-        datadomains = []
-        for d in strategy.datas:
-            datadomains.append(get_datadomain(d))
-        return datadomains
 
     def generate_model(self, figurepage_idx=0):
         if figurepage_idx >= len(self.figurepages):
@@ -432,6 +426,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def savefig(self, fig, filename, width, height, dpi, tight):
         self._generate_output(fig, filename)
 
+    def list_datadomains(self, strategy: bt.Strategy):
+        datadomains = []
+        for d in strategy.datas:
+            datadomains.append(get_datadomain(d))
+        return datadomains
+
     def get_last_idx(self, strategy, datadomain=False):
         if datadomain is not False:
             data = strategy.getdatabyname(datadomain)
@@ -530,11 +530,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     def plot(self, obj, figid=0, numfigs=1, iplot=True, start=None,
              end=None, use=None, datadomain=False, filldata=True, **kwargs):
-
-        """
+        '''
         Plot either a strategy or an optimization result
         This method is called by backtrader
-        """
+        '''
 
         # prepare new FigurePage. Every time plot is being called,
         # a new FigurePage is added containing the blueprint for the
@@ -557,7 +556,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         self._iplot = iplot and 'ipykernel' in sys.modules
 
         if isinstance(obj, bt.Strategy):
-            self._blueprint_strategy(obj, datadomain, **kwargs)
+            self._blueprint_strategy(obj, datadomain)
             if filldata:
                 df = self.build_data(
                     strategy=obj,
@@ -574,8 +573,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception(
                 f'Unsupported plot source object: {str(type(obj))}')
 
-        # returns current figurepage, which may not necessary have index=0
-        return self._cur_figurepage
+        # returns generated figurepages
+        return self.figurepages
 
     def plot_optmodel(self, obj):
         self._reset()
@@ -587,11 +586,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return self.generate_model(0)
 
     def show(self):
-
-        """
+        '''
         Display a figure
         This method is called by backtrader
-        """
+        '''
 
         for idx in range(len(self.figurepages)):
             model = self.generate_model(idx)

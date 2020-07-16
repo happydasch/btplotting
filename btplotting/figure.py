@@ -49,11 +49,11 @@ class FigureType(Enum):
 
 class HoverContainer(metaclass=bt.MetaParams):
 
-    """
+    '''
     Class to store information about hover tooltips. Will be filled
     while Bokeh glyphs are created. After all figures are complete,
     hovers will be applied by calling apply_hovertips
-    """
+    '''
 
     params = (('hover_tooltip_config', None),
               ('is_multidata', False))
@@ -125,10 +125,9 @@ class HoverContainer(metaclass=bt.MetaParams):
             hovertool.tooltips.append(t)
 
     def apply_hovertips(self, figures):
-
-        """
+        '''
         Add hovers to to all figures from the figures list
-        """
+        '''
 
         for f in figures:
             for t in f.figure.tools:
@@ -141,9 +140,9 @@ class HoverContainer(metaclass=bt.MetaParams):
 
 class FigurePage(object):
 
-    """
+    '''
     FigurePage represents a strategy or optimization result
-    """
+    '''
 
     def __init__(self, obj):
         # columns the FigurePage is using
@@ -170,7 +169,7 @@ class FigurePage(object):
 
 class Figure(object):
 
-    """
+    '''
     Figure represents a figure plotted with bokeh
 
     It will wrap all data, indicators and observers being plotted on a
@@ -179,7 +178,7 @@ class Figure(object):
     After the Figure is configured, it is required to fill the figure at
     least once with a DataFrame using set_data_from_df. After this, the
     ColumnDataSource is ready for use.
-    """
+    '''
 
     _tools = "pan,wheel_zoom,box_zoom,reset"
 
@@ -215,10 +214,9 @@ class Figure(object):
         self._init_figure()
 
     def _set_single_hover_renderer(self, renderer):
-
-        """
+        '''
         Sets this figure's hover to a single renderer
-        """
+        '''
 
         if self._hover_line_set:
             return
@@ -227,11 +225,10 @@ class Figure(object):
         self._hover_line_set = True
 
     def _add_hover_renderer(self, renderer):
-
-        """
+        '''
         Adds another hover render target. Only has effect if not single
         renderer has been set before
-        """
+        '''
 
         if self._hover_line_set:
             return
@@ -503,9 +500,9 @@ class Figure(object):
         self._plot_hlines(obj)
 
     def get_datadomain(self):
-        """
+        '''
         Returns the datadomain of the figure.
-        """
+        '''
 
         return get_datadomain(self.master)
 
@@ -610,10 +607,9 @@ class Figure(object):
             self.plot_volume(data, self._scheme.voltrans, True)
 
     def plot_volume(self, data, alpha=1.0, extra_axis=False):
-
-        """
+        '''
         extra_axis displays a second axis (for overlay on data plotting)
-        """
+        '''
 
         source_id = get_source_id(data)
         self.cds_cols += [source_id + x for x in ['volume', 'colors_volume']]

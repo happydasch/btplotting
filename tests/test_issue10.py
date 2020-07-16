@@ -32,8 +32,8 @@ class MACDStrategy(bt.Strategy):
         self.order = None  # sentinel to avoid operrations on pending order
 
     def log(self, txt, dt=None):
-        """ Logging function for this strategy
-        """
+        ''' Logging function for this strategy
+        '''
         dt = dt or self.datas[0].datetime.date(0)
         time = self.datas[0].datetime.time()
         print('%s,%s' % (dt.isoformat(), txt))

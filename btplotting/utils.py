@@ -41,10 +41,9 @@ def get_params_str(params):
 
 
 def find_by_plotid(strategy, plotid):
-
-    """
+    '''
     Returns a object by its plotid.
-    """
+    '''
 
     objs = itertools.chain(
         strategy.datas,
@@ -65,13 +64,12 @@ def find_by_plotid(strategy, plotid):
 
 
 def get_indicator_data(indicator):
-
-    """
+    '''
     The indicator might have been created using a specific line
     (like SMA(data.lines.close)). In this case a LineSeriesStub
     has been created for which we have to resolve the original
     data.
-    """
+    '''
 
     data = indicator.data
     if isinstance(data, bt.LineSeriesStub):
@@ -81,11 +79,10 @@ def get_indicator_data(indicator):
 
 
 def filter_by_datadomain(obj, datadomain):
-
-    """
+    '''
     Returns if the given object should be included in datadomain.
     True if it should be included, False if not
-    """
+    '''
 
     if datadomain is False:
         return True
@@ -98,12 +95,11 @@ def filter_by_datadomain(obj, datadomain):
 
 
 def get_datadomain(obj):
-
-    """
+    '''
     Returns the datadomain for given object. A datadomain
     is basically the name of a data feed.
     If there is no datadomain -> False will be returned.
-    """
+    '''
 
     if isinstance(obj, bt.Strategy):
         # strategy will have no datadomain
@@ -120,10 +116,9 @@ def get_datadomain(obj):
 
 
 def get_clock_obj(obj):
-
-    """
+    '''
     Returns a clock object to use for building data
-    """
+    '''
 
     if isinstance(obj, bt.LinesOperation):
         # indicators can be created to run on a line
@@ -150,21 +145,19 @@ def get_clock_obj(obj):
 
 
 def get_clock_line(obj):
-
-    """
+    '''
     Find the corresponding clock for an object.
     A clock is a datetime line that holds timestamps for the line in question.
-    """
+    '''
 
     clk = get_clock_obj(obj)
     return clk.lines.datetime
 
 
 def get_source_id(source):
-
-    """
+    '''
     Returns a unique source id for given source.
     This is used for unique column names.
-    """
+    '''
 
     return str(id(source))

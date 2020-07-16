@@ -1,6 +1,6 @@
-"""
+'''
 Marker definition used to generate markers in bokeh using matplotlib notation
-"""
+'''
 
 _mrk_fncs = {
     # "."	m00	point

@@ -16,7 +16,7 @@ _DATATABLE_FNC_NAME = 'get_analysis_table'
 
 
 def inject_datatables():
-    """Injects function 'get_analysis_table' to some well-known Analyzer classes."""
+    '''Injects function 'get_analysis_table' to some well-known Analyzer classes.'''
     _atables = {
         backtrader.analyzers.sharpe.SharpeRatio: sharperatio,
         backtrader.analyzers.DrawDown: drawdown,

@@ -175,10 +175,11 @@ class Scheme(PlotScheme):
         self._set_args(**kwargs)
 
     def _set_params(self):
-        """
+        '''
         hover tooltips of datas will contain all other datas and all indicators/observers
         if set to False then tooltips of datas will only contain the current data and indicators/observers related to that data
-        """
+        '''
+
         self.tabs = 'single'
         self.show_headline = True
         self.hover_tooltip_config = ''

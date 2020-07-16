@@ -55,10 +55,9 @@ class AnalysisTableGenerator:
 
     @staticmethod
     def _get_table_generic(analyzer):
-
-        """
+        '''
         Returns two columns labeled '' and 'Value'
-        """
+        '''
 
         table = [
             ['', ColummDataType.STRING],
@@ -92,10 +91,9 @@ class AnalysisTableGenerator:
             raise Exception(f"Unsupported ColumnDataType: '{ctype}'")
 
     def get_tables(self, analyzer):
-
-        """
+        '''
         Return a header for this analyzer and one *or more* data tables.
-        """
+        '''
 
         if hasattr(analyzer, 'get_analysis_table'):
             title, table_columns_list = analyzer.get_analysis_table()

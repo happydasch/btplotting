@@ -138,7 +138,7 @@ def test_std_backtest_ind_subplot(cerebro: bt.Cerebro):
 
 
 def test_std_backtest_ind_on_line(cerebro: bt.Cerebro):
-    """In the past it crashed when creating indicators with specific lines case LineSeriesStub was not handled correctly"""
+    '''In the past it crashed when creating indicators with specific lines case LineSeriesStub was not handled correctly'''
     class TestStrategy(bt.Strategy):
         def __init__(self):
             self._sma = bt.indicators.SMA(self.data.close)

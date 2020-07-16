@@ -21,10 +21,11 @@ class Webapp:
         self._on_session_destroyed = on_session_destroyed
 
     def start(self, ioloop=None):
-        """
+        '''
         Serves a backtrader result as a Bokeh application running on
         a web server
-        """
+        '''
+
         def make_document(doc: Document):
             if self._on_session_destroyed is not None:
                 doc.on_session_destroyed(self._on_session_destroyed)
@@ -49,10 +50,10 @@ class Webapp:
                     notebook_url="localhost:8889",
                     port=80, ioloop=None):
 
-        """
+        '''
         Runs a Bokeh webserver application. Documents will be created using
         fnc_make_document
-        """
+        '''
 
         handler = FunctionHandler(fnc_make_document)
         app = Application(handler)
