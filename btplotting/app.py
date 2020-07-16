@@ -71,7 +71,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         ('scheme', Blackly()),
         # output filename when running backtest
         ('filename', None),
-        # TODO what is this used for
+        # individual plot options
         ('plotconfig', None),
         # output mode for plotting: show, save, memory
         ('output_mode', 'show'),

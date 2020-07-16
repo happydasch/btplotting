@@ -67,6 +67,7 @@ class HoverContainer(metaclass=bt.MetaParams):
             if len(self.p.hover_tooltip_config) == 0
             else self.p.hover_tooltip_config.split(','))
         for c in input_config:
+            c = c.split('-')
             if len(c) != 2:
                 raise RuntimeError(f'Invalid hover config entry "{c}"')
             self._config.append(

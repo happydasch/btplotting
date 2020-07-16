@@ -4,6 +4,9 @@ Library to add extended plotting capabilities to `backtrader` (<https://www.back
 
 btplotting is a fork based on the awesome `backtrader_plotting` (<https://github.com/verybadsoldier/backtrader_plotting>)
 
+Since most of the inner workings are updated this fork may not
+work correctly for you. Please use `backtrader_plotting` instead.
+
 **This fork has some changes compared to backtrader_plotting:**
 
 * No need for custom backtrader
