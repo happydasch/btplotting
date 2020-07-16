@@ -167,6 +167,7 @@ def set_cds_columns_from_df(df, cds, columns=None, dropna=True):
         np.array(df.loc[c_df.index, 'datetime'], dtype=np.datetime64),
         'datetime')
 
+
 def get_streamdata_from_df(df, columns=None):
     '''
     Creates stream data from df

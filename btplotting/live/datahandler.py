@@ -33,7 +33,9 @@ class LiveDataHandler:
         self._fill()
 
     def _fill(self):
-        # fill datastore with latest values
+        '''
+        Fills datastore with latest values
+        '''
         with self._lock:
             self._datastore = self._client.app.build_data(
                 self._client.strategy,
@@ -52,15 +54,13 @@ class LiveDataHandler:
         '''
         Streams new data to all ColumnDataSources
         '''
-
         # take all rows from datastore that were not yet streamed
-        last_idx = self._last_idx
-        update_df = self._datastore[self._datastore['index'] > last_idx]
+        update_df = self._datastore[self._datastore['index'] > self._last_idx]
         # skip if we don't have new data
         if update_df.shape[0] == 0:
             return
         # store last index of streamed data
-        self._last_idx = last_idx
+        self._last_idx = update_df['index'].iloc[-1]
 
         figurepage = self._client.figurepage
         # create stream data for figurepage
@@ -81,7 +81,6 @@ class LiveDataHandler:
         '''
         Pushes patches to all ColumnDataSources
         '''
-
         # get all rows to patch
         patches = []
         while len(self._patches) > 0:
@@ -101,7 +100,7 @@ class LiveDataHandler:
                 figurepage.cds.patch(p_data)
             if len(s_data) > 0:
                 _logger.debug(f"Sending stream for figurepage: {s_data}")
-                figurepage.cds.stream(s_data)
+                figurepage.cds.stream(s_data, self._datastore.shape[0])
 
             # patch all figures
             for figure in figurepage.figures:
@@ -112,7 +111,7 @@ class LiveDataHandler:
                     figure.cds.patch(p_data)
                 if len(s_data) > 0:
                     _logger.debug(f"Sending stream for figure: {s_data}")
-                    figure.cds.stream(s_data)
+                    figure.cds.stream(s_data, self._datastore.shape[0])
 
     def _push_adds(self):
         doc = self._client.doc
@@ -133,11 +132,17 @@ class LiveDataHandler:
             self._cb_push_patches)
 
     def get_last_idx(self):
+        '''
+        Returns the last index in local datastore
+        '''
         if self._datastore.shape[0] > 0:
             return self._datastore['index'].iloc[-1]
         return -1
 
     def set(self, df):
+        '''
+        Sets a new df and streams data
+        '''
         with self._lock:
             self._datastore = df
         self._last_idx = -1
@@ -147,7 +152,6 @@ class LiveDataHandler:
         '''
         Request to update data with given rows
         '''
-
         strategy = self._client.strategy
         datadomain = self._client.datadomain
         # don't do anything if datadomain is different than
@@ -156,36 +160,36 @@ class LiveDataHandler:
             return
 
         for idx, row in rows.iterrows():
-            if (self._datastore.shape[0] > 0
-                    and idx in self._datastore['index']):
-                update_type = UpdateType.UPDATE
-            else:
-                update_type = UpdateType.ADD
+            with self._lock:
+                if (self._datastore.shape[0] > 0
+                        and idx in self._datastore['index']):
+                    update_type = UpdateType.UPDATE
+                else:
+                    update_type = UpdateType.ADD
 
             if update_type == UpdateType.UPDATE:
-                ds_idx = self._datastore.loc[
-                    self._datastore['index'] == idx].index[0]
                 with self._lock:
+                    ds_idx = self._datastore.loc[
+                        self._datastore['index'] == idx].index[0]
                     self._datastore.at[ds_idx] = row
                     self._patches.append(row)
                 self._push_patches()
             else:
                 # check for gaps in data before adding new data
                 if (
-                        self._last_idx > -1
+                        self._last_idx > 0
                         and self._datastore.shape[0] > 0
                         and row['index']
-                        > (self._datastore['index'].iloc[-1] + 1)):
+                        != (self._datastore['index'].iloc[-1] + 1)):
                     missing = self._client.app.build_data(
                         strategy=strategy,
-                        start=self._datastore['index'].iloc[-1],
+                        start=self._datastore['index'].iloc[-1] + 1,
+                        end=row['index'] - 1,
                         datadomain=datadomain,
                         preserveidx=True)
                     # add missing rows
-                    self.update(missing)
-                    # if any gap occured, no need to continue, since
-                    # current rows were already updated
-                    return
+                    if missing.shape[0] > 0:
+                        self.update(missing)
 
                 # append data and remove old data
                 with self._lock:
