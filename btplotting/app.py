@@ -27,7 +27,7 @@ from .figure import FigurePage, FigureType, Figure, HoverContainer
 from .clock import ClockGenerator, ClockHandler
 from .helper.label_resolver import plotobj2label
 from .helper.bokeh import generate_stylesheet, build_color_lines, \
-    sort_plotobjects, get_plotmaster
+    get_plotmaster
 from .tab import BacktraderPlottingTab
 from .tabs import AnalyzerTab, MetadataTab, LogTab
 
@@ -415,8 +415,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         def build_panel(objects, panel_title):
             if len(objects) == 0:
                 return
-
-            sort_plotobjects(objects)
 
             g = gridplot([[x.figure] for x in objects],
                          toolbar_options={'logo': None},

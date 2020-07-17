@@ -217,10 +217,6 @@ def get_patchdata_from_series(series, cds, columns=None):
     return p_data, s_data
 
 
-def sort_plotobjects(objs):
-    objs.sort(key=lambda x: x.plotorder)
-
-
 def get_plotmaster(obj):
     if obj is None:
         return None
