@@ -201,9 +201,10 @@ def get_patchdata_from_series(series, cds, columns=None):
     # create patch or stream data based on given series
     if idx is not False:
         for c in columns:
-            if (series[c] == series[c]
-                    and series[c] != cds.data[c][idx]):
-                p_data[c].append((idx, series[c]))
+            val = series[c]
+            cds_val = cds.data[c][idx]
+            if (val == val and val != cds_val):
+                p_data[c].append((idx, val))
         # ensure datetime is always patched
         if 'datetime' not in p_data:
             p_data['datetime'].append((idx, series['datetime']))
