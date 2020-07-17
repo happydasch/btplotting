@@ -5,7 +5,7 @@ import backtrader as bt
 from bokeh.layouts import column, row, gridplot, layout
 from bokeh.models import Paragraph, Spacer, Button
 
-from ..utils import get_params, paramval2str
+from ..helper.params import get_params, paramval2str
 from ..helper.label_resolver import indicator2fullid
 from ..helper.datatable import TableGenerator
 from ..tab import BacktraderPlottingTab

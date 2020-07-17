@@ -6,7 +6,7 @@ import backtrader as bt
 from bokeh.models import ColumnDataSource, Paragraph, TableColumn, DataTable, \
     DateFormatter, NumberFormatter, StringFormatter
 
-from ..utils import get_params_str
+from .params import get_params_str
 
 
 # the height of a single row

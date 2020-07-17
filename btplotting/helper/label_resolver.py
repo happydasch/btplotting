@@ -1,6 +1,7 @@
 import backtrader as bt
 
-from ..utils import get_params_str, get_clock_obj
+from .params import get_params_str
+from ..utils import get_clock_obj
 
 
 def datatarget2label(datas):
