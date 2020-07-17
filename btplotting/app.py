@@ -28,6 +28,7 @@ from .clock import ClockGenerator, ClockHandler
 from .helper.label_resolver import plotobj2label
 from .helper.bokeh import generate_stylesheet, build_color_lines, \
     sort_plotobjects, get_plotmaster
+from .tab import BacktraderPlottingTab
 from .tabs import AnalyzerTab, MetadataTab, LogTab
 
 _logger = logging.getLogger(__name__)
@@ -90,7 +91,14 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         else:
             self.tabs = []
         # add additional tabs from param
+        if not isinstance(tabs, list):
+            raise Exception(
+                "Param tabs needs to be a list containing tabs to display")
         for tab in tabs:
+            if not issubclass(tab, BacktraderPlottingTab):
+                raise Exception(
+                    "Tab needs to be a subclass of"
+                    + " btplotting.tab.BacktraderPlottingTab")
             self.tabs.append(tab)
 
     def _configure_plotting(self, strategy):
