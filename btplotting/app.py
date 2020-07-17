@@ -57,9 +57,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     The live client also uses this class to generate all figures to plot.
 
     TODO
-    -these examples should work:
-      * https://www.backtrader.com/blog/posts/2015-09-21-plotting-same-axis/plotting-same-axis/
-      * https://www.backtrader.com/docu/plotting/sameaxis/plot-sameaxis/
     -datadomain should be cleaned up (provide one or more datadomains)
     -should be able to add additional tabs
     '''
@@ -184,7 +181,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 plotmaster = (plotmaster
                               if plotmaster is not None
                               else get_indicator_data(obj))
-
+                plotmaster = get_plotmaster(plotmaster)
                 if plotmaster not in data_graph:
                     data_graph[plotmaster] = []
                 data_graph[plotmaster].append(obj)
@@ -453,7 +450,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                              stylesheet=self._output_stylesheet(),
                              show_headline=self.p.scheme.show_headline,
                          )
-                        )
+                         )
 
         with open(filename, 'w') as f:
             f.write(html)
