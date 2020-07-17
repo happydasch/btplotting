@@ -109,10 +109,6 @@ class LiveClient:
         select_datadomain.on_change(
             'value',
             partial(on_select_datadomain, self))
-        datadomain_label = Div(
-            text="Datadomain:",
-            margin=(10, 5, 0, 5),
-            css_classes=["label"])
         # nav
         btn_nav_prev = Button(label="❮", width=self.NAV_BUTTON_WIDTH)
         btn_nav_prev.on_click(partial(on_click_nav_prev, self))
@@ -126,7 +122,7 @@ class LiveClient:
         btn_nav_next_big.on_click(partial(on_click_nav_next, self, 10))
         # layout
         controls = row(
-            children=[datadomain_label, select_datadomain])
+            children=[select_datadomain])
         nav = row(
             children=[btn_nav_prev_big,
                       btn_nav_prev,
@@ -142,7 +138,7 @@ class LiveClient:
                 [column(controls, width_policy="min"),
                  Spacer(),
                  column(nav, width_policy="min")],
-                Spacer(height=30),
+                Spacer(height=15),
                 # layout for tabs
                 [tabs]
             ],

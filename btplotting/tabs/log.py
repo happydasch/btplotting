@@ -3,7 +3,7 @@ from functools import partial
 from tornado import gen
 
 from bokeh.io import curdoc
-from bokeh.models import Panel, DataTable, TableColumn, ColumnDataSource
+from bokeh.models import DataTable, TableColumn, ColumnDataSource, Paragraph
 from bokeh.layouts import column
 
 from ..tab import BacktraderPlottingTab
@@ -84,18 +84,26 @@ def is_log_tab_initialized():
 
 class LogTab(BacktraderPlottingTab):
 
-    def is_useable(self):
+    def _is_useable(self):
         return is_log_tab_initialized()
 
-    def get_panel(self):
+    def _get_panel(self):
         global handler
+
         if handler is None:
             init_log_tab([])
         if self.client is not None:
             doc = self.client.doc
         else:
             doc = curdoc()
-        message = TableColumn(field="message", title="Message", sortable=False)
+
+        message = TableColumn(
+            field="message",
+            title="Message",
+            sortable=False)
+        title = Paragraph(
+            text="Log Messages",
+            css_classes=['panel-title'])
         table = DataTable(
             source=handler.get_cds(doc),
             columns=[message],
@@ -104,6 +112,8 @@ class LogTab(BacktraderPlottingTab):
             sortable=False,
             reorderable=False,
             fit_columns=True)
-        return Panel(
-            child=column(children=[table], sizing_mode="scale_width"),
-            title='Log')
+        child = column(
+            children=[title, table],
+            sizing_mode="scale_width")
+
+        return child, 'Log'

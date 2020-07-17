@@ -2,29 +2,31 @@ import math
 
 import backtrader as bt
 
-from bokeh.layouts import column, gridplot
-from bokeh.models import Panel, Paragraph
+from bokeh.layouts import column, row, gridplot, layout
+from bokeh.models import Paragraph, Spacer, Button
 
 from ..utils import get_params, paramval2str
 from ..helper.label_resolver import indicator2fullid
 from ..helper.datatable import TableGenerator
 from ..tab import BacktraderPlottingTab
 
-# TODO add refresh button if client is set
-
 
 class MetadataTab(BacktraderPlottingTab):
 
-    def is_useable(self):
+    def __init__(self, app, figurepage, client=None):
+        super(MetadataTab, self).__init__(app, figurepage, client=client)
+        self.content = None
+
+    def _is_useable(self):
         return True
 
     def _get_title(self, title):
         return Paragraph(
             text=title,
-            css_classes=['table_title'])
+            css_classes=['table-title'])
 
     def _get_no_params(self):
-        return Paragraph(text="No parameters", css_classes=['table_info'])
+        return Paragraph(text="No parameters", css_classes=['table-info'])
 
     def _get_parameter_table(self, params):
         tablegen = TableGenerator()
@@ -94,11 +96,39 @@ class MetadataTab(BacktraderPlottingTab):
         acolumns.extend(self._get_datas(strategy))
         return acolumns
 
-    def get_panel(self):
+    def _get_metadata_info(self):
         acolumns = self._get_metadata_columns(self.figurepage.strategy)
-        childs = gridplot(
+        info = gridplot(
             acolumns,
             ncols=self.app.p.scheme.metadata_tab_num_cols,
             sizing_mode='stretch_width',
             toolbar_options={'logo': None})
-        return Panel(child=childs, title="Metadata")
+        return info
+
+    def _on_update_metadata_info(self):
+        self.content.children[1] = self._get_metadata_info()
+
+    def _create_content(self):
+        title_area = []
+        title = Paragraph(
+            text="Strategy Metadata Overview",
+            css_classes=["panel-title"])
+        title_area.append(row([title], width_policy="min"))
+        if self.client:
+            btn_refresh = Button(label="Refresh", width_policy="min")
+            btn_refresh.on_click(self._on_update_metadata_info)
+            title_area.append(Spacer())
+            title_area.append(row([btn_refresh], width_policy="min"))
+        # set content in self
+        return layout(
+            [
+                title_area,
+                # initialize with info
+                [self._get_metadata_info()]
+            ],
+            sizing_mode='stretch_width')
+
+    def _get_panel(self):
+        if self.content is None:
+            self.content = self._create_content()
+        return self.content, "Metadata"

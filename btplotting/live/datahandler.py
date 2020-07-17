@@ -179,8 +179,8 @@ class LiveDataHandler:
                 if (
                         self._last_idx > 0
                         and self._datastore.shape[0] > 0
-                        and row['index']
-                        != (self._datastore['index'].iloc[-1] + 1)):
+                        and (row['index']
+                             != self._datastore['index'].iloc[-1] + 1)):
                     missing = self._client.app.build_data(
                         strategy=strategy,
                         start=self._datastore['index'].iloc[-1] + 1,

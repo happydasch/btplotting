@@ -134,4 +134,4 @@ class AnalysisTableGenerator:
                 fit_columns=True))
         return Paragraph(
             text=title,
-            css_classes=['table_title']), elems
+            css_classes=['table-title']), elems
