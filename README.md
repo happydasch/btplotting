@@ -29,6 +29,10 @@ work correctly for you. Please use `backtrader_plotting` instead.
 
 Needs Python >= 3.6.
 
+## Demos
+
+https://happydasch.github.io/btplotting/
+
 ## Installation
 
 `pip install git+https://github.com/happydasch/btplotting`
