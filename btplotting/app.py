@@ -174,17 +174,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
             # subplot = create a new figure for this indicator
             subplot = obj.plotinfo.subplot
-            plotmaster = obj.plotinfo.plotmaster
-            if subplot and plotmaster is None:
+            pmaster = get_plotmaster(obj.plotinfo.plotmaster)
+            if subplot and pmaster is None:
                 data_graph[obj] = []
             else:
-                plotmaster = (plotmaster
-                              if plotmaster is not None
-                              else get_indicator_data(obj))
-                plotmaster = get_plotmaster(plotmaster)
-                if plotmaster not in data_graph:
-                    data_graph[plotmaster] = []
-                data_graph[plotmaster].append(obj)
+                if pmaster is None:
+                    pmaster = get_plotmaster(get_indicator_data(obj))
+                if pmaster not in data_graph:
+                    data_graph[pmaster] = []
+                data_graph[pmaster].append(obj)
 
         return data_graph, volume_graph
 
