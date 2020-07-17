@@ -18,6 +18,7 @@ work correctly for you. Please use `backtrader_plotting` instead.
   useful when replaying data, to remove gaps when using multiple data sources.
 * Every figure has its own ColumnDataSource, so the live client can patch without having issues
   with nan values
+* Can be extended with custom tabs (for example order execution with live client, custom analysis, etc.)
 
 ## Features
 

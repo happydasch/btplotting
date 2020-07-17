@@ -28,9 +28,7 @@ from .clock import ClockGenerator, ClockHandler
 from .helper.label_resolver import plotobj2label
 from .helper.bokeh import generate_stylesheet, build_color_lines, \
     sort_plotobjects, get_plotmaster
-from .tabs import get_analyzer_panel, get_metadata_panel, \
-    get_log_panel
-from .tabs.log import is_log_tab_initialized
+from .tabs import AnalyzerTab, MetadataTab, LogTab
 
 _logger = logging.getLogger(__name__)
 
@@ -58,7 +56,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     TODO
     -datadomain should be cleaned up (provide one or more datadomains)
-    -should be able to add additional tabs
     '''
 
     params = (
@@ -72,21 +69,29 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         ('output_mode', 'show'),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self, tabs=[], use_default_tabs=True, **kwargs):
         # apply additional parameters to override / set scheme settings
         for pname, pvalue in kwargs.items():
             setattr(self.p.scheme, pname, pvalue)
 
         self._iplot = None
         if not isinstance(self.p.scheme, Scheme):
-            raise Exception("Provided scheme has to be a subclass" +
-                            " of btplotting.schemes.scheme.Scheme")
+            raise Exception("Provided scheme has to be a subclass"
+                            + " of btplotting.schemes.scheme.Scheme")
 
         # when optreturn is active during optimization then we get
         # a thinned out result only
         self._is_optreturn = False
         self._current_fig_idx = None
         self.figurepages = []
+        # set default tabs
+        if use_default_tabs:
+            self.tabs = [AnalyzerTab, MetadataTab, LogTab]
+        else:
+            self.tabs = []
+        # add additional tabs from param
+        for tab in tabs:
+            self.tabs.append(tab)
 
     def _configure_plotting(self, strategy):
         datas = strategy.datas
@@ -334,20 +339,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         else:
             panels = []
 
-        # append analyzer panel
-        panel_analyzer = get_analyzer_panel(self, figurepage, None)
-        panels.append(panel_analyzer)
-
-        # append meta panel
-        if not self._is_optreturn:
-            assert figurepage.strategy is not None
-            panel_metadata = get_metadata_panel(self, figurepage, None)
-            panels.append(panel_metadata)
-
-        # append log panel
-        if is_log_tab_initialized():
-            panel_log = get_log_panel(self, figurepage, None)
-            panels.append(panel_log)
+        for t in self.tabs:
+            tab = t(self, figurepage, None)
+            if tab.is_useable():
+                panels.append(tab.get_panel())
 
         # set all tabs (filter out None)
         model = Tabs(tabs=list(filter(None.__ne__, panels)))
@@ -359,6 +354,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return model
 
     def generate_model_panels(self, fp, datadomain=False):
+        '''
+        Generates panels used for current model tabs.
+        '''
         observers = [
             x for x in fp.figures
             if isinstance(x.master, bt.ObserverBase)]

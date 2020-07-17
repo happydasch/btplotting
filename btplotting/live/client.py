@@ -6,9 +6,7 @@ from bokeh.layouts import column, row, layout
 from bokeh.models import Div, Select, Spacer, Tabs, Button
 
 from .datahandler import LiveDataHandler
-from ..tabs import get_analyzer_panel, get_metadata_panel, \
-    get_config_panel, get_log_panel
-from ..tabs.log import is_log_tab_initialized
+from ..tabs import ConfigTab
 
 _logger = logging.getLogger(__name__)
 
@@ -34,6 +32,8 @@ class LiveClient:
         self.datadomain = False
         self.model = None
 
+        # append config tab
+        self.app.tabs.append(ConfigTab)
         # create model
         self.model, self._update_fnc = self._createmodel()
         # create figurepage
@@ -43,12 +43,6 @@ class LiveClient:
         self._updatemodel()
 
     def _createmodel(self):
-
-        def on_click_refresh(self):
-            panel = get_analyzer_panel(self.app, self.figurepage, self)
-            tabs.tabs[1] = panel
-            panel = get_metadata_panel(self.app, self.figurepage, self)
-            tabs.tabs[2] = panel
 
         def on_select_datadomain(self, a, old, new):
             _logger.debug(f"Switching datadomain {new}...")
@@ -119,9 +113,6 @@ class LiveClient:
             text="Datadomain:",
             margin=(10, 5, 0, 5),
             css_classes=["label"])
-        # refresh
-        btn_refresh = Button(label='Refresh', width_policy="min")
-        btn_refresh.on_click(partial(on_click_refresh, self))
         # nav
         btn_nav_prev = Button(label="❮", width=self.NAV_BUTTON_WIDTH)
         btn_nav_prev.on_click(partial(on_click_nav_prev, self))
@@ -135,7 +126,7 @@ class LiveClient:
         btn_nav_next_big.on_click(partial(on_click_nav_next, self, 10))
         # layout
         controls = row(
-            children=[datadomain_label, select_datadomain, btn_refresh])
+            children=[datadomain_label, select_datadomain])
         nav = row(
             children=[btn_nav_prev_big,
                       btn_nav_prev,
@@ -161,24 +152,10 @@ class LiveClient:
     def _updatemodel(self):
         self.app.update_figurepage(self.figureidx, self.datadomain)
         panels = self.app.generate_model_panels(self.figurepage)
-
-        # append analyzer panel
-        panel_analyzer = get_analyzer_panel(self.app, self.figurepage, self)
-        panels.append(panel_analyzer)
-
-        # append metadata panel
-        panel_metadata = get_metadata_panel(self.app, self.figurepage, self)
-        panels.append(panel_metadata)
-
-        # append log panel
-        # check if a log panel is needed
-        if is_log_tab_initialized():
-            panel_log = get_log_panel(self.app, self.figurepage, self)
-            panels.append(panel_log)
-
-        # append config panel
-        panel_config = get_config_panel(self.app, self.figurepage, self)
-        panels.append(panel_config)
+        for t in self.app.tabs:
+            tab = t(self.app, self.figurepage, self)
+            if tab.is_useable():
+                panels.append(tab.get_panel())
 
         # set all tabs (from panels, without None)
         self._get_tabs().tabs = list(filter(None.__ne__, panels))

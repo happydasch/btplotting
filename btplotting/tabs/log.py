@@ -6,6 +6,8 @@ from bokeh.io import curdoc
 from bokeh.models import Panel, DataTable, TableColumn, ColumnDataSource
 from bokeh.layouts import column
 
+from ..tab import BacktraderPlottingTab
+
 handler = None
 logger = logging.getLogger(__name__)
 
@@ -80,22 +82,28 @@ def is_log_tab_initialized():
     return handler is not None
 
 
-def get_log_panel(app, figurepage, client):
-    global handler
-    if handler is None:
-        init_log_tab([])
-    if client is not None:
-        doc = client.doc
-    else:
-        doc = curdoc()
-    message = TableColumn(field="message", title="Message", sortable=False)
-    table = DataTable(source=handler.get_cds(doc),
-                      columns=[message],
-                      height=250,
-                      scroll_to_selection=True,
-                      sortable=False,
-                      reorderable=False,
-                      fit_columns=True)
-    return Panel(
-        child=column(children=[table], sizing_mode="scale_width"),
-        title='Log')
+class LogTab(BacktraderPlottingTab):
+
+    def is_useable(self):
+        return is_log_tab_initialized()
+
+    def get_panel(self):
+        global handler
+        if handler is None:
+            init_log_tab([])
+        if self.client is not None:
+            doc = self.client.doc
+        else:
+            doc = curdoc()
+        message = TableColumn(field="message", title="Message", sortable=False)
+        table = DataTable(
+            source=handler.get_cds(doc),
+            columns=[message],
+            height=250,
+            scroll_to_selection=True,
+            sortable=False,
+            reorderable=False,
+            fit_columns=True)
+        return Panel(
+            child=column(children=[table], sizing_mode="scale_width"),
+            title='Log')
