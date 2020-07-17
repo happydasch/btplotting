@@ -23,6 +23,10 @@ class ColummDataType(Enum):
 
 class TableGenerator:
 
+    '''
+    Table generator for key -> value tuples
+    '''
+
     def get_table(self, data):
         table = [['Name'], ['Value']]
         cds = ColumnDataSource()
@@ -50,6 +54,10 @@ class TableGenerator:
 
 class AnalysisTableGenerator:
 
+    '''
+    Table generator for analyzers
+    '''
+
     def __init__(self, scheme):
         self._scheme = scheme
 
@@ -58,7 +66,6 @@ class AnalysisTableGenerator:
         '''
         Returns two columns labeled '' and 'Value'
         '''
-
         table = [
             ['', ColummDataType.STRING],
             ['Value', ColummDataType.STRING]]
@@ -94,7 +101,6 @@ class AnalysisTableGenerator:
         '''
         Return a header for this analyzer and one *or more* data tables.
         '''
-
         if hasattr(analyzer, 'get_analysis_table'):
             title, table_columns_list = analyzer.get_analysis_table()
         else:

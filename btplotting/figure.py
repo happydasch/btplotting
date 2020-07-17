@@ -129,7 +129,6 @@ class HoverContainer(metaclass=bt.MetaParams):
         '''
         Add hovers to to all figures from the figures list
         '''
-
         for f in figures:
             for t in f.figure.tools:
                 if not isinstance(t, HoverTool):
@@ -224,7 +223,6 @@ class Figure(object):
         '''
         Sets this figure's hover to a single renderer
         '''
-
         if self._hover_line_set:
             return
 
@@ -236,7 +234,6 @@ class Figure(object):
         Adds another hover render target. Only has effect if not single
         renderer has been set before
         '''
-
         if self._hover_line_set:
             return
 
@@ -518,7 +515,6 @@ class Figure(object):
         '''
         Returns the datadomain of the figure.
         '''
-
         return get_datadomain(self.master)
 
     def set_data_from_df(self, df):
@@ -623,7 +619,6 @@ class Figure(object):
         '''
         extra_axis displays a second axis (for overlay on data plotting)
         '''
-
         source_id = get_source_id(data)
         self.cds_cols += [source_id + x for x in ['volume', 'colors_volume']]
 

@@ -128,6 +128,10 @@ class ClockHandler:
         return data
 
     def get_list_from_line(self, line, clkalign=None):
+        '''
+        Returns a list with values from the given line values
+        aligned to the given clock list
+        '''
         start = max(0, self.start)
         end = min(len(line) - 1, self.end)
         llist = get_slice_with_end(line.array, start, end)
@@ -138,6 +142,10 @@ class ClockHandler:
         return data
 
     def get_df_from_series(self, series, clkalign=None, name_prefix=""):
+        '''
+        Returns a DataFrame from the given LineSeries
+        The column names will use the name_prefix and the line alias
+        '''
         df = pd.DataFrame()
         for lineidx in range(series.size()):
             linealias = series.lines._getlinealias(lineidx)

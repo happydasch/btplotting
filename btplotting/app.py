@@ -200,7 +200,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return data_graph, volume_graph
 
     def _blueprint_strategy(self, strategy, datadomain=False):
-
         self._cur_figurepage.reset()
         self._cur_figurepage.analyzers += [
             a for _, a in strategy.analyzers.getitems()]
@@ -305,7 +304,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Creates new FigurePage for given obj.
         The obj can be either an instance of bt.Strategy or bt.OptReturn
         '''
-
         fp = FigurePage(obj)
         self.figurepages.append(fp)
         self._current_fig_idx = len(self.figurepages) - 1
@@ -354,7 +352,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # set all tabs (filter out None)
         model = Tabs(tabs=list(filter(None.__ne__, panels)))
-
         # attach the model to the underlying figure for
         # later reference (e.g. unit test)
         figurepage.model = model
@@ -375,7 +372,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             x for x in fp.figures
             if isinstance(x.master, bt.IndicatorBase)]
 
-        # now assign figures to tabs
+        # assign figures to tabs
         # 1. assign default tabs if no manual tab is assigned
         for figure in [x for x in datas if x.plottab is None]:
             figure.plottab = 'Plots' if self.is_tabs_single else 'Datas'
@@ -415,7 +412,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         def build_panel(objects, panel_title):
             if len(objects) == 0:
                 return
-
             g = gridplot([[x.figure] for x in objects],
                          toolbar_options={'logo': None},
                          toolbar_location=self.p.scheme.toolbar_location,
@@ -579,7 +575,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Plot either a strategy or an optimization result
         This method is called by backtrader
         '''
-
         if numfigs > 1:
             raise Exception("numfigs must be 1")
         if use is not None:
@@ -611,7 +606,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Display a figure
         This method is called by backtrader
         '''
-
         for idx in range(len(self.figurepages)):
             model = self.generate_model(idx)
 

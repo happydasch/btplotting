@@ -10,7 +10,6 @@ def datatarget2label(datas):
     one indicator operates on another indicator) to a readable string.
     If a name was provided manually then use that.
     '''
-
     # try some popular attributes that might carry string represantations
     # _name: user assigned value upon instantiation
     # shortname: used by some datafeeds
@@ -75,7 +74,6 @@ def indicator2fullid(ind):
     Returns a string listing all involved data feeds. Empty string if
     there is only a single feed in the mix
     '''
-
     if isinstance(ind, bt.LineActions):
         return "Line Action"
 

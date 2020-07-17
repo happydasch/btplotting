@@ -14,7 +14,6 @@ def convert_color(color):
     if color is a float value then it is interpreted as a shade of grey
     and converted to the corresponding html color code
     '''
-
     try:
         val = round(float(color) * 255.0)
         hex_string = '#{0:02x}{0:02x}{0:02x}'.format(val)
@@ -25,11 +24,9 @@ def convert_color(color):
 
 def build_color_lines(df, scheme, col_open='open', col_close='close',
                       col_prefix=''):
-
     '''
     Creates columns with color infos for given DataFrame
     '''
-
     # build color strings from scheme
     colorup = convert_color(scheme.barup)
     colordown = convert_color(scheme.bardown)
@@ -80,7 +77,6 @@ def sanitize_source_name(name: str):
     removes illegal characters from source name to make it
     compatible with Bokeh
     '''
-
     forbidden_chars = ' (),.-/*:'
     for fc in forbidden_chars:
         name = name.replace(fc, '_')
@@ -109,26 +105,27 @@ def adapt_yranges(y_range, data, padding_factor=200.0):
 
 
 def generate_stylesheet(scheme, template="basic.css.j2"):
+    '''
+    Generates stylesheet with values from scheme
+    '''
     env = Environment(loader=PackageLoader('btplotting', 'templates'))
     templ = env.get_template(template)
 
     css = templ.render(dict(
-            datatable_row_color_even=scheme.table_color_even,
-            datatable_row_color_odd=scheme.table_color_odd,
-            datatable_header_color=scheme.table_header_color,
-            tab_active_background_color=scheme.tab_active_background_color,
-            tab_active_color=scheme.tab_active_color,
+        datatable_row_color_even=scheme.table_color_even,
+        datatable_row_color_odd=scheme.table_color_odd,
+        datatable_header_color=scheme.table_header_color,
+        tab_active_background_color=scheme.tab_active_background_color,
+        tab_active_color=scheme.tab_active_color,
 
-            tooltip_background_color=scheme.tooltip_background_color,
-            tooltip_text_color_label=scheme.tooltip_text_label_color,
-            tooltip_text_color_value=scheme.tooltip_text_value_color,
-            body_background_color=scheme.body_background_color,
-            tag_pre_background_color=scheme.tag_pre_background_color,
-            tag_pre_text_color=scheme.tag_pre_text_color,
-            headline_color=scheme.plot_title_text_color,
-            text_color=scheme.text_color,
-        )
-    )
+        tooltip_background_color=scheme.tooltip_background_color,
+        tooltip_text_color_label=scheme.tooltip_text_label_color,
+        tooltip_text_color_value=scheme.tooltip_text_value_color,
+        body_background_color=scheme.body_background_color,
+        tag_pre_background_color=scheme.tag_pre_background_color,
+        tag_pre_text_color=scheme.tag_pre_text_color,
+        headline_color=scheme.plot_title_text_color,
+        text_color=scheme.text_color))
     return css
 
 
@@ -138,7 +135,6 @@ def set_cds_columns_from_df(df, cds, columns=None, dropna=True):
     the given columns. Only the given columns will be added, all will be
     added if columns=None
     '''
-
     if columns is None:
         columns = list(df.columns)
     c_df = df.loc[:, columns]
@@ -170,9 +166,8 @@ def set_cds_columns_from_df(df, cds, columns=None, dropna=True):
 
 def get_streamdata_from_df(df, columns=None):
     '''
-    Creates stream data from df
+    Creates stream data from a pandas DataFrame
     '''
-
     if columns is None:
         columns = list(df.columns)
     c_df = df.loc[:, columns]
@@ -188,7 +183,9 @@ def get_streamdata_from_df(df, columns=None):
 
 
 def get_patchdata_from_series(series, cds, columns=None):
-
+    '''
+    Creates patch data from a pandas Series
+    '''
     p_data = defaultdict(list)
     s_data = defaultdict(list)
     idx_map = {d: idx for idx, d in enumerate(cds.data['index'])}
@@ -197,7 +194,6 @@ def get_patchdata_from_series(series, cds, columns=None):
         idx = idx_map[series['index']]
     else:
         idx = False
-
     # create patch or stream data based on given series
     if idx is not False:
         for c in columns:
@@ -218,6 +214,9 @@ def get_patchdata_from_series(series, cds, columns=None):
 
 
 def get_plotmaster(obj):
+    '''
+    Resolves the plotmaster of the given object
+    '''
     if obj is None:
         return None
 
