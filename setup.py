@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='backtrader_plotting',
+    name='btplotting',
 
     version='1.1.0',
 
@@ -14,34 +14,33 @@ setuptools.setup(
 
     python_requires='>=3.6',
 
-    author='verybadsolider',
-    author_email='vbs@springrts.de',
+    author='happydasch',
+    author_email='daniel@vcard24.de',
 
     long_description=long_description,
     long_description_content_type="text/markdown",
 
     license='GPLv3+',
-    url="https://github.com/verybadsoldier/backtrader_plotting",
+    url="https://github.com/happydasch/btplotting",
     project_urls={
-        "Bug Tracker": "https://github.com/verybadsoldier/backtrader_plotting/issues",
-        "Documentation": "https://github.com/verybadsoldier/backtrader_plotting/wiki",
-        "Source Code": "https://github.com/verybadsoldier/backtrader_plotting",
-        "Demos": "https://github.com/verybadsoldier/backtrader_plotting/tree/gh-pages",
+        "Bug Tracker": "https://github.com/happydasch/btplotting/issues",
+        "Documentation": "https://github.com/happydasch/btplotting/wiki",
+        "Source Code": "https://github.com/happydasch/btplotting",
+        "Demos": "https://github.com/happydasch/btplotting/tree/gh-pages",
     },
 
     # What does your project relate to?
     keywords=['trading', 'development', 'plotting', 'backtrader'],
 
     packages=setuptools.find_packages(),
-    
-    package_data={'backtrader_plotting.bokeh': ['templates/*.j2']},
+
+    package_data={'btplotting.btplotting': ['templates/*.j2']},
 
     install_requires=[
         'backtrader',
-        'bokeh~=2.0.0',
+        'bokeh~=2.1.1',
         'jinja2',
         'pandas',
         'matplotlib',
-        'markdown2',
     ],
 )

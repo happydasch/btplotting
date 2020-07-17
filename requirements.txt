@@ -1,1 +1,5 @@
--e .
+backtrader
+bokeh==2.1.1
+jinja2
+pandas
+matplotlib
