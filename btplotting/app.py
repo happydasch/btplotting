@@ -440,19 +440,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return panels
 
-    def get_clock_generator(self, strategy, datadomain=False):
-        if datadomain is not False:
-            data = strategy.getdatabyname(datadomain)
-            return ClockGenerator(data.datetime, data._tz)
-        # if no datadomain provided, use first data
-        return ClockGenerator(strategy.data.datetime, strategy.data._tz)
-
     def build_data(self, strategy, start=None, end=None, back=None,
                    datadomain=False, preserveidx=False):
 
         clock_values = {}
         # create the main clock for data alignment
-        generator = self.get_clock_generator(strategy, datadomain)
+        generator = ClockGenerator(strategy, datadomain)
         clock_values[datadomain] = generator.get_clock(
             start, end, back)
         # get start and end values from main clock
@@ -469,12 +462,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # generate additional clocks
         if datadomain is not False:
             # ensure we have strategies clock if a datadomain is set
-            generator = self.get_clock_generator(strategy)
+            generator = ClockGenerator(strategy)
             clock_values[False] = generator.get_clock(
                 clkstart, clkend)
         for data in strategy.datas:
             if datadomain is False or data._name != datadomain:
-                generator = self.get_clock_generator(strategy, data._name)
+                generator = ClockGenerator(strategy, data._name)
                 clock_values[data._name] = generator.get_clock(
                     clkstart, clkend)
 
