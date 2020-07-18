@@ -8,28 +8,6 @@ import itertools
 _logger = logging.getLogger(__name__)
 
 
-def find_by_plotid(strategy, plotid):
-    '''
-    Returns a object by its plotid.
-    '''
-    objs = itertools.chain(
-        strategy.datas,
-        strategy.getindicators(),
-        strategy.getobservers())
-    founds = []
-    for obj in objs:
-        if getattr(obj.plotinfo, 'plotid', None) == plotid:
-            founds.append(obj)
-
-    num_results = len(founds)
-    if num_results == 0:
-        return None
-    elif num_results == 1:
-        return founds[0]
-    else:
-        raise RuntimeError(f'Found multiple objects with plotid "{plotid}"')
-
-
 def get_indicator_data(indicator):
     '''
     The indicator might have been created using a specific line

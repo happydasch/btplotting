@@ -21,8 +21,8 @@ from jinja2 import Environment, PackageLoader
 
 from .schemes import Scheme, Blackly
 
-from .utils import find_by_plotid, get_indicator_data, \
-    get_datadomain, filter_by_datadomain, get_source_id
+from .utils import get_indicator_data, get_datadomain, \
+    filter_by_datadomain, get_source_id
 from .figure import FigurePage, FigureType, Figure, HoverContainer
 from .clock import ClockGenerator, ClockHandler
 from .helper.label_resolver import plotobj2label
@@ -116,28 +116,20 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         def apply_config(obj, config):
             for k, v in config.items():
-                if k == 'plotmaster':
-                    # this needs special treatment since a string
-                    # is passed but we need to set the actual obj
-                    v = find_by_plotid(strategy, v)
                 setattr(obj.plotinfo, k, v)
 
         for k, config in self.p.plotconfig.items():
             ctype, target = k.split(':')
-
             if ctype == 'r':  # regex
                 label = plotobj2label(obj)
-
                 m = re.match(target, label)
                 if m:
                     apply_config(obj, config)
             elif ctype[0] == '#':  # index
                 target_type, target_idx = target.split('-')
-
                 # check if instance type matches
                 if not isinstance(obj, FigureType.get_obj[target_type]):
                     continue
-
                 if int(target_idx) != idx:
                     continue
                 apply_config(obj, config)
