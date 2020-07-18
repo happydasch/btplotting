@@ -68,9 +68,13 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         ('plotconfig', None),
         # output mode for plotting: show, save, memory
         ('output_mode', 'show'),
+        # custom tabs
+        ('tabs', []),
+        # should default tabs be used
+        ('use_default_tabs', True),
     )
 
-    def __init__(self, tabs=[], use_default_tabs=True, **kwargs):
+    def __init__(self, **kwargs):
         # apply additional parameters to override / set scheme settings
         for pname, pvalue in kwargs.items():
             setattr(self.p.scheme, pname, pvalue)
