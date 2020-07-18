@@ -90,20 +90,17 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         self._current_fig_idx = None
         self.figurepages = {}
         # set default tabs
-        if use_default_tabs:
-            self.tabs = [AnalyzerTab, MetadataTab, LogTab]
-        else:
-            self.tabs = []
+        if self.p.use_default_tabs:
+            self.p.tabs = [AnalyzerTab, MetadataTab, LogTab]
         # add additional tabs from param
-        if not isinstance(tabs, list):
+        if not isinstance(self.p.tabs, list):
             raise Exception(
                 "Param tabs needs to be a list containing tabs to display")
-        for tab in tabs:
+        for tab in self.p.tabs:
             if not issubclass(tab, BacktraderPlottingTab):
                 raise Exception(
                     "Tab needs to be a subclass of"
                     + " btplotting.tab.BacktraderPlottingTab")
-            self.tabs.append(tab)
 
     @property
     def _cur_figurepage(self):
@@ -359,7 +356,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         else:
             panels = []
 
-        for t in self.tabs:
+        for t in self.p.tabs:
             tab = t(self, figurepage, None)
             if tab.is_useable():
                 panels.append(tab.get_panel())

@@ -33,8 +33,9 @@ class LiveClient:
         self.datadomain = False
         self.model = None
 
-        # append config tab
-        self.app.tabs.append(ConfigTab)
+        # append config tab if default tabs should be added
+        if self.app.p.use_default_tabs:
+            self.app.p.tabs.append(ConfigTab)
         # create model
         self.model, self._update_fnc = self._createmodel()
         # create figurepage
@@ -148,7 +149,7 @@ class LiveClient:
     def _updatemodel(self):
         self.app.update_figurepage(self.figureid, self.datadomain)
         panels = self.app.generate_model_panels(self.figurepage)
-        for t in self.app.tabs:
+        for t in self.app.p.tabs:
             tab = t(self.app, self.figurepage, self)
             if tab.is_useable():
                 panels.append(tab.get_panel())
