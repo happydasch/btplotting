@@ -2,7 +2,6 @@ import logging
 
 import backtrader as bt
 
-
 _logger = logging.getLogger(__name__)
 
 
@@ -18,6 +17,29 @@ def get_indicator_data(indicator):
         return data._owner.data
     else:
         return data
+
+
+def get_last_idx(strategy, datadomain=False):
+    '''
+    Returns the last index of a datadomain
+    '''
+    if datadomain is not False:
+        data = strategy.getdatabyname(datadomain)
+    else:
+        data = strategy.data
+    if data.islive():
+        # this is a workaround for live data being a strategy clock
+        # and generating a empty new row before any data is available
+        # which makes the index bigger than it actually is
+        return len(data) - 2
+    return len(data) - 1
+
+
+def list_datadomains(strategy):
+    datadomains = []
+    for d in strategy.datas:
+        datadomains.append(get_datadomain(d))
+    return datadomains
 
 
 def filter_by_datadomain(obj, datadomain):

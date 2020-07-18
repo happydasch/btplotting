@@ -3,10 +3,11 @@ from functools import partial
 
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
-from bokeh.models import Div, Select, Spacer, Tabs, Button
+from bokeh.models import Select, Spacer, Tabs, Button
 
 from .datahandler import LiveDataHandler
 from ..tabs import ConfigTab
+from ..utils import get_last_idx, list_datadomains
 
 _logger = logging.getLogger(__name__)
 
@@ -80,8 +81,7 @@ class LiveClient:
 
         def update_nav_buttons(self):
             last_idx = self._datahandler.get_last_idx()
-            last_avail_idx = self.app.get_last_idx(
-                self.strategy, self.datadomain)
+            last_avail_idx = get_last_idx(self.strategy, self.datadomain)
 
             if last_idx < self._lookback:
                 btn_nav_prev.disabled = True
@@ -101,7 +101,7 @@ class LiveClient:
                 btn_nav_action.label = "❙❙"
 
         # datadomain selection
-        datadomains = self.app.list_datadomains(self.strategy)
+        datadomains = list_datadomains(self.strategy)
         self.datadomain = datadomains[0]
         select_datadomain = Select(
             value=self.datadomain,
@@ -178,10 +178,8 @@ class LiveClient:
         # if a index is provided, ensure that index is within data range
         if idx:
             # don't allow idx to be bigger than max idx
-            last_idx = self.app.get_last_idx(
-                self.strategy,
-                self.datadomain)
-            idx = min(idx, last_idx)
+            last_avail_idx = get_last_idx(self.strategy, self.datadomain)
+            idx = min(idx, last_avail_idx)
             # don't allow idx to be smaller than lookback - 1
             idx = max(idx, self._lookback - 1)
         # create DataFrame based on last index with length of lookback

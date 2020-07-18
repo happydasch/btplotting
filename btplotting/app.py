@@ -101,7 +101,24 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     + " btplotting.tab.BacktraderPlottingTab")
             self.tabs.append(tab)
 
+    @property
+    def _cur_figurepage(self):
+        return self.figurepages[self._current_fig_idx]
+
+    @property
+    def is_tabs_single(self):
+        if self.p.scheme.tabs == 'single':
+            return True
+        elif self.p.scheme.tabs == 'multi':
+            return False
+        else:
+            raise RuntimeError(
+                f'Invalid tabs parameter "{self.p.scheme.tabs}"')
+
     def _configure_plotting(self, strategy):
+        '''
+        Applies config from plotconfig param to objects
+        '''
         datas = strategy.datas
         inds = strategy.getindicators()
         obs = strategy.getobservers()
@@ -111,6 +128,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 self._configure_plotobject(obj, idx, strategy)
 
     def _configure_plotobject(self, obj, idx, strategy):
+        '''
+        Applies config to a single object
+        '''
         if self.p.plotconfig is None:
             return
 
@@ -272,20 +292,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def _reset(self):
         self.figurepages = []
         self._is_optreturn = False
-
-    @property
-    def _cur_figurepage(self):
-        return self.figurepages[self._current_fig_idx]
-
-    @property
-    def is_tabs_single(self):
-        if self.p.scheme.tabs == 'single':
-            return True
-        elif self.p.scheme.tabs == 'multi':
-            return False
-        else:
-            raise RuntimeError(
-                f'Invalid tabs parameter "{self.p.scheme.tabs}"')
 
     def get_figurepage(self, idx=0):
         return self.figurepages[idx]
@@ -450,24 +456,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def savefig(self, fig, filename, width, height, dpi, tight):
         self._generate_output(fig, filename)
 
-    def list_datadomains(self, strategy):
-        datadomains = []
-        for d in strategy.datas:
-            datadomains.append(get_datadomain(d))
-        return datadomains
-
-    def get_last_idx(self, strategy, datadomain=False):
-        if datadomain is not False:
-            data = strategy.getdatabyname(datadomain)
-        else:
-            data = strategy.data
-        if data.islive():
-            # this is a workaround for live data being a strategy clock
-            # and generating a empty new row before any data is available
-            # which makes the index bigger than it actually is
-            return len(data) - 2
-        return len(data) - 1
-
     def get_clock_generator(self, strategy, datadomain=False):
         if datadomain is not False:
             data = strategy.getdatabyname(datadomain)
@@ -561,6 +549,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return df
 
+    def plot_optmodel(self, obj):
+        self._reset()
+        self.plot(obj)
+
+        # we support only one strategy at a time so pass fixed zero index
+        # if we ran optresults=False then we have a full strategy object
+        # -> pass it to get full plot
+        return self.generate_model(0)
+
     def plot(self, obj, figid=0, numfigs=1, iplot=True, start=None,
              end=None, use=None, datadomain=False, **kwargs):
         '''
@@ -583,15 +580,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # returns all figurepages
         return self.figurepages
-
-    def plot_optmodel(self, obj):
-        self._reset()
-        self.plot(obj)
-
-        # we support only one strategy at a time so pass fixed zero index
-        # if we ran optresults=False then we have a full strategy object
-        # -> pass it to get full plot
-        return self.generate_model(0)
 
     def show(self):
         '''
