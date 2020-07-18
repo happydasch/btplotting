@@ -110,11 +110,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return self._current_fig_id
 
     @_cur_figurepage_id.setter
-    def _cur_figurepage_id(self, id):
-        if id not in self.figurepages:
+    def _cur_figurepage_id(self, figid):
+        if figid not in self.figurepages:
             raise RuntimeError(
-                f'FigurePage with id {id} does not exist')
-        self._current_fig_id = id
+                f'FigurePage with figid {figid} does not exist')
+        self._current_fig_id = figid
 
     def _configure_plotting(self, strategy):
         '''
@@ -293,11 +293,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def _output_stylesheet(self, template="basic.css.j2"):
         return generate_stylesheet(self.p.scheme, template)
 
-    def _output_plot_file(self, model, id, filename=None,
+    def _output_plot_file(self, model, figid, filename=None,
                           template="basic.html.j2"):
         if filename is None:
             tmpdir = tempfile.gettempdir()
-            filename = os.path.join(tmpdir, f"bt_bokeh_plot_{id}.html")
+            filename = os.path.join(tmpdir, f"bt_bokeh_plot_{figid}.html")
 
         env = Environment(loader=PackageLoader('btplotting', 'templates'))
         templ = env.get_template(template)
@@ -320,15 +320,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         self.figurepages = []
         self._is_optreturn = False
 
-    def create_figurepage(self, obj, id=0, start=None, end=None,
+    def create_figurepage(self, obj, figid=0, start=None, end=None,
                           datadomain=False, filldata=True):
         '''
         Creates new FigurePage for given obj.
         The obj can be either an instance of bt.Strategy or bt.OptReturn
         '''
         fp = FigurePage(obj)
-        self.figurepages[id] = fp
-        self._cur_figurepage_id = id
+        self.figurepages[figid] = fp
+        self._cur_figurepage_id = figid
         self._is_optreturn = isinstance(obj, bt.OptReturn)
 
         if isinstance(obj, bt.Strategy):
@@ -348,13 +348,13 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 f'Unsupported plot source object: {str(type(obj))}')
         return self._current_fig_id, self._cur_figurepage
 
-    def update_figurepage(self, id=0, datadomain=False):
-        self._cur_figurepage_id = id
+    def update_figurepage(self, figid=0, datadomain=False):
+        self._cur_figurepage_id = figid
         if self._cur_figurepage.strategy is not None:
             self._blueprint_strategy(self._cur_figurepage.strategy, datadomain)
 
-    def generate_model(self, id=0):
-        self._cur_figurepage_id = id
+    def generate_model(self, figid=0):
+        self._cur_figurepage_id = figid
         figurepage = self._cur_figurepage
 
         if not self._is_optreturn:
@@ -566,7 +566,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # create figurepage for obj
         self.create_figurepage(
             obj,
-            id=figid,
+            figid=figid,
             start=start,
             end=end,
             datadomain=datadomain)
@@ -579,8 +579,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Display a figure
         This method is called by backtrader
         '''
-        for id in self.figurepages:
-            model = self.generate_model(id)
+        for figid in self.figurepages:
+            model = self.generate_model(figid)
 
             if self.p.output_mode in ['show', 'save']:
                 if self._iplot:
@@ -589,7 +589,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     show(model)
                 else:
                     filename = self._output_plot_file(
-                        model, id, self.p.filename)
+                        model, figid, self.p.filename)
                     if self.p.output_mode == 'show':
                         view(filename)
             elif self.p.output_mode == 'memory':
