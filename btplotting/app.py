@@ -89,13 +89,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         self._is_optreturn = False
         self._current_fig_idx = None
         self.figurepages = {}
-        # set default tabs
-        if self.p.use_default_tabs:
-            self.p.tabs = [AnalyzerTab, MetadataTab, LogTab]
-        # add additional tabs from param
+        # set tabs
         if not isinstance(self.p.tabs, list):
             raise Exception(
                 "Param tabs needs to be a list containing tabs to display")
+        if self.p.use_default_tabs:
+            self.p.tabs = [AnalyzerTab, MetadataTab, LogTab] + self.p.tabs
         for tab in self.p.tabs:
             if not issubclass(tab, BacktraderPlottingTab):
                 raise Exception(
