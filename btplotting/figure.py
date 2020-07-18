@@ -157,8 +157,8 @@ class FigurePage(object):
 
     def get_datadomains(self):
         datadomain = set()
-        for fe in self.figures:
-            datadomain = datadomain.union(fe.get_datadomain())
+        for f in self.figures:
+            datadomain = datadomain.union(get_datadomain(f.master))
         return list(datadomain)
 
     def set_data_from_df(self, df):
@@ -197,10 +197,9 @@ class Figure(object):
 
     _bar_width = 0.5
 
-    def __init__(self, strategy, cds, hoverc, scheme, master,
+    def __init__(self, cds, hoverc, scheme, master,
                  plotorder, is_multidata, type=None):
 
-        self._strategy = strategy
         self._scheme = scheme
         self._hover_line_set = False
         self._hover = None
@@ -510,12 +509,6 @@ class Figure(object):
         if self._type is None:
             return FigureType.get_type(self.master)
         return self._type
-
-    def get_datadomain(self):
-        '''
-        Returns the datadomain of the figure.
-        '''
-        return get_datadomain(self.master)
 
     def set_data_from_df(self, df):
         set_cds_columns_from_df(df, self.cds, self.cds_cols)

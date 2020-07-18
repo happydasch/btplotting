@@ -37,8 +37,7 @@ class LiveDataHandler:
         Fills datastore with latest values
         '''
         with self._lock:
-            self._datastore = self._client.app.build_data(
-                self._client.strategy,
+            self._datastore = self._client.app.generate_data(
                 back=self._lookback,
                 preserveidx=True,
                 datadomain=self._client.datadomain)
@@ -181,8 +180,7 @@ class LiveDataHandler:
                         and self._datastore.shape[0] > 0
                         and (row['index']
                              != self._datastore['index'].iloc[-1] + 1)):
-                    missing = self._client.app.build_data(
-                        strategy=strategy,
+                    missing = self._client.app.generate_data(
                         start=self._datastore['index'].iloc[-1] + 1,
                         end=row['index'] - 1,
                         datadomain=datadomain,

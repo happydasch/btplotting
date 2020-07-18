@@ -1,8 +1,4 @@
-import logging
-
 import backtrader as bt
-
-_logger = logging.getLogger(__name__)
 
 
 def get_indicator_data(indicator):

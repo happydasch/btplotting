@@ -76,14 +76,11 @@ class LivePlotAnalyzer(bt.Analyzer):
         pass
 
     def next(self):
-        rows = {}
         with self._lock:
             for c in self._clients.values():
                 datadomain = c.datadomain
-                if datadomain not in rows:
-                    rows[datadomain] = self._app.build_data(
-                        self.strategy,
-                        back=1,
-                        preserveidx=True,
-                        datadomain=datadomain)
-                c.update(rows[datadomain])
+                data = c.app.generate_data(
+                    back=1,
+                    preserveidx=True,
+                    datadomain=datadomain)
+                c.update(data)

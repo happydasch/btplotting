@@ -213,11 +213,14 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return data_graph, volume_graph
 
     def _blueprint_strategy(self, strategy, datadomain=False):
+        strategy = self._cur_figurepage.strategy
         self._cur_figurepage.reset()
         self._cur_figurepage.analyzers += [
             a for _, a in strategy.analyzers.getitems()]
 
-        data_graph, volume_graph = self._build_graph(strategy, datadomain)
+        data_graph, volume_graph = self._build_graph(
+            strategy,
+            datadomain=datadomain)
 
         # reset hover container to not mix hovers with other strategies
         hoverc = HoverContainer(
@@ -231,7 +234,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         for master, slaves in data_graph.items():
             plotorder = getattr(master.plotinfo, 'plotorder', 0)
             figure = Figure(
-                strategy=strategy,
                 cds=cds,
                 hoverc=hoverc,
                 scheme=self.p.scheme,
@@ -326,10 +328,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         if isinstance(obj, bt.Strategy):
             self._configure_plotting(obj)
-            self._blueprint_strategy(obj, datadomain)
+            self._blueprint_strategy(obj, datadomain=datadomain)
             if filldata:
-                df = self.build_data(
-                    strategy=obj,
+                df = self.generate_data(
                     start=start,
                     end=end,
                     datadomain=datadomain)
@@ -344,19 +345,21 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def update_figurepage(self, figid=0, datadomain=False):
         self._cur_figurepage_id = figid
         if self._cur_figurepage.strategy is not None:
-            self._blueprint_strategy(self._cur_figurepage.strategy, datadomain)
+            self._blueprint_strategy(
+                self._cur_figurepage.strategy,
+                datadomain=datadomain)
 
     def generate_model(self, figid=0):
         self._cur_figurepage_id = figid
-        figurepage = self._cur_figurepage
+        fp = self._cur_figurepage
 
         if not self._is_optreturn:
-            panels = self.generate_model_panels(figurepage)
+            panels = self.generate_model_panels()
         else:
             panels = []
 
         for t in self.p.tabs:
-            tab = t(self, figurepage, None)
+            tab = t(self, fp, None)
             if tab.is_useable():
                 panels.append(tab.get_panel())
 
@@ -364,14 +367,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         model = Tabs(tabs=list(filter(None.__ne__, panels)))
         # attach the model to the underlying figure for
         # later reference (e.g. unit test)
-        figurepage.model = model
+        fp.model = model
 
         return model
 
-    def generate_model_panels(self, fp, datadomain=False):
+    def generate_model_panels(self):
         '''
         Generates panels used for current model tabs.
         '''
+        fp = self._cur_figurepage
         observers = [
             x for x in fp.figures
             if isinstance(x.master, bt.ObserverBase)]
@@ -397,24 +401,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # 2. group panels by desired tabs
         # groupby expects the groups to be sorted or else will produce
         # duplicated groups
-        sorted_figs = list(itertools.chain(datas, inds, observers))
-
-        # 3. filter datadomains
-        if datadomain is not False:
-            filtered = []
-            for f in sorted_figs:
-                lgs = f.get_datadomains()
-                for lg in lgs:
-                    if lg is True or lg == datadomain:
-                        filtered.append(f)
-            sorted_figs = filtered
-
-        # 4. sort figures by plotorder, datadomain and type
         data_sort = {False: 0}
+        sorted_figs = list(itertools.chain(datas, inds, observers))
         for i, d in enumerate(datas, start=1):
             data_sort[get_datadomain(d.master)] = i
         sorted_figs.sort(key=lambda x: (
-            x.plotorder, data_sort[x.get_datadomain()], x.get_type().value))
+            x.plotorder, data_sort[get_datadomain(x.master)], x.get_type().value))
         sorted_figs.sort(key=lambda x: x.plottab)
         tabgroups = itertools.groupby(sorted_figs, lambda x: x.plottab)
 
@@ -440,8 +432,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return panels
 
-    def build_data(self, strategy, start=None, end=None, back=None,
-                   datadomain=False, preserveidx=False):
+    def generate_data(self, start=None, end=None, back=None,
+                      datadomain=False, preserveidx=False):
+
+        strategy = self._cur_figurepage.strategy
 
         clock_values = {}
         # create the main clock for data alignment

@@ -148,7 +148,7 @@ class LiveClient:
 
     def _updatemodel(self):
         self.app.update_figurepage(self.figureid, self.datadomain)
-        panels = self.app.generate_model_panels(self.figurepage)
+        panels = self.app.generate_model_panels()
         for t in self.app.p.tabs:
             tab = t(self.app, self.figurepage, self)
             if tab.is_useable():
@@ -184,8 +184,7 @@ class LiveClient:
             # don't allow idx to be smaller than lookback - 1
             idx = max(idx, self._lookback - 1)
         # create DataFrame based on last index with length of lookback
-        df = self.app.build_data(
-            strategy=self.strategy,
+        df = self.app.generate_data(
             datadomain=self.datadomain,
             end=idx,
             back=self._lookback,
