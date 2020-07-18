@@ -257,13 +257,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         for i in range(1, len(strat_figures)):
             strat_figures[i].figure.x_range = strat_figures[0].figure.x_range
 
-        # configure xaxis visibility
-        if self.p.scheme.xaxis_pos == "bottom":
-            for i, f in enumerate(strat_figures):
-                f.figure.xaxis.visible = (
-                    False if i < len(strat_figures) - 1
-                    else True)
-
         # apply hover tooltips
         hoverc.apply_hovertips(strat_figures)
 
@@ -391,21 +384,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # assign figures to tabs
         # 1. assign default tabs if no manual tab is assigned
-        if self.p.scheme.tabs == 'single':
-            singletabs = True
-        elif self.p.scheme.tabs == 'multi':
-            singletabs = False
-        else:
-            raise RuntimeError(
-                f'Invalid tabs parameter "{self.p.scheme.tabs}"')
+        multiple_tabs = self.p.scheme.multiple_tabs
         for figure in [x for x in datas if x.plottab is None]:
-            figure.plottab = 'Plots' if singletabs else 'Datas'
+            figure.plottab = 'Datas' if multiple_tabs else 'Plots'
 
         for figure in [x for x in inds if x.plottab is None]:
-            figure.plottab = 'Plots' if singletabs else 'Indicators'
+            figure.plottab = 'Indicators' if multiple_tabs else 'Plots'
 
         for figure in [x for x in observers if x.plottab is None]:
-            figure.plottab = 'Plots' if singletabs else 'Observers'
+            figure.plottab = 'Observers' if multiple_tabs else 'Plots'
 
         # 2. group panels by desired tabs
         # groupby expects the groups to be sorted or else will produce
@@ -432,19 +419,24 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         tabgroups = itertools.groupby(sorted_figs, lambda x: x.plottab)
 
         panels = []
-
-        def build_panel(objects, panel_title):
-            if len(objects) == 0:
-                return
-            g = gridplot([[x.figure] for x in objects],
+        for tabname, figures in tabgroups:
+            figures = list(figures)
+            if len(figures) == 0:
+                continue
+            # configure xaxis visibility
+            if self.p.scheme.xaxis_pos == "bottom":
+                for i, x in enumerate(figures):
+                    x.figure.xaxis.visible = (
+                        False if i < len(figures) - 1
+                        else True)
+            # create gridplot for panel
+            g = gridplot([[x.figure] for x in figures],
                          toolbar_options={'logo': None},
                          toolbar_location=self.p.scheme.toolbar_location,
                          sizing_mode=self.p.scheme.plot_sizing_mode,
                          )
-            panels.append(Panel(title=panel_title, child=g))
-
-        for tabname, figures in tabgroups:
-            build_panel(list(figures), tabname)
+            # append created panel
+            panels.append(Panel(title=tabname, child=g))
 
         return panels
 

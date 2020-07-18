@@ -180,7 +180,7 @@ class Scheme(PlotScheme):
         if set to False then tooltips of datas will only contain the current data and indicators/observers related to that data
         '''
 
-        self.tabs = 'single'
+        self.multiple_tabs = False
         self.show_headline = True
         self.hover_tooltip_config = ''
 

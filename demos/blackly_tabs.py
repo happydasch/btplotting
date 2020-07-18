@@ -37,5 +37,5 @@ if __name__ == '__main__':
 
     cerebro.run()
 
-    p = BacktraderPlotting(style='bar', tabs='multi')
+    p = BacktraderPlotting(style='bar', multiple_tabs=True)
     cerebro.plot(p)
