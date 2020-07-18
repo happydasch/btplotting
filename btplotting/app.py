@@ -84,7 +84,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # a thinned out result only
         self._is_optreturn = False
         self._current_fig_idx = None
-        self.figurepages = []
+        self.figurepages = {}
         # set default tabs
         if use_default_tabs:
             self.tabs = [AnalyzerTab, MetadataTab, LogTab]
@@ -103,17 +103,18 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     @property
     def _cur_figurepage(self):
-        return self.figurepages[self._current_fig_idx]
+        return self.figurepages[self._current_fig_id]
 
     @property
-    def is_tabs_single(self):
-        if self.p.scheme.tabs == 'single':
-            return True
-        elif self.p.scheme.tabs == 'multi':
-            return False
-        else:
+    def _cur_figurepage_id(self):
+        return self._current_fig_id
+
+    @_cur_figurepage_id.setter
+    def _cur_figurepage_id(self, id):
+        if id not in self.figurepages:
             raise RuntimeError(
-                f'Invalid tabs parameter "{self.p.scheme.tabs}"')
+                f'FigurePage with id {id} does not exist')
+        self._current_fig_id = id
 
     def _configure_plotting(self, strategy):
         '''
@@ -289,22 +290,45 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         self._cur_figurepage.analyzers += [
             a for _, a in optreturn.analyzers.getitems()]
 
+    def _output_stylesheet(self, template="basic.css.j2"):
+        return generate_stylesheet(self.p.scheme, template)
+
+    def _output_plot_file(self, model, id, filename=None,
+                          template="basic.html.j2"):
+        if filename is None:
+            tmpdir = tempfile.gettempdir()
+            filename = os.path.join(tmpdir, f"bt_bokeh_plot_{id}.html")
+
+        env = Environment(loader=PackageLoader('btplotting', 'templates'))
+        templ = env.get_template(template)
+        now = datetime.datetime.now()
+        templ.globals['now'] = now.strftime("%Y-%m-%d %H:%M:%S")
+
+        html = file_html(model,
+                         template=templ,
+                         resources=CDN,
+                         template_variables=dict(
+                             stylesheet=self._output_stylesheet(),
+                             show_headline=self.p.scheme.show_headline))
+
+        with open(filename, 'w') as f:
+            f.write(html)
+
+        return filename
+
     def _reset(self):
         self.figurepages = []
         self._is_optreturn = False
 
-    def get_figurepage(self, idx=0):
-        return self.figurepages[idx]
-
-    def create_figurepage(self, obj, start=None, end=None, datadomain=False,
-                          filldata=True):
+    def create_figurepage(self, obj, id=0, start=None, end=None,
+                          datadomain=False, filldata=True):
         '''
         Creates new FigurePage for given obj.
         The obj can be either an instance of bt.Strategy or bt.OptReturn
         '''
         fp = FigurePage(obj)
-        self.figurepages.append(fp)
-        self._current_fig_idx = len(self.figurepages) - 1
+        self.figurepages[id] = fp
+        self._cur_figurepage_id = id
         self._is_optreturn = isinstance(obj, bt.OptReturn)
 
         if isinstance(obj, bt.Strategy):
@@ -322,21 +346,16 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         else:
             raise Exception(
                 f'Unsupported plot source object: {str(type(obj))}')
-        return self._current_fig_idx, self._cur_figurepage
+        return self._current_fig_id, self._cur_figurepage
 
-    def update_figurepage(self, idx=0, datadomain=False):
-        self._current_fig_idx = idx
+    def update_figurepage(self, id=0, datadomain=False):
+        self._cur_figurepage_id = id
         if self._cur_figurepage.strategy is not None:
             self._blueprint_strategy(self._cur_figurepage.strategy, datadomain)
 
-    def generate_model(self, figurepage_idx=0):
-        if figurepage_idx >= len(self.figurepages):
-            raise RuntimeError(
-                'Cannot generate model for FigurePage'
-                + f'with index {figurepage_idx} as there are only'
-                + f' {len(self.figurepages)}.')
-
-        figurepage = self.figurepages[figurepage_idx]
+    def generate_model(self, id=0):
+        self._cur_figurepage_id = id
+        figurepage = self._cur_figurepage
 
         if not self._is_optreturn:
             panels = self.generate_model_panels(figurepage)
@@ -372,14 +391,21 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # assign figures to tabs
         # 1. assign default tabs if no manual tab is assigned
+        if self.p.scheme.tabs == 'single':
+            singletabs = True
+        elif self.p.scheme.tabs == 'multi':
+            singletabs = False
+        else:
+            raise RuntimeError(
+                f'Invalid tabs parameter "{self.p.scheme.tabs}"')
         for figure in [x for x in datas if x.plottab is None]:
-            figure.plottab = 'Plots' if self.is_tabs_single else 'Datas'
+            figure.plottab = 'Plots' if singletabs else 'Datas'
 
         for figure in [x for x in inds if x.plottab is None]:
-            figure.plottab = 'Plots' if self.is_tabs_single else 'Indicators'
+            figure.plottab = 'Plots' if singletabs else 'Indicators'
 
         for figure in [x for x in observers if x.plottab is None]:
-            figure.plottab = 'Plots' if self.is_tabs_single else 'Observers'
+            figure.plottab = 'Plots' if singletabs else 'Observers'
 
         # 2. group panels by desired tabs
         # groupby expects the groups to be sorted or else will produce
@@ -421,40 +447,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             build_panel(list(figures), tabname)
 
         return panels
-
-    def _output_stylesheet(self, template="basic.css.j2"):
-        return generate_stylesheet(self.p.scheme, template)
-
-    def _output_plot_file(
-            self,
-            model, idx,
-            filename=None,
-            template="basic.html.j2"):
-        if filename is None:
-            tmpdir = tempfile.gettempdir()
-            filename = os.path.join(tmpdir, f"bt_bokeh_plot_{idx}.html")
-
-        env = Environment(loader=PackageLoader('btplotting', 'templates'))
-        templ = env.get_template(template)
-        now = datetime.datetime.now()
-        templ.globals['now'] = now.strftime("%Y-%m-%d %H:%M:%S")
-
-        html = file_html(model,
-                         template=templ,
-                         resources=CDN,
-                         template_variables=dict(
-                             stylesheet=self._output_stylesheet(),
-                             show_headline=self.p.scheme.show_headline,
-                         )
-                         )
-
-        with open(filename, 'w') as f:
-            f.write(html)
-
-        return filename
-
-    def savefig(self, fig, filename, width, height, dpi, tight):
-        self._generate_output(fig, filename)
 
     def get_clock_generator(self, strategy, datadomain=False):
         if datadomain is not False:
@@ -574,6 +566,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # create figurepage for obj
         self.create_figurepage(
             obj,
+            id=figid,
             start=start,
             end=end,
             datadomain=datadomain)
@@ -586,8 +579,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Display a figure
         This method is called by backtrader
         '''
-        for idx in range(len(self.figurepages)):
-            model = self.generate_model(idx)
+        for id in self.figurepages:
+            model = self.generate_model(id)
 
             if self.p.output_mode in ['show', 'save']:
                 if self._iplot:
@@ -596,9 +589,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     show(model)
                 else:
                     filename = self._output_plot_file(
-                        model,
-                        idx,
-                        self.p.filename)
+                        model, id, self.p.filename)
                     if self.p.output_mode == 'show':
                         view(filename)
             elif self.p.output_mode == 'memory':

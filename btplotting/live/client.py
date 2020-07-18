@@ -28,7 +28,7 @@ class LiveClient:
         self.doc = doc
         self.app = app
         self.strategy = strategy
-        self.figureidx = None
+        self.figureid = None
         self.figurepage = None
         self.datadomain = False
         self.model = None
@@ -38,7 +38,7 @@ class LiveClient:
         # create model
         self.model, self._update_fnc = self._createmodel()
         # create figurepage
-        self.figureidx, self.figurepage = self.app.create_figurepage(
+        self.figureid, self.figurepage = self.app.create_figurepage(
             self.strategy, filldata=False)
         # update model with current figurepage
         self._updatemodel()
@@ -146,7 +146,7 @@ class LiveClient:
         return model, partial(update, self)
 
     def _updatemodel(self):
-        self.app.update_figurepage(self.figureidx, self.datadomain)
+        self.app.update_figurepage(self.figureid, self.datadomain)
         panels = self.app.generate_model_panels(self.figurepage)
         for t in self.app.tabs:
             tab = t(self.app, self.figurepage, self)
