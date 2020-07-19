@@ -25,7 +25,7 @@ from .utils import get_indicator_data, get_datadomain, \
     filter_by_datadomain, get_source_id
 from .figure import FigurePage, FigureType, Figure, HoverContainer
 from .clock import ClockGenerator, ClockHandler
-from .helper.label_resolver import plotobj2label
+from .helper.label import obj2label
 from .helper.bokeh import generate_stylesheet, build_color_lines, \
     get_plotmaster
 from .tab import BacktraderPlottingTab
@@ -142,7 +142,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         for k, config in self.p.plotconfig.items():
             ctype, target = k.split(':')
             if ctype == 'r':  # regex
-                label = plotobj2label(obj)
+                label = obj2label(obj)
                 m = re.match(target, label)
                 if m:
                     apply_config(obj, config)
@@ -212,8 +212,21 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return data_graph, volume_graph
 
+    def _test(self, strategy):
+        from libs.btplotting.utils_new import get_dataname, get_clock_obj
+        objs = list(itertools.chain(strategy.datas, strategy.getindicators(), strategy.getobservers()))
+        for o in objs:
+            if not isinstance(o, (bt.AbstractDataBase,bt.IndicatorBase, bt.ObserverBase)):
+                continue
+            print('OBJ', obj2label(o), get_dataname(o),
+                  get_clock_obj(o))
+            if hasattr(o, 'data'):
+                print('HAS DATA', get_clock_obj(o.data))
+
     def _blueprint_strategy(self, strategy, datadomain=False):
+        scheme = self.p.scheme
         strategy = self._cur_figurepage.strategy
+        self._test(strategy)
         self._cur_figurepage.reset()
         self._cur_figurepage.analyzers += [
             a for _, a in strategy.analyzers.getitems()]
@@ -224,7 +237,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # reset hover container to not mix hovers with other strategies
         hoverc = HoverContainer(
-            hover_tooltip_config=self.p.scheme.hover_tooltip_config,
+            hover_tooltip_config=scheme.hover_tooltip_config,
             is_multidata=len(strategy.datas) > 1)
 
         # set the cds for figurepage which contains all data
@@ -236,7 +249,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             figure = Figure(
                 cds=cds,
                 hoverc=hoverc,
-                scheme=self.p.scheme,
+                scheme=scheme,
                 master=master,
                 plotorder=plotorder,
                 is_multidata=len(strategy.datas) > 1)
@@ -249,11 +262,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # apply legend configuration to figures
         for f in strat_figures:
-            f.figure.legend.click_policy = self.p.scheme.legend_click
-            f.figure.legend.location = self.p.scheme.legend_location
-            f.figure.legend.background_fill_color = self.p.scheme.legend_background_color
-            f.figure.legend.label_text_color = self.p.scheme.legend_text_color
-            f.figure.legend.orientation = self.p.scheme.legend_orientation
+            legend = f.figure.legend
+            legend.click_policy = scheme.legend_click
+            legend.location = scheme.legend_location
+            legend.background_fill_color = scheme.legend_background_color
+            legend.label_text_color = scheme.legend_text_color
+            legend.orientation = scheme.legend_orientation
 
         # link axis
         for i in range(1, len(strat_figures)):
@@ -350,6 +364,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 datadomain=datadomain)
 
     def generate_model(self, figid=0):
+        '''
+        Generates bokeh model used for the given figurepage id
+        '''
         self._cur_figurepage_id = figid
         fp = self._cur_figurepage
 
@@ -373,7 +390,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     def generate_model_panels(self):
         '''
-        Generates panels used for current model tabs.
+        Generates bokeh panels used for current figurepage
         '''
         fp = self._cur_figurepage
         observers = [
@@ -406,7 +423,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         for i, d in enumerate(datas, start=1):
             data_sort[get_datadomain(d.master)] = i
         sorted_figs.sort(key=lambda x: (
-            x.plotorder, data_sort[get_datadomain(x.master)], x.get_type().value))
+            x.plotorder,
+            data_sort[get_datadomain(x.master)],
+            x.get_type().value))
         sorted_figs.sort(key=lambda x: x.plottab)
         tabgroups = itertools.groupby(sorted_figs, lambda x: x.plottab)
 
@@ -491,7 +510,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             if filter_by_datadomain(data, datadomain):
                 tmpclk = clocks[get_datadomain(data)]
                 source_id = get_source_id(data)
-                df_data = tmpclk.get_df_from_series(data, clkidx, source_id)
+                df_data = tmpclk.get_df_from_series(
+                    data, clkidx, source_id, ['datetime'])
                 df = df.join(df_data)
                 df_colors = build_color_lines(
                     df_data,
@@ -507,8 +527,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 strategy.getobservers()):
             if filter_by_datadomain(obj, datadomain):
                 tmpclk = clocks[get_datadomain(obj)]
-                num_lines = obj.size() if getattr(obj, 'size', None) else 1
-                for lineidx in range(num_lines):
+                for lineidx, line in enumerate(obj.lines):
                     line = obj.lines[lineidx]
                     source_id = get_source_id(line)
                     new_line = tmpclk.get_list_from_line(line, clkidx)

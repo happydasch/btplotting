@@ -152,17 +152,17 @@ class ClockHandler:
         data = self._get_data_from_list(llist, clkalign)
         return data
 
-    def get_df_from_series(self, series, clkalign=None, name_prefix=""):
+    def get_df_from_series(self, series, clkalign=None, name_prefix="",
+                           skip=[]):
         '''
         Returns a DataFrame from the given LineSeries
         The column names will use the name_prefix and the line alias
         '''
         df = pd.DataFrame()
-        for lineidx in range(series.size()):
-            linealias = series.lines._getlinealias(lineidx)
-            if linealias == 'datetime':
+        for linealias in series.getlinealiases():
+            if linealias in skip:
                 continue
-            line = series.lines[lineidx]
+            line = getattr(series, linealias)
             df[name_prefix + linealias] = self.get_list_from_line(
                 line, clkalign)
         return df

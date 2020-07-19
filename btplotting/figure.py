@@ -15,7 +15,7 @@ from bokeh.models import ColumnDataSource, FuncTickFormatter, \
     DatetimeTickFormatter, CustomJS
 
 from .utils import get_datadomain, get_source_id
-from .helper.label_resolver import datatarget2label, plotobj2label
+from .helper.label import datatarget2label, obj2label
 from .helper.bokeh import convert_color, sanitize_source_name, \
     set_cds_columns_from_df
 from .helper.marker import get_marker_info
@@ -374,18 +374,16 @@ class Figure(object):
         self.figure.title.text += title
 
     def _plot_indicator_observer(self, obj, master):
-        pl = plotobj2label(obj)
-
+        pl = obj2label(obj, True)
         if self._scheme.plot_title:
             self._figure_append_title(pl)
-            indlabel = obj.plotlabel()
+            indlabel = obj2label(obj)
         else:
             indlabel = pl
         plotinfo = obj.plotinfo
 
         is_multiline = obj.size() > 1
-        for lineidx in range(obj.size()):
-            line = obj.lines[lineidx]
+        for lineidx, line in enumerate(obj.lines):
             source_id = get_source_id(line)
             self.cds_cols.append(source_id)
             linealias = obj.lines._getlinealias(lineidx)

@@ -64,7 +64,13 @@ def get_datadomain(obj):
         return False
     elif isinstance(obj, bt.AbstractDataBase):
         # data feeds are end points
-        return obj._name
+        for n in ['_name', '_dataname']:
+            val = getattr(obj, n)
+            if val is not None:
+                break
+        if val is None:
+            val = str(obj)
+        return val
     elif isinstance(obj, (bt.IndicatorBase, bt.ObserverBase)):
         # to get the datadomain for ind and obs, use clock
         return get_datadomain(obj._clock)

@@ -81,7 +81,7 @@ class AnalysisTableGenerator:
                         table[1].append(av)
 
         add_to_table(analyzer.get_analysis())
-        return type(analyzer).__name__, [table]
+        return analyzer.__class__.__name__, [table]
 
     def _get_formatter(self, ctype):
         if ctype == ColummDataType.FLOAT:

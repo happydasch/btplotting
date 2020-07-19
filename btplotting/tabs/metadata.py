@@ -6,7 +6,7 @@ from bokeh.layouts import column, row, gridplot, layout
 from bokeh.models import Paragraph, Spacer, Button
 
 from ..helper.params import get_params, paramval2str
-from ..helper.label_resolver import indicator2fullid
+from ..helper.label import obj2label
 from ..helper.datatable import TableGenerator
 from ..tab import BacktraderPlottingTab
 
@@ -47,13 +47,13 @@ class MetadataTab(BacktraderPlottingTab):
     def _get_strategy(self, strategy):
         columns = []
         childs = []
-        childs.append(self._get_title(f'Strategy: {strategy.__class__.__name__}'))
+        childs.append(self._get_title(f'Strategy: {obj2label(strategy)}'))
         childs.append(self._get_parameter_table(strategy.params))
         for o in strategy.observers:
-            childs.append(self._get_title(f'Observer: {o.__class__.__name__}'))
+            childs.append(self._get_title(f'Observer: {obj2label(o)}'))
             childs.append(self._get_parameter_table(o.params))
         for a in strategy.analyzers:
-            childs.append(self._get_title(f'Analyzer: {a.__class__.__name__}'))
+            childs.append(self._get_title(f'Analyzer: {obj2label(a)}{" [Analysis Table]" if hasattr(a, "get_analysis_table") else ""}'))
             childs.append(self._get_parameter_table(a.params))
         columns.append(column(childs))
         return columns
@@ -61,10 +61,12 @@ class MetadataTab(BacktraderPlottingTab):
     def _get_indicators(self, strategy):
         columns = []
         childs = []
-        for i in strategy.getindicators():
-            childs.append(self._get_title(
-                f'Indicator: {i.__class__.__name__} @ {indicator2fullid(i)}'))
-            childs.append(self._get_parameter_table(i.params))
+        inds = strategy.getindicators()
+        for i in inds:
+            if isinstance(i, bt.IndicatorBase):
+                childs.append(self._get_title(
+                    f'Indicator: {obj2label(i, True)}'))
+                childs.append(self._get_parameter_table(i.params))
         columns.append(column(childs))
         return columns
 
@@ -73,18 +75,19 @@ class MetadataTab(BacktraderPlottingTab):
         childs = []
         for data in strategy.datas:
             tabdata = {
-                'DataName:': str(data._dataname).replace("|", "\\|"),
+                'DataName:': str(data._dataname).replace('|', '\\|'),
                 'Timezone:': str(data._tz),
-                'Number of bars:': len(data),
-                'Bar Length:': f"{data._compression} {bt.TimeFrame.getname(data._timeframe, data._compression)}",
+                'Live:': f'{"Yes" if data.islive() else "No"}',
+                'Length:': len(data),
+                'Granularity:': f'{data._compression} {bt.TimeFrame.getname(data._timeframe, data._compression)}',
             }
             # live trading does not have valid data parameters (other datas
             # might also not have)
             if not math.isinf(data.fromdate):
-                tabdata['Time From:'] = bt.num2date(data.fromdate)
+                tabdata['Time From:'] = str(bt.num2date(data.fromdate))
             if not math.isinf(data.todate):
-                tabdata['Time To:'] = bt.num2date(data.todate)
-            childs.append(self._get_title(f'Data Feed: {data.__class__.__name__}'))
+                tabdata['Time To:'] = str(bt.num2date(data.todate))
+            childs.append(self._get_title(f'Data Feed: {obj2label(data)}'))
             childs.append(self._get_values_table(tabdata))
         columns.append(column(childs))
         return columns
