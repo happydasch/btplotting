@@ -143,8 +143,8 @@ class ClockHandler:
         Returns a list with values from the given line values
         aligned to the given clock list
         '''
-        start = max(0, self.start)
         end = min(len(line) - 1, self.end)
+        start = max(0, min(end, self.start))
         llist = get_slice_with_end(line.array, start, end)
 
         if clkalign is None:

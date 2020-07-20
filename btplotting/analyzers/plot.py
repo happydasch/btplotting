@@ -40,7 +40,6 @@ class LivePlotAnalyzer(bt.Analyzer):
         self._lock = Lock()
         self._clients = {}
         self._app_kwargs = kwargs
-        self._app = self._create_app()
 
     def _create_app(self):
         return BacktraderPlotting(
@@ -78,9 +77,4 @@ class LivePlotAnalyzer(bt.Analyzer):
     def next(self):
         with self._lock:
             for c in self._clients.values():
-                datadomain = c.datadomain
-                data = c.app.generate_data(
-                    back=1,
-                    preserveidx=True,
-                    datadomain=datadomain)
-                c.update(data)
+                c.next()

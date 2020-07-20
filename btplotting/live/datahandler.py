@@ -39,8 +39,7 @@ class LiveDataHandler:
         with self._lock:
             self._datastore = self._client.app.generate_data(
                 back=self._lookback,
-                preserveidx=True,
-                datadomain=self._client.datadomain)
+                preserveidx=True)
             if self._datastore.shape[0] > 0:
                 self._last_idx = self._datastore['index'].iloc[-1]
             # init figurepage and figure cds by calling set_data_from_df
@@ -183,7 +182,6 @@ class LiveDataHandler:
                     missing = self._client.app.generate_data(
                         start=self._datastore['index'].iloc[-1] + 1,
                         end=row['index'] - 1,
-                        datadomain=datadomain,
                         preserveidx=True)
                     # add missing rows
                     if missing.shape[0] > 0:

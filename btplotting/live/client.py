@@ -185,7 +185,6 @@ class LiveClient:
             idx = max(idx, self._lookback - 1)
         # create DataFrame based on last index with length of lookback
         df = self.app.generate_data(
-            datadomain=self.datadomain,
             end=idx,
             back=self._lookback,
             preserveidx=True)
@@ -194,12 +193,14 @@ class LiveClient:
     def _get_tabs(self):
         return self.model.select_one({"id": "tabs"})
 
-    def update(self, rows):
+    def next(self):
         '''
         Request for updating data with rows
         '''
-
         if not self._paused and self._datahandler:
-            self._datahandler.update(rows)
+            data = self.app.generate_data(
+                back=1,
+                preserveidx=True)
+            self._datahandler.update(data)
         if self._update_fnc:
             self._update_fnc()

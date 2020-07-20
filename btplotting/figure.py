@@ -197,7 +197,7 @@ class Figure(object):
 
     _bar_width = 0.5
 
-    def __init__(self, cds, hoverc, scheme, master,
+    def __init__(self, cds, hoverc, scheme, master, slaves,
                  plotorder, is_multidata, type=None):
 
         self._scheme = scheme
@@ -212,6 +212,7 @@ class Figure(object):
         self.cds = ColumnDataSource()
         self.figure = None
         self.master = master
+        self.slaves = slaves
         self.plottab = None
         self.plotorder = plotorder
         # list of all datas that have been plotted to this figure
@@ -373,7 +374,7 @@ class Figure(object):
             self.figure.title.text += " | "
         self.figure.title.text += title
 
-    def _plot_indicator_observer(self, obj, master):
+    def _plot_indicator_observer(self, obj):
         pl = obj2label(obj, True)
         if self._scheme.plot_title:
             self._figure_append_title(pl)
@@ -382,7 +383,6 @@ class Figure(object):
             indlabel = pl
         plotinfo = obj.plotinfo
 
-        is_multiline = obj.size() > 1
         for lineidx, line in enumerate(obj.lines):
             source_id = get_source_id(line)
             self.cds_cols.append(source_id)
@@ -413,7 +413,7 @@ class Figure(object):
             # either all individual lines of are displayed in the legend
             # or only the ind/obs as a whole
             label = indlabel
-            if is_multiline and plotinfo.plotlinelabels:
+            if obj.size() > 1 and plotinfo.plotlinelabels:
                 label += " " + (lineplotinfo._get("_name", "") or linealias)
             kwglyphs['legend_label'] = label
 
@@ -511,13 +511,13 @@ class Figure(object):
     def set_data_from_df(self, df):
         set_cds_columns_from_df(df, self.cds, self.cds_cols)
 
-    def plot(self, obj, master=None):
+    def plot(self, obj):
         if isinstance(obj, bt.AbstractDataBase):
             self.plot_data(obj)
         elif isinstance(obj, bt.IndicatorBase):
-            self.plot_indicator(obj, master)
+            self.plot_indicator(obj)
         elif isinstance(obj, bt.ObserverBase):
-            self.plot_observer(obj, master)
+            self.plot_observer(obj)
         else:
             raise Exception(f"Unsupported plot object: {type(obj)}")
 
@@ -663,8 +663,8 @@ class Figure(object):
             f"@{source_id}volume{{({self._scheme.number_format})}}",
             data)
 
-    def plot_observer(self, obj, master):
-        self._plot_indicator_observer(obj, master)
+    def plot_observer(self, obj):
+        self._plot_indicator_observer(obj)
 
-    def plot_indicator(self, obj, master):
-        self._plot_indicator_observer(obj, master)
+    def plot_indicator(self, obj):
+        self._plot_indicator_observer(obj)

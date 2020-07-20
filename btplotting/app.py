@@ -1,3 +1,4 @@
+from collections import defaultdict
 import datetime
 import itertools
 import logging
@@ -21,6 +22,7 @@ from jinja2 import Environment, PackageLoader
 
 from .schemes import Scheme, Blackly
 
+from .utils_new import get_dataname
 from .utils import get_indicator_data, get_datadomain, \
     filter_by_datadomain, get_source_id
 from .figure import FigurePage, FigureType, Figure, HoverContainer
@@ -214,9 +216,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     def _test(self, strategy):
         from libs.btplotting.utils_new import get_dataname, get_clock_obj
-        objs = list(itertools.chain(strategy.datas, strategy.getindicators(), strategy.getobservers()))
+        objs = list(itertools.chain(strategy.datas,
+                                    strategy.getindicators(),
+                                    strategy.getobservers()))
         for o in objs:
-            if not isinstance(o, (bt.AbstractDataBase,bt.IndicatorBase, bt.ObserverBase)):
+            if not isinstance(o, (bt.AbstractDataBase, bt.IndicatorBase, bt.ObserverBase)):
                 continue
             print('OBJ', obj2label(o), get_dataname(o),
                   get_clock_obj(o))
@@ -251,13 +255,14 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 hoverc=hoverc,
                 scheme=scheme,
                 master=master,
+                slaves=slaves,
                 plotorder=plotorder,
                 is_multidata=len(strategy.datas) > 1)
 
-            figure.plot(master, None)
+            figure.plot(master)
 
             for s in slaves:
-                figure.plot(s, master)
+                figure.plot(s)
             strat_figures.append(figure)
 
         # apply legend configuration to figures
@@ -288,6 +293,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 hoverc=hoverc,
                 scheme=self.p.scheme,
                 master=v,
+                slaves=[],
                 plotorder=plotorder,
                 is_multidata=len(strategy.datas) > 1,
                 type=FigureType.VOL)
@@ -344,10 +350,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             self._configure_plotting(obj)
             self._blueprint_strategy(obj, datadomain=datadomain)
             if filldata:
-                df = self.generate_data(
-                    start=start,
-                    end=end,
-                    datadomain=datadomain)
+                df = self.generate_data(start=start, end=end)
                 self._cur_figurepage.set_data_from_df(df)
         elif isinstance(obj, bt.OptReturn):
             self._blueprint_optreturn(obj)
@@ -357,15 +360,19 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return self._current_fig_id, self._cur_figurepage
 
     def update_figurepage(self, figid=0, datadomain=False):
+        '''
+        Updates the figurepage with the given figid
+        '''
         self._cur_figurepage_id = figid
-        if self._cur_figurepage.strategy is not None:
+        fp = self._cur_figurepage
+        if fp.strategy is not None:
             self._blueprint_strategy(
-                self._cur_figurepage.strategy,
+                fp.strategy,
                 datadomain=datadomain)
 
     def generate_model(self, figid=0):
         '''
-        Generates bokeh model used for the given figurepage id
+        Generates bokeh model used for the current figurepage
         '''
         self._cur_figurepage_id = figid
         fp = self._cur_figurepage
@@ -452,17 +459,33 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return panels
 
     def generate_data(self, start=None, end=None, back=None,
-                      datadomain=False, preserveidx=False):
+                      preserveidx=False):
+        '''
+        Generates data for current figurepage
+        '''
+        fp = self._cur_figurepage
+        objs = defaultdict(list)
+        for f in fp.figures:
+            dataname = get_dataname(f.master)
+            objs[dataname].append(f.master)
+            for s in f.slaves:
+                objs[dataname].append(s)
+        strategy = fp.strategy
 
-        strategy = self._cur_figurepage.strategy
+        # use first data as clock
+        smallest = False
+        for k in objs.keys():
+            if k is not False:
+                smallest = k
+                break
 
+        # create clock values
         clock_values = {}
         # create the main clock for data alignment
-        generator = ClockGenerator(strategy, datadomain)
-        clock_values[datadomain] = generator.get_clock(
+        generator = ClockGenerator(strategy, smallest)
+        clock_values[smallest] = generator.get_clock(
             start, end, back)
-        # get start and end values from main clock
-        clk, _, _ = clock_values[datadomain]
+        clk, _, _ = clock_values[smallest]
         if len(clk) > 0:
             clkstart, clkend = clk[0], clk[-1]
             # ensure to reset end if no end is set, so we get also new
@@ -471,27 +494,23 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 clkend = None
         else:
             clkstart, clkend = None, None
-
-        # generate additional clocks
-        if datadomain is not False:
-            # ensure we have strategies clock if a datadomain is set
-            generator = ClockGenerator(strategy)
-            clock_values[False] = generator.get_clock(
-                clkstart, clkend)
-        for data in strategy.datas:
-            if datadomain is False or data._name != datadomain:
-                generator = ClockGenerator(strategy, data._name)
-                clock_values[data._name] = generator.get_clock(
+        # generate remaining clock values
+        for k in objs.keys():
+            if k not in clock_values and k is not False:
+                generator = ClockGenerator(strategy, k)
+                clock_values[k] = generator.get_clock(
                     clkstart, clkend)
 
-        clocks = {}
         # generate clock handlers
+        clocks = {}
         for name in clock_values:
             clk, clkstart, clkend = clock_values[name]
             clocks[name] = ClockHandler(clk, clkstart, clkend)
+        # for objects not haivng a dataname, use smallest clock
+        clocks[False] = clocks[smallest]
 
         # get the clock to use to align everything to
-        clock = clocks[datadomain]
+        clock = clocks[smallest]
         # get clock list for index
         clkidx = clock.clk
 
@@ -505,33 +524,28 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         df['datetime'] = clkidx
         df['index'] = indices
 
-        # append data columns
-        for data in strategy.datas:
-            if filter_by_datadomain(data, datadomain):
-                tmpclk = clocks[get_datadomain(data)]
-                source_id = get_source_id(data)
-                df_data = tmpclk.get_df_from_series(
-                    data, clkidx, source_id, ['datetime'])
-                df = df.join(df_data)
-                df_colors = build_color_lines(
-                    df_data,
-                    self.p.scheme,
-                    col_open=source_id + 'open',
-                    col_close=source_id + 'close',
-                    col_prefix=source_id)
-                df = df.join(df_colors)
-
-        # append obs and ind columns
-        for obj in itertools.chain(
-                strategy.getindicators(),
-                strategy.getobservers()):
-            if filter_by_datadomain(obj, datadomain):
+        # generate data for all figurepage objects
+        for d in objs:
+            for obj in objs[d]:
                 tmpclk = clocks[get_datadomain(obj)]
-                for lineidx, line in enumerate(obj.lines):
-                    line = obj.lines[lineidx]
-                    source_id = get_source_id(line)
-                    new_line = tmpclk.get_list_from_line(line, clkidx)
-                    df[source_id] = new_line
+                if isinstance(obj, bt.AbstractDataBase):
+                    source_id = get_source_id(obj)
+                    df_data = tmpclk.get_df_from_series(
+                        obj, clkidx, source_id, ['datetime'])
+                    df_colors = build_color_lines(
+                        df_data,
+                        self.p.scheme,
+                        col_open=source_id + 'open',
+                        col_close=source_id + 'close',
+                        col_prefix=source_id)
+                    df = df.join(df_data)
+                    df = df.join(df_colors)
+                else:
+                    tmpclk = clocks[get_datadomain(obj)]
+                    for lineidx, line in enumerate(obj.lines):
+                        source_id = get_source_id(line)
+                        new_line = tmpclk.get_list_from_line(line, clkidx)
+                        df[source_id] = new_line
 
         # apply a proper index (should be identical to 'index' column)
         if df.shape[0] > 0:
