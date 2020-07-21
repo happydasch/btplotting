@@ -98,11 +98,11 @@ class LogTab(BacktraderPlottingTab):
             doc = curdoc()
 
         message = TableColumn(
-            field="message",
-            title="Message",
+            field='message',
+            title='Message',
             sortable=False)
         title = Paragraph(
-            text="Log Messages",
+            text='Log Messages',
             css_classes=['panel-title'])
         table = DataTable(
             source=handler.get_cds(doc),
@@ -114,6 +114,6 @@ class LogTab(BacktraderPlottingTab):
             fit_columns=True)
         child = column(
             children=[title, table],
-            sizing_mode="scale_width")
+            sizing_mode='scale_width')
 
         return child, 'Log'

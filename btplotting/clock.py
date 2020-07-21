@@ -155,7 +155,7 @@ class ClockHandler:
         data = self._get_data_from_list(llist, clkalign)
         return data
 
-    def get_df_from_series(self, series, clkalign=None, name_prefix="",
+    def get_df_from_series(self, series, clkalign=None, name_prefix='',
                            skip=[]):
         '''
         Returns a DataFrame from the given LineSeries

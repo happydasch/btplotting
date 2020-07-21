@@ -37,45 +37,45 @@ class ConfigTab(BacktraderPlottingTab):
             elif ftype == FigureType.IND:
                 f.figure.aspect_ratio = self.sld_ind_ar.value
             else:
-                raise Exception(f"Unknown type {ftype}")
+                raise Exception(f'Unknown type {ftype}')
 
     def _get_panel(self):
         self.sld_obs_ar = Slider(
-            title="Observer Aspect Ratio",
+            title='Observer Aspect Ratio',
             value=self.scheme.obs_aspectratio,
             start=0.1, end=10.0, step=0.1)
         self.sld_data_ar = Slider(
-            title="Data Aspect Ratio",
+            title='Data Aspect Ratio',
             value=self.scheme.data_aspectratio,
             start=0.1, end=10.0, step=0.1)
         self.sld_vol_ar = Slider(
-            title="Volume Aspect Ratio",
+            title='Volume Aspect Ratio',
             value=self.scheme.vol_aspectratio,
             start=0.1, end=10.0, step=0.1)
         self.sld_ind_ar = Slider(
-            title="Indicator Aspect Ratio",
+            title='Indicator Aspect Ratio',
             value=self.scheme.ind_aspectratio,
             start=0.1, end=10.0, step=0.1)
 
         button = Button(
-            label="Save",
-            button_type="success",
-            width_policy="min")
+            label='Save',
+            button_type='success',
+            width_policy='min')
         button.on_click(self._on_button_save_config)
 
         title = Paragraph(
-            text="Client Configuration",
+            text='Client Configuration',
             css_classes=['panel-title'])
         r1 = column(
             [self.sld_obs_ar,
              self.sld_data_ar,
              self.sld_vol_ar,
              self.sld_ind_ar],
-            sizing_mode="scale_width")
+            sizing_mode='scale_width')
         r2 = row(
             [button])
         child = column(
             children=[title, r1, r2],
-            sizing_mode="scale_width")
+            sizing_mode='scale_width')
 
         return child, 'Config'

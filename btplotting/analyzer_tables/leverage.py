@@ -10,4 +10,4 @@ def datatable(self):
         cols1[0].append(k)
         cols1[1].append(v)
 
-    return "Gross Leverage", [cols1]
+    return 'Gross Leverage', [cols1]

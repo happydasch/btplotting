@@ -114,14 +114,14 @@ class MetadataTab(BacktraderPlottingTab):
     def _create_content(self):
         title_area = []
         title = Paragraph(
-            text="Strategy Metadata Overview",
-            css_classes=["panel-title"])
-        title_area.append(row([title], width_policy="min"))
+            text='Strategy Metadata Overview',
+            css_classes=['panel-title'])
+        title_area.append(row([title], width_policy='min'))
         if self.client:
-            btn_refresh = Button(label="Refresh", width_policy="min")
+            btn_refresh = Button(label='Refresh', width_policy='min')
             btn_refresh.on_click(self._on_update_metadata_info)
             title_area.append(Spacer())
-            title_area.append(row([btn_refresh], width_policy="min"))
+            title_area.append(row([btn_refresh], width_policy='min'))
         # set content in self
         return layout(
             [
@@ -134,4 +134,4 @@ class MetadataTab(BacktraderPlottingTab):
     def _get_panel(self):
         if self.content is None:
             self.content = self._create_content()
-        return self.content, "Metadata"
+        return self.content, 'Metadata'

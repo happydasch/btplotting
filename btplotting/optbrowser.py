@@ -22,8 +22,8 @@ class OptBrowser:
 
     def start(self, ioloop=None):
         webapp = Webapp(
-            "Backtrader Optimization Result",
-            "basic.html.j2",
+            'Backtrader Optimization Result',
+            'basic.html.j2',
             self._app.params.scheme,
             self.build_optresult_model)
         webapp.start(ioloop)
@@ -85,8 +85,8 @@ class OptBrowser:
         # one strategy. we don't support having more than one strategy!
         if len(self._optresults) > 0 and len(self._optresults[0]) > 1:
             raise RuntimeError(
-                "You passed on optimization result based on more than "
-                + "one strategy which is not supported!")
+                'You passed on optimization result based on more than'
+                + ' one strategy which is not supported!')
 
         selector, selector_cds = self._build_optresult_selector(
             self._optresults)

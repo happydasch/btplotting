@@ -47,7 +47,7 @@ class Webapp:
 
     @staticmethod
     def _run_server(fnc_make_document, iplot=True,
-                    notebook_url="localhost:8889",
+                    notebook_url='localhost:8889',
                     port=80, ioloop=None):
 
         '''
@@ -63,7 +63,7 @@ class Webapp:
         else:
             apps = {'/': app}
 
-            print(f"Open your browser here: http://localhost:{port}")
+            print(f'Open your browser here: http://localhost:{port}')
             server = Server(apps, port=port, io_loop=ioloop)
             if ioloop is None:
                 server.run_until_shutdown()

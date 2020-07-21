@@ -28,6 +28,6 @@ def get_params(params):
 
 def get_params_str(params):
     user_params = get_nondefault_params(params)
-    plabs = [f"{x}: {paramval2str(x, y)}" for x, y in user_params.items()]
+    plabs = [f'{x}: {paramval2str(x, y)}' for x, y in user_params.items()]
     plabs = '/'.join(plabs)
     return plabs

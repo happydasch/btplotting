@@ -33,14 +33,14 @@ class AnalyzerTab(BacktraderPlottingTab):
     def _create_content(self):
         title_area = []
         title = Paragraph(
-            text="Available Analyzer Results",
-            css_classes=["panel-title"])
-        title_area.append(row([title], width_policy="min"))
+            text='Available Analyzer Results',
+            css_classes=['panel-title'])
+        title_area.append(row([title], width_policy='min'))
         if self.client:
-            btn_refresh = Button(label="Refresh", width_policy="min")
+            btn_refresh = Button(label='Refresh', width_policy='min')
             btn_refresh.on_click(self._on_update_analyzer_info)
             title_area.append(Spacer())
-            title_area.append(row([btn_refresh], width_policy="min"))
+            title_area.append(row([btn_refresh], width_policy='min'))
         # set content in self
         return layout(
             [

@@ -17,10 +17,10 @@ class BacktraderPlottingTab:
         self.panel = None
 
     def _is_useable(self):
-        raise Exception("_is_useable needs to be implemented.")
+        raise Exception('_is_useable needs to be implemented.')
 
     def _get_panel(self):
-        raise Exception("_get_panel needs to be implemented.")
+        raise Exception('_get_panel needs to be implemented.')
 
     def is_useable(self):
         '''

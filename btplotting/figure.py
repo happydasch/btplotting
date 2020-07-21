@@ -110,9 +110,9 @@ class HoverContainer(metaclass=bt.MetaParams):
                 # prefix with data name if we got multiple datas
                 if self.p.is_multidata and foreign:
                     if isinstance(src_obj, bt.IndicatorBase):
-                        prefix = datatarget2label(src_obj.datas) + " - "
+                        prefix = datatarget2label(src_obj.datas) + ' - '
                     elif isinstance(src_obj, bt.AbstractDataBase):
-                        prefix = datatarget2label([src_obj]) + " - "
+                        prefix = datatarget2label([src_obj]) + ' - '
                     top = False
 
                 item = (prefix + label, tmpl)
@@ -182,7 +182,7 @@ class Figure(object):
     https://www.backtrader.com/docu/plotting/plotting/
     '''
 
-    _tools = "pan,wheel_zoom,box_zoom,reset"
+    _tools = 'pan,wheel_zoom,box_zoom,reset'
 
     _style_mpl2bokeh = {
         '-': 'solid',
@@ -257,7 +257,7 @@ class Figure(object):
         elif ftype == FigureType.DATA:
             aspectratio = self._scheme.data_aspectratio
         else:
-            raise Exception(f"Unknown type {ftype}")
+            raise Exception(f'Unknown type "{ftype}"')
 
         f = figure(
             tools=Figure._tools,
@@ -266,8 +266,8 @@ class Figure(object):
         # TODO: backend webgl (output_backend="webgl") removed due to this bug:
         # https://github.com/bokeh/bokeh/issues/7568
         f.y_range.range_padding = self._scheme.y_range_padding
-        # remove any spacing if there is no title, so there is no spacing between
-        # plots
+        # remove any spacing if there is no title, so there is no spacing
+        # between plots
         if not self._scheme.plot_title:
             f.min_border_bottom = 0
             f.min_border_top = 0
@@ -306,13 +306,13 @@ class Figure(object):
         # https://groups.google.com/a/continuum.io/forum/#!topic/bokeh/t3HkalO4TGA
         formatter_code = pkgutil.get_data(
             __name__,
-            "templates/js/tick_formatter.js").decode()
+            'templates/js/tick_formatter.js').decode()
         f.xaxis.formatter = FuncTickFormatter(
             args=dict(
                 axis=f.xaxis[0],
                 formatter=DatetimeTickFormatter(
-                    microseconds=["%fus"],
-                    milliseconds=["%3Nms", "%S.%3Ns"],
+                    microseconds=['%fus'],
+                    milliseconds=['%3Nms', '%S.%3Ns'],
                     seconds=[self._scheme.axis_tickformat_seconds],
                     minsec=[self._scheme.axis_tickformat_minsec],
                     minutes=[self._scheme.axis_tickformat_minutes],
@@ -330,12 +330,12 @@ class Figure(object):
 
         hover_code = pkgutil.get_data(
             __name__,
-            "templates/js/hover_tooltips.js").decode()
+            'templates/js/hover_tooltips.js').decode()
         h = HoverTool(
             tooltips=[(
                 'Time',
                 f'@datetime{{{self._scheme.hovertool_timeformat}}}')],
-            mode="vline",
+            mode='vline',
             formatters={'@datetime': 'datetime'},)
         callback = CustomJS(
             args=dict(source=self.cds, hover=h), code=hover_code)
@@ -373,7 +373,7 @@ class Figure(object):
     def _figure_append_title(self, title):
         # append to title
         if len(self.figure.title.text) > 0:
-            self.figure.title.text += " | "
+            self.figure.title.text += ' | '
         self.figure.title.text += title
 
     def _plot_indicator_observer(self, obj):
@@ -400,10 +400,10 @@ class Figure(object):
             if lineplotinfo._get('_plotskip', False):
                 continue
 
-            marker = lineplotinfo._get("marker", None)
-            method = lineplotinfo._get('_method', "line")
+            marker = lineplotinfo._get('marker', None)
+            method = lineplotinfo._get('_method', 'line')
 
-            color = getattr(lineplotinfo, "color", None)
+            color = getattr(lineplotinfo, 'color', None)
             if color is None:
                 if not lineplotinfo._get('_samecolor', False):
                     self._nextcolor()
@@ -416,34 +416,35 @@ class Figure(object):
             # or only the ind/obs as a whole
             label = indlabel
             if obj.size() > 1 and plotinfo.plotlinelabels:
-                label += " " + (lineplotinfo._get("_name", "") or linealias)
+                label += ' ' + (lineplotinfo._get('_name', '_name')
+                                or linealias)
             kwglyphs['legend_label'] = label
 
             if marker is not None:
                 fnc_name, attrs, vals, updates = get_marker_info(marker)
                 if not fnc_name or not hasattr(self.figure, fnc_name):
                     # provide alternative methods for not available methods
-                    if fnc_name == "y":
-                        fnc_name = "text"
-                        attrs = ["text_color", "text_size"]
-                        vals.update({"text": {"value": "y"}})
+                    if fnc_name == 'y':
+                        fnc_name = 'text'
+                        attrs = ['text_color', 'text_size']
+                        vals.update({'text': {'value': 'y'}})
                     else:
                         raise Exception(
-                            "Sorry, unsupported marker:"
-                            + f" '{marker}'. Please report to GitHub.")
+                            'Sorry, unsupported marker:'
+                            + f' "{marker}". Please report to GitHub.')
                         return
                 # set kwglyph values
                 kwglyphs['y'] = source_id
                 for v in attrs:
                     val = None
                     if v in ['color', 'fill_color', 'text_color']:
-                        val = {"value": color}
+                        val = {'value': color}
                     elif v in ['size']:
                         val = lineplotinfo.markersize
                     elif v in ['text_font_size']:
-                        val = {"value": "%spx" % lineplotinfo.markersize}
+                        val = {'value': '%spx' % lineplotinfo.markersize}
                     elif v in ['text']:
-                        val = {"value": marker[1:-1]}
+                        val = {'value': marker[1:-1]}
                     if val is not None:
                         kwglyphs[v] = val
                 for v in vals:
@@ -456,9 +457,9 @@ class Figure(object):
                             1, kwglyphs[u] + val)
                     else:
                         raise Exception(
-                            f"{u} for {marker} is not set but needs to be set")
+                            f'{u} for {marker} is not set but needs to be set')
                 glyph_fnc = getattr(self.figure, fnc_name)
-            elif method == "bar":
+            elif method == 'bar':
                 kwglyphs['bottom'] = 0
                 kwglyphs['line_color'] = color
                 kwglyphs['fill_color'] = color
@@ -466,23 +467,23 @@ class Figure(object):
                 kwglyphs['top'] = source_id
 
                 glyph_fnc = self.figure.vbar
-            elif method == "line":
+            elif method == 'line':
                 kwglyphs['line_width'] = 1
                 kwglyphs['color'] = color
                 kwglyphs['y'] = source_id
 
-                linestyle = getattr(lineplotinfo, "ls", None)
+                linestyle = getattr(lineplotinfo, 'ls', None)
                 if linestyle is not None:
                     kwglyphs['line_dash'] = self._style_mpl2bokeh[linestyle]
-                linewidth = getattr(lineplotinfo, "lw", None)
+                linewidth = getattr(lineplotinfo, 'lw', None)
                 if linewidth is not None:
                     kwglyphs['line_width'] = linewidth
 
                 glyph_fnc = self.figure.line
             else:
-                raise Exception(f"Unknown plotting method '{method}'")
+                raise Exception(f'Unknown plotting method "{method}"')
 
-            renderer = glyph_fnc("index", source=self.cds, **kwglyphs)
+            renderer = glyph_fnc('index', source=self.cds, **kwglyphs)
 
             # make sure the regular y-axis only scales to the normal
             # data (data + ind/obs) on 1st axis (not to e.g. volume
@@ -497,9 +498,9 @@ class Figure(object):
                 self._add_hover_renderer(renderer)
 
             # we need no suffix if there is just one line in the indicator
-            hover_label_suffix = f" - {linealias}" if obj.size() > 1 else ""
+            hover_label_suffix = f' - {linealias}' if obj.size() > 1 else ''
             hover_label = indlabel + hover_label_suffix
-            hover_data = f"@{source_id}{{{self._scheme.number_format}}}"
+            hover_data = f'@{source_id}{{{self._scheme.number_format}}}'
             self._hoverc.add_hovertip(hover_label, hover_data, obj)
 
         self._set_yticks(obj)
@@ -521,7 +522,7 @@ class Figure(object):
         elif isinstance(obj, bt.ObserverBase):
             self.plot_observer(obj)
         else:
-            raise Exception(f"Unsupported plot object: {type(obj)}")
+            raise Exception(f'Unsupported plot object: "{type(obj)}"')
 
         # first object can apply config
         if len(self.datas) == 0:
@@ -560,7 +561,7 @@ class Figure(object):
                 legend_label=title)
             self._set_single_hover_renderer(renderer)
 
-            self._hoverc.add_hovertip("Close", f"@{source_id}close", data)
+            self._hoverc.add_hovertip('Close', f'@{source_id}close', data)
         elif self._scheme.style in ['bar', 'candle']:
             self.figure.segment(
                 'index',
@@ -583,23 +584,23 @@ class Figure(object):
             self._set_single_hover_renderer(renderer)
 
             self._hoverc.add_hovertip(
-                "Open",
-                f"@{source_id}open{{{self._scheme.number_format}}}",
+                'Open',
+                f'@{source_id}open{{{self._scheme.number_format}}}',
                 data)
             self._hoverc.add_hovertip(
-                "High",
-                f"@{source_id}high{{{self._scheme.number_format}}}",
+                'High',
+                f'@{source_id}high{{{self._scheme.number_format}}}',
                 data)
             self._hoverc.add_hovertip(
-                "Low",
-                f"@{source_id}low{{{self._scheme.number_format}}}",
+                'Low',
+                f'@{source_id}low{{{self._scheme.number_format}}}',
                 data)
             self._hoverc.add_hovertip(
-                "Close",
-                f"@{source_id}close{{{self._scheme.number_format}}}",
+                'Close',
+                f'@{source_id}close{{{self._scheme.number_format}}}',
                 data)
         else:
-            raise Exception(f"Unsupported style '{self._scheme.style}'")
+            raise Exception(f'Unsupported style "{self._scheme.style}"')
 
         # make sure the regular y-axis only scales to the normal data
         # on 1st axis (not to e.g. volume data on 2nd axis)
@@ -661,8 +662,8 @@ class Figure(object):
             self.figure.extra_y_ranges['axvol'].renderers = [vbars]
 
         self._hoverc.add_hovertip(
-            "Volume",
-            f"@{source_id}volume{{({self._scheme.number_format})}}",
+            'Volume',
+            f'@{source_id}volume{{({self._scheme.number_format})}}',
             data)
 
     def plot_observer(self, obj):

@@ -113,10 +113,10 @@ class LiveDataHandler:
             p_data, s_data = get_patchdata_from_series(
                 patch, fp.cds, fp.cds_cols)
             if len(p_data) > 0:
-                _logger.debug(f"Sending patch for figurepage: {p_data}")
+                _logger.debug(f'Sending patch for figurepage: {p_data}')
                 fp.cds.patch(p_data)
             if len(s_data) > 0:
-                _logger.debug(f"Sending stream for figurepage: {s_data}")
+                _logger.debug(f'Sending stream for figurepage: {s_data}')
                 fp.cds.stream(
                     s_data, self._get_data_stream_length())
 
@@ -125,10 +125,10 @@ class LiveDataHandler:
                 p_data, s_data = get_patchdata_from_series(
                     patch, f.cds, f.cds_cols)
                 if len(p_data) > 0:
-                    _logger.debug(f"Sending patch for figure: {p_data}")
+                    _logger.debug(f'Sending patch for figure: {p_data}')
                     f.cds.patch(p_data)
                 if len(s_data) > 0:
-                    _logger.debug(f"Sending stream for figure: {s_data}")
+                    _logger.debug(f'Sending stream for figure: {s_data}')
                     f.cds.stream(
                         s_data, self._get_data_stream_length())
 

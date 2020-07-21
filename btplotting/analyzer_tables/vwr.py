@@ -8,4 +8,4 @@ def datatable(self):
     cols1[0].append('VWR')
     cols1[1].append(a['vwr'])
 
-    return "Variability-Weighted Return", [cols1]
+    return 'Variability-Weighted Return', [cols1]

@@ -19,4 +19,4 @@ def datatable(self):
         cols[3].append(v[0][3])
         cols[4].append(v[0][4])
 
-    return "Transactions", [cols]
+    return 'Transactions', [cols]

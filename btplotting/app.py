@@ -79,20 +79,20 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         self._iplot = None
         if not isinstance(self.p.scheme, Scheme):
-            raise Exception("Provided scheme has to be a subclass"
-                            + " of btplotting.schemes.scheme.Scheme")
+            raise Exception('Provided scheme has to be a subclass'
+                            + ' of btplotting.schemes.scheme.Scheme')
         self._figurepages = {}
         # set tabs
         if not isinstance(self.p.tabs, list):
             raise Exception(
-                "Param tabs needs to be a list containing tabs to display")
+                'Param tabs needs to be a list containing tabs to display')
         if self.p.use_default_tabs:
             self.p.tabs = [AnalyzerTab, MetadataTab, LogTab] + self.p.tabs
         for tab in self.p.tabs:
             if not issubclass(tab, BacktraderPlottingTab):
                 raise Exception(
-                    "Tab needs to be a subclass of"
-                    + " btplotting.tab.BacktraderPlottingTab")
+                    'Tab needs to be a subclass of'
+                    + ' btplotting.tab.BacktraderPlottingTab')
 
     def _reset(self):
         self._figurepages = {}
@@ -291,19 +291,19 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         fp.analyzers += [
             a for _, a in optreturn.analyzers.getitems()]
 
-    def _output_stylesheet(self, template="basic.css.j2"):
+    def _output_stylesheet(self, template='basic.css.j2'):
         return generate_stylesheet(self.p.scheme, template)
 
     def _output_plot_file(self, model, figid=0, filename=None,
-                          template="basic.html.j2"):
+                          template='basic.html.j2'):
         if filename is None:
             tmpdir = tempfile.gettempdir()
-            filename = os.path.join(tmpdir, f"bt_bokeh_plot_{figid}.html")
+            filename = os.path.join(tmpdir, f'bt_bokeh_plot_{figid}.html')
 
         env = Environment(loader=PackageLoader('btplotting', 'templates'))
         templ = env.get_template(template)
         now = datetime.now()
-        templ.globals['now'] = now.strftime("%Y-%m-%d %H:%M:%S")
+        templ.globals['now'] = now.strftime('%Y-%m-%d %H:%M:%S')
 
         html = file_html(model,
                          template=templ,
@@ -425,7 +425,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             if len(figures) == 0:
                 continue
             # configure xaxis visibility
-            if self.p.scheme.xaxis_pos == "bottom":
+            if self.p.scheme.xaxis_pos == 'bottom':
                 for i, x in enumerate(figures):
                     x.figure.xaxis.visible = (
                         False if i < len(figures) - 1
@@ -557,9 +557,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         This method is called by backtrader
         '''
         if numfigs > 1:
-            raise Exception("numfigs must be 1")
+            raise Exception('numfigs must be 1')
         if use is not None:
-            raise Exception("Different backends by 'use' not supported")
+            raise Exception('Different backends by "use" not supported')
 
         self._iplot = iplot and 'ipykernel' in sys.modules
 

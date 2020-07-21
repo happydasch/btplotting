@@ -194,9 +194,9 @@ class Scheme(PlotScheme):
 
         self.loc = 'lightgray'
         self.background_fill = '#222222'
-        self.body_background_color = "white"
-        self.border_fill = "#3C3F41"
-        self.legend_click = "hide"  # or "mute"
+        self.body_background_color = 'white'
+        self.border_fill = '#3C3F41'
+        self.legend_click = 'hide'  # or 'mute'
         self.axis_line_color = 'darkgrey'
         self.tick_line_color = self.axis_line_color
         self.grid_line_color = '#444444'
@@ -206,7 +206,7 @@ class Scheme(PlotScheme):
         self.tag_pre_background_color = 'lightgrey'
         self.tag_pre_text_color = 'black'
 
-        self.xaxis_pos = "all"  # "all" or "bottom"
+        self.xaxis_pos = 'all'  # 'all' or 'bottom'
 
         self.table_color_even = '#404040'
         self.table_color_odd = '#333333'
@@ -218,13 +218,13 @@ class Scheme(PlotScheme):
         self.analyzer_tab_num_cols = 1
         # Number of columns on the metadata tab
         self.metadata_tab_num_cols = 3
-        self.plot_sizing_mode = "scale_width"
+        self.plot_sizing_mode = 'scale_width'
         self.data_aspectratio = 2.5
         self.vol_aspectratio = 7.5
         self.obs_aspectratio = 7.5
         self.ind_aspectratio = 7.5
 
-        self.toolbar_location = "right"
+        self.toolbar_location = 'right'
 
         self.tooltip_background_color = '#4C4F51'
         self.tooltip_text_label_color = '#848EFF'
@@ -242,19 +242,19 @@ class Scheme(PlotScheme):
         self.number_format_volume = '0.00 a'
 
         # https://docs.bokeh.org/en/latest/docs/reference/models/formatters.html
-        self.axis_tickformat_days = "%d %b %R"
-        self.axis_tickformat_hourmin = "%H:%M:%S"
-        self.axis_tickformat_hours = "%d %b %R"
-        self.axis_tickformat_minsec = "%H:%M:%S"
-        self.axis_tickformat_minutes = "%H:%M"
-        self.axis_tickformat_months = "%d/%m/%y"
-        self.axis_tickformat_seconds = "%H:%M:%S"
-        self.axis_tickformat_years = "%Y %b"
+        self.axis_tickformat_days = '%d %b %R'
+        self.axis_tickformat_hourmin = '%H:%M:%S'
+        self.axis_tickformat_hours = '%d %b %R'
+        self.axis_tickformat_minsec = '%H:%M:%S'
+        self.axis_tickformat_minutes = '%H:%M'
+        self.axis_tickformat_months = '%d/%m/%y'
+        self.axis_tickformat_seconds = '%H:%M:%S'
+        self.axis_tickformat_years = '%Y %b'
 
         self.y_range_padding = 0.5  # used to add padding on the y-axis for all data except volume
 
     def _set_args(self, **kwargs):
         for k, v in kwargs.items():
             if not hasattr(self, k):
-                raise Exception(f'Invalid scheme parameter "{k}')
+                raise Exception(f'Invalid scheme parameter "{k}"')
             setattr(self, k, v)

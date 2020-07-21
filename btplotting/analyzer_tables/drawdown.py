@@ -17,4 +17,4 @@ def datatable(self):
     cols1[1].append(a['drawdown'])
     cols1[2].append(a['max']['drawdown'])
 
-    return "Drawdown", [cols1]
+    return 'Drawdown', [cols1]

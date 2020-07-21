@@ -11,4 +11,4 @@ def datatable(self):
     cols1[0].append('Trades')
     cols1[1].append(a['trades'])
 
-    return "SystemQualityNumber", [cols1]
+    return 'SystemQualityNumber', [cols1]

@@ -46,12 +46,12 @@ class LiveClient:
     def _createmodel(self):
 
         def on_select_dataname(self, a, old, new):
-            _logger.debug(f"Switching data {new}...")
+            _logger.debug(f'Switching data {new}...')
             self._dataname = new
             self.doc.hold()
             self._updatemodel()
             self.doc.unhold()
-            _logger.debug(f"Switching data finished")
+            _logger.debug(f'Switching data finished')
 
         def on_click_nav_action(self):
             if not self._paused:
@@ -76,7 +76,7 @@ class LiveClient:
         def reset_nav_buttons(self):
             btn_nav_prev.disabled = True
             btn_nav_next.disabled = True
-            btn_nav_action.label = "‖"
+            btn_nav_action.label = '❙❙'
 
         def update_nav_buttons(self):
             last_idx = self._datahandler.get_last_idx()
@@ -95,9 +95,9 @@ class LiveClient:
                 btn_nav_next.disabled = False
                 btn_nav_next_big.disabled = False
             if self._paused:
-                btn_nav_action.label = "▶"
+                btn_nav_action.label = '▶'
             else:
-                btn_nav_action.label = "❙❙"
+                btn_nav_action.label = '❙❙'
 
         # dataname selection
         datanames = get_datanames(self._strategy)
@@ -109,15 +109,15 @@ class LiveClient:
             'value',
             partial(on_select_dataname, self))
         # nav
-        btn_nav_prev = Button(label="❮", width=self.NAV_BUTTON_WIDTH)
+        btn_nav_prev = Button(label='❮', width=self.NAV_BUTTON_WIDTH)
         btn_nav_prev.on_click(partial(on_click_nav_prev, self))
-        btn_nav_prev_big = Button(label="❮❮", width=self.NAV_BUTTON_WIDTH)
+        btn_nav_prev_big = Button(label='❮❮', width=self.NAV_BUTTON_WIDTH)
         btn_nav_prev_big.on_click(partial(on_click_nav_prev, self, 10))
-        btn_nav_action = Button(label="❙❙", width=self.NAV_BUTTON_WIDTH)
+        btn_nav_action = Button(label='❙❙', width=self.NAV_BUTTON_WIDTH)
         btn_nav_action.on_click(partial(on_click_nav_action, self))
-        btn_nav_next = Button(label="❯", width=self.NAV_BUTTON_WIDTH)
+        btn_nav_next = Button(label='❯', width=self.NAV_BUTTON_WIDTH)
         btn_nav_next.on_click(partial(on_click_nav_next, self))
-        btn_nav_next_big = Button(label="❯❯", width=self.NAV_BUTTON_WIDTH)
+        btn_nav_next_big = Button(label='❯❯', width=self.NAV_BUTTON_WIDTH)
         btn_nav_next_big.on_click(partial(on_click_nav_next, self, 10))
         # layout
         controls = row(
@@ -129,19 +129,19 @@ class LiveClient:
                       btn_nav_next,
                       btn_nav_next_big])
         # tabs
-        tabs = Tabs(id="tabs", sizing_mode=self.app.p.scheme.plot_sizing_mode)
+        tabs = Tabs(id='tabs', sizing_mode=self.app.p.scheme.plot_sizing_mode)
         # model
         model = layout(
             [
                 # app settings, top area
-                [column(controls, width_policy="min"),
+                [column(controls, width_policy='min'),
                  Spacer(),
-                 column(nav, width_policy="min")],
+                 column(nav, width_policy='min')],
                 Spacer(height=15),
                 # layout for tabs
                 [tabs]
             ],
-            sizing_mode="stretch_width")
+            sizing_mode='stretch_width')
         return model, partial(refresh, self)
 
     def _updatemodel(self):
@@ -193,7 +193,7 @@ class LiveClient:
         self._datahandler.set(df)
 
     def _get_tabs(self):
-        return self.model.select_one({"id": "tabs"})
+        return self.model.select_one({'id': 'tabs'})
 
     def next(self):
         '''

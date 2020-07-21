@@ -29,7 +29,7 @@ class LivePlotAnalyzer(bt.Analyzer):
     def __init__(self, **kwargs):
         title = self.p.title
         if title is None:
-            title = "Live %s" % type(self.strategy).__name__
+            title = 'Live %s' % type(self.strategy).__name__
         self._webapp = Webapp(
             title,
             'basic.html.j2',
@@ -67,7 +67,7 @@ class LivePlotAnalyzer(bt.Analyzer):
         return client.model
 
     def start(self):
-        _logger.debug("Starting PlotListener...")
+        _logger.debug('Starting PlotListener...')
         t = threading.Thread(target=self._t_server)
         t.daemon = True
         t.start()

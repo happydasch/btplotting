@@ -104,7 +104,7 @@ def adapt_yranges(y_range, data, padding_factor=200.0):
     y_range.end = dmax
 
 
-def generate_stylesheet(scheme, template="basic.css.j2"):
+def generate_stylesheet(scheme, template='basic.css.j2'):
     '''
     Generates stylesheet with values from scheme
     '''

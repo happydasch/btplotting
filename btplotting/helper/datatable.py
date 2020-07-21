@@ -70,10 +70,10 @@ class AnalysisTableGenerator:
             ['', ColummDataType.STRING],
             ['Value', ColummDataType.STRING]]
 
-        def add_to_table(item, baselabel=""):
+        def add_to_table(item, baselabel=''):
             if isinstance(item, dict):
                 for ak, av in item.items():
-                    label = f"{baselabel} - {ak}" if len(baselabel) > 0 else ak
+                    label = f'{baselabel} - {ak}' if len(baselabel) > 0 else ak
                     if isinstance(av, (dict, bt.AutoOrderedDict, OrderedDict)):
                         add_to_table(av, label)
                     else:
@@ -89,13 +89,13 @@ class AnalysisTableGenerator:
         elif ctype == ColummDataType.INT:
             return NumberFormatter()
         elif ctype == ColummDataType.DATETIME:
-            return DateFormatter(format="%c")
+            return DateFormatter(format='%c')
         elif ctype == ColummDataType.STRING:
             return StringFormatter()
         elif ctype == ColummDataType.PERCENTAGE:
-            return NumberFormatter(format="0.000 %")
+            return NumberFormatter(format='0.000 %')
         else:
-            raise Exception(f"Unsupported ColumnDataType: '{ctype}'")
+            raise Exception(f'Unsupported ColumnDataType: "{ctype}"')
 
     def get_tables(self, analyzer):
         '''
