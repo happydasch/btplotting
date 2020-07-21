@@ -15,50 +15,94 @@ def get_indicator_data(indicator):
         return data
 
 
-def filter_by_datadomain(obj, datadomain):
+def get_last_avail_idx(strategy, dataname=False):
     '''
-    Returns if the given object should be included in datadomain.
+    Returns the last available index of a data source
+    '''
+    if dataname is not False:
+        data = strategy.getdatabyname(dataname)
+    else:
+        data = strategy
+    offset = 0
+    while True:
+        if data.datetime[-offset] != data.datetime[-offset]:
+            offset += 1
+            continue
+        break
+    return len(data) - 1 - offset
+
+
+def filter_by_dataname(obj, dataname):
+    '''
+    Returns if the given object should be included
     True if it should be included, False if not
     '''
-    if datadomain is False:
+    if dataname is False:
         return True
 
-    if isinstance(datadomain, str):
-        datadomain = [datadomain]
-
-    obj_lg = get_datadomain(obj)
-    return obj_lg is False or obj_lg in datadomain
+    obj_dataname = get_dataname(obj)
+    return obj_dataname is False or obj_dataname == dataname
 
 
-def get_datadomain(obj):
+def get_datanames(strategy):
     '''
-    Returns the datadomain for given object. A datadomain
-    is basically the name of a data feed.
-    If there is no datadomain -> False will be returned.
+    Returns the names of all data sources
     '''
-    if isinstance(obj, bt.Strategy):
-        # strategy will have no datadomain
+    datanames = []
+    for d in strategy.datas:
+        datanames.append(get_dataname(d))
+    return datanames
+
+
+def get_dataname(obj):
+    '''
+    Returns the name of the data for the given object
+    If the data for a object is a strategy then False will
+    be returned.
+    '''
+    data = get_data_obj(obj)
+    if isinstance(data, bt.Strategy):
+        # strategy will have no dataname
         return False
-    elif isinstance(obj, bt.AbstractDataBase):
+    elif isinstance(data, bt.AbstractDataBase):
         # data feeds are end points
+        # try some popular attributes that might carry a name
+        # _name: user assigned value upon instantiation
+        # _dataname: underlying bt dataname (is always available)
+        # if that fails, use str
         for n in ['_name', '_dataname']:
-            val = getattr(obj, n)
+            val = getattr(data, n)
             if val is not None:
                 break
         if val is None:
-            val = str(obj)
+            val = str(data)
         return val
+    else:
+        raise Exception(
+            f'Unsupported data: {obj.__class__}')
+
+
+def get_data_obj(obj):
+    '''
+    Returns the data object of the given object
+    This will be either a data source or a strategy
+    '''
+    if isinstance(obj, (bt.Strategy, bt.AbstractDataBase)):
+        # strategies and data feeds are end points
+        return obj
     elif isinstance(obj, (bt.IndicatorBase, bt.ObserverBase)):
-        # to get the datadomain for ind and obs, use clock
-        return get_datadomain(obj._clock)
+        # to get the data obj for ind and obs, use clock
+        return get_data_obj(obj._clock)
     else:
         # try to find a clock as last ressort
-        return get_datadomain(get_clock_obj(obj))
+        return get_data_obj(get_clock_obj(obj))
 
 
 def get_clock_obj(obj):
     '''
     Returns a clock object to use for building data
+    A clock object can be either a strategy, data source,
+    indicator or a observer.
     '''
     if isinstance(obj, bt.LinesOperation):
         # indicators can be created to run on a line
@@ -83,15 +127,24 @@ def get_clock_obj(obj):
     elif isinstance(obj, bt.AbstractDataBase):
         clk = obj
     else:
-        raise Exception(f'Unsupported object type passed: {obj.__class__}')
+        raise Exception(
+            f'Unsupported clock: {obj.__class__}')
     return clk
 
 
 def get_clock_line(obj):
     '''
     Find the corresponding clock for an object.
-    A clock is a datetime line that holds timestamps for the line in question.
+    A clock is a datetime line that holds timestamps
+    for the line in question.
     '''
     clk = get_clock_obj(obj)
     return clk.lines.datetime
 
+
+def get_source_id(source):
+    '''
+    Returns a unique source id for given source.
+    This is used for unique column names.
+    '''
+    return str(id(source))

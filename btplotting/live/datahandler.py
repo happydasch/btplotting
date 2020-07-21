@@ -1,6 +1,7 @@
-from enum import Enum
-from threading import Lock
+import time
 import logging
+from enum import Enum
+from threading import Thread, Lock
 from tornado import gen
 
 from ..helper.bokeh import get_streamdata_from_df, get_patchdata_from_series
@@ -19,10 +20,24 @@ class LiveDataHandler:
     Handler for live data
     '''
 
-    def __init__(self, client, lookback):
-        self._lock = Lock()
-        self._client = client
+    def __init__(self, doc, app, figid, lookback, timeout=0.5):
+        # doc of client
+        self._doc = doc
+        # app instance
+        self._app = app
+        # figurepage id
+        self._figid = figid
+        # lookback length
         self._lookback = lookback
+        # timeout for thread
+        self._timeout = timeout
+        # figurepage
+        self._figurepage = app.get_figurepage(figid)
+        # thread to process new data
+        self._thread = Thread(target=self._t_thread, daemon=True)
+        self._lock = Lock()
+        self._running = True
+        self._new_data = False
         self._last_idx = -1
         self._datastore = None
         self._patches = []
@@ -30,13 +45,16 @@ class LiveDataHandler:
         self._cb_add = None
         # inital fill of datastore
         self._fill()
+        # start thread
+        self._thread.start()
 
     def _fill(self):
         '''
         Fills datastore with latest values
         '''
         with self._lock:
-            self._datastore = self._client.app.generate_data(
+            self._datastore = self._app.generate_data(
+                figid=self._figid,
                 back=self._lookback,
                 preserveidx=True)
             if self._datastore.shape[0] > 0:
@@ -44,7 +62,7 @@ class LiveDataHandler:
             # init figurepage and figure cds by calling set_data_from_df
             # after this, all cds will already contain data, so no need
             # to push adds
-            self._client.figurepage.set_data_from_df(self._datastore)
+            self._figurepage.set_data_from_df(self._datastore)
 
     @gen.coroutine
     def _cb_push_adds(self):
@@ -59,19 +77,21 @@ class LiveDataHandler:
         # store last index of streamed data
         self._last_idx = update_df['index'].iloc[-1]
 
-        figurepage = self._client.figurepage
+        fp = self._figurepage
         # create stream data for figurepage
         data = get_streamdata_from_df(
             update_df,
-            figurepage.cds_cols)
+            fp.cds_cols)
         _logger.debug(f'Sending stream for figurepage: {data}')
-        figurepage.cds.stream(data, self._datastore.shape[0])
+        fp.cds.stream(
+            data, self._get_data_stream_length())
 
         # create stream df for every figure
-        for figure in figurepage.figures:
-            data = get_streamdata_from_df(update_df, figure.cds_cols)
+        for f in fp.figures:
+            data = get_streamdata_from_df(update_df, f.cds_cols)
             _logger.debug(f'Sending stream for figure: {data}')
-            figure.cds.stream(data, self._datastore.shape[0])
+            f.cds.stream(
+                data, self._get_data_stream_length())
 
     @gen.coroutine
     def _cb_push_patches(self):
@@ -87,31 +107,33 @@ class LiveDataHandler:
             return
 
         for patch in patches:
-            figurepage = self._client.figurepage
+            fp = self._figurepage
 
             # patch figurepage
             p_data, s_data = get_patchdata_from_series(
-                patch, figurepage.cds, figurepage.cds_cols)
+                patch, fp.cds, fp.cds_cols)
             if len(p_data) > 0:
                 _logger.debug(f"Sending patch for figurepage: {p_data}")
-                figurepage.cds.patch(p_data)
+                fp.cds.patch(p_data)
             if len(s_data) > 0:
                 _logger.debug(f"Sending stream for figurepage: {s_data}")
-                figurepage.cds.stream(s_data, self._datastore.shape[0])
+                fp.cds.stream(
+                    s_data, self._get_data_stream_length())
 
             # patch all figures
-            for figure in figurepage.figures:
+            for f in fp.figures:
                 p_data, s_data = get_patchdata_from_series(
-                    patch, figure.cds, figure.cds_cols)
+                    patch, f.cds, f.cds_cols)
                 if len(p_data) > 0:
                     _logger.debug(f"Sending patch for figure: {p_data}")
-                    figure.cds.patch(p_data)
+                    f.cds.patch(p_data)
                 if len(s_data) > 0:
                     _logger.debug(f"Sending stream for figure: {s_data}")
-                    figure.cds.stream(s_data, self._datastore.shape[0])
+                    f.cds.stream(
+                        s_data, self._get_data_stream_length())
 
     def _push_adds(self):
-        doc = self._client.doc
+        doc = self._doc
         try:
             doc.remove_next_tick_callback(self._cb_add)
         except ValueError:
@@ -120,13 +142,58 @@ class LiveDataHandler:
             self._cb_push_adds)
 
     def _push_patches(self):
-        doc = self._client.doc
+        doc = self._doc
         try:
             doc.remove_next_tick_callback(self._cb_patch)
         except ValueError:
             pass
         self._cb_patch = doc.add_next_tick_callback(
             self._cb_push_patches)
+
+    def _process(self, rows):
+        '''
+        Request to update data with given rows
+        '''
+        for idx, row in rows.iterrows():
+            if (self._datastore.shape[0] > 0
+                    and idx in self._datastore['index']):
+                update_type = UpdateType.UPDATE
+            else:
+                update_type = UpdateType.ADD
+
+            if update_type == UpdateType.UPDATE:
+                ds_idx = self._datastore.loc[
+                    self._datastore['index'] == idx].index[0]
+                with self._lock:
+                    self._datastore.at[ds_idx] = row
+                self._patches.append(row)
+                self._push_patches()
+            else:
+                # append data and remove old data
+                with self._lock:
+                    self._datastore = self._datastore.append(row)
+                    self._datastore = self._datastore.tail(
+                        self._get_data_stream_length())
+                self._push_adds()
+
+    def _t_thread(self):
+        '''
+        Thread method for datahandler
+        '''
+        while self._running:
+            if self._new_data:
+                data = self._app.generate_data(
+                    start=self._last_idx,
+                    preserveidx=True)
+                self._new_data = False
+                self._process(data)
+            time.sleep(self._timeout)
+
+    def _get_data_stream_length(self):
+        '''
+        Returns the length of data stream to use
+        '''
+        return min(self._lookback, self._datastore.shape[0])
 
     def get_last_idx(self):
         '''
@@ -142,45 +209,17 @@ class LiveDataHandler:
         '''
         with self._lock:
             self._datastore = df
-        self._last_idx = -1
+            self._last_idx = -1
         self._push_adds()
 
-    def update(self, rows):
+    def update(self):
         '''
-        Request to update data with given rows
+        Notifies datahandler of new data
         '''
-        for idx, row in rows.iterrows():
-            with self._lock:
-                if (self._datastore.shape[0] > 0
-                        and idx in self._datastore['index']):
-                    update_type = UpdateType.UPDATE
-                else:
-                    update_type = UpdateType.ADD
+        self._new_data = True
 
-            if update_type == UpdateType.UPDATE:
-                with self._lock:
-                    ds_idx = self._datastore.loc[
-                        self._datastore['index'] == idx].index[0]
-                    self._datastore.at[ds_idx] = row
-                    self._patches.append(row)
-                self._push_patches()
-            else:
-                # check for gaps in data before adding new data
-                if (
-                        self._last_idx > 0
-                        and self._datastore.shape[0] > 0
-                        and (row['index']
-                             != self._datastore['index'].iloc[-1] + 1)):
-                    missing = self._client.app.generate_data(
-                        start=self._datastore['index'].iloc[-1],
-                        end=row['index'] - 1,
-                        preserveidx=True)
-                    # add missing rows
-                    if missing.shape[0] > 0:
-                        self.update(missing)
-
-                # append data and remove old data
-                with self._lock:
-                    self._datastore = self._datastore.append(row)
-                    self._datastore = self._datastore.tail(self._lookback)
-                self._push_adds()
+    def stop(self):
+        '''
+        Stops the datahandler
+        '''
+        self._running = False

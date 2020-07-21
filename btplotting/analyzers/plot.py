@@ -49,6 +49,7 @@ class LivePlotAnalyzer(bt.Analyzer):
 
     def _on_session_destroyed(self, session_context):
         with self._lock:
+            self._clients[session_context.id].stop()
             del self._clients[session_context.id]
 
     def _t_server(self):

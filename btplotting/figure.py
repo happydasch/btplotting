@@ -14,7 +14,7 @@ from bokeh.models.formatters import NumeralTickFormatter
 from bokeh.models import ColumnDataSource, FuncTickFormatter, \
     DatetimeTickFormatter, CustomJS
 
-from .utils_new import get_source_id
+from .utils import get_source_id
 from .helper.label import datatarget2label, obj2label
 from .helper.bokeh import convert_color, sanitize_source_name, \
     set_cds_columns_from_df
@@ -152,6 +152,7 @@ class FigurePage(object):
         self.figures = []
         self.analyzers = []
         self.strategy = obj if isinstance(obj, bt.Strategy) else None
+        self.optreturn = obj if isinstance(obj, bt.OptReturn) else None
         # the whole generated model will we attached here after plotting
         self.model = None
 

@@ -91,6 +91,9 @@ class ClockGenerator:
         arr = get_slice_with_end(arr, start, end)
         return arr, start, end
 
+    def get_clock_time_at_idx(self, idx):
+        return bt.num2date(self._clk.array[idx], self._tz)
+
 
 class ClockHandler:
 

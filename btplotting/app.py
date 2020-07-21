@@ -1,5 +1,5 @@
 from collections import defaultdict
-import datetime
+from datetime import datetime, timedelta
 import itertools
 import logging
 import re
@@ -22,8 +22,8 @@ from jinja2 import Environment, PackageLoader
 
 from .schemes import Scheme, Blackly
 
-from .utils_new import get_dataname, get_source_id
-from .utils import get_indicator_data, filter_by_datadomain
+from .utils import get_dataname, get_source_id, filter_by_dataname, \
+    get_indicator_data
 from .figure import FigurePage, FigureType, Figure, HoverContainer
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
@@ -55,9 +55,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     show -> all figurepages will be filled with data and plotted
 
     The live client also uses this class to generate all figures to plot.
-
-    TODO
-    -datadomain should be cleaned up (provide one or more datadomains)
     '''
 
     params = (
@@ -84,12 +81,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         if not isinstance(self.p.scheme, Scheme):
             raise Exception("Provided scheme has to be a subclass"
                             + " of btplotting.schemes.scheme.Scheme")
-
-        # when optreturn is active during optimization then we get
-        # a thinned out result only
-        self._is_optreturn = False
-        self._current_fig_idx = None
-        self.figurepages = {}
+        self._figurepages = {}
         # set tabs
         if not isinstance(self.p.tabs, list):
             raise Exception(
@@ -102,34 +94,24 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     "Tab needs to be a subclass of"
                     + " btplotting.tab.BacktraderPlottingTab")
 
-    @property
-    def _cur_figurepage(self):
-        return self.figurepages[self._current_fig_id]
+    def _reset(self):
+        self._figurepages = {}
 
-    @property
-    def _cur_figurepage_id(self):
-        return self._current_fig_id
-
-    @_cur_figurepage_id.setter
-    def _cur_figurepage_id(self, figid):
-        if figid not in self.figurepages:
-            raise RuntimeError(
-                f'FigurePage with figid {figid} does not exist')
-        self._current_fig_id = figid
-
-    def _configure_plotting(self, strategy):
+    def _configure_plotting(self, figid=0):
         '''
         Applies config from plotconfig param to objects
         '''
+        fp = self.get_figurepage(figid)
+        strategy = fp.strategy
         datas = strategy.datas
         inds = strategy.getindicators()
         obs = strategy.getobservers()
 
         for objs in [datas, inds, obs]:
             for idx, obj in enumerate(objs):
-                self._configure_plotobject(obj, idx, strategy)
+                self._configure_plotobject(obj, idx)
 
-    def _configure_plotobject(self, obj, idx, strategy):
+    def _configure_plotobject(self, obj, idx):
         '''
         Applies config to a single object
         '''
@@ -164,7 +146,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 raise RuntimeError(
                     f'Unknown config type in plotting config: {k}')
 
-    def _build_graph(self, strategy, datadomain=False):
+    def _build_graph(self, figid=0, dataname=False):
+        fp = self.get_figurepage(figid)
+        strategy = fp.strategy
         datas = strategy.datas
         inds = strategy.getindicators()
         obs = strategy.getobservers()
@@ -172,7 +156,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         volume_graph = []
         for d in datas:
             if (not d.plotinfo.plot
-                    or not filter_by_datadomain(d, datadomain)):
+                    or not filter_by_dataname(d, dataname)):
                 continue
 
             pmaster = get_plotmaster(d.plotinfo.plotmaster)
@@ -196,7 +180,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             # should this indicator be plotted?
             if (not obj.plotinfo.plot
                     or obj.plotinfo.plotskip
-                    or not filter_by_datadomain(obj, datadomain)):
+                    or not filter_by_dataname(obj, dataname)):
                 continue
 
             # subplot = create a new figure for this indicator
@@ -213,8 +197,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return data_graph, volume_graph
 
-    def _test(self, strategy):
-        from libs.btplotting.utils_new import get_dataname, get_clock_obj
+    def _test(self, figid=0):
+        fp = self.get_figurepage(figid)
+        strategy = fp.strategy
+        from libs.btplotting.utils import get_dataname, get_clock_obj
         objs = list(itertools.chain(strategy.datas,
                                     strategy.getindicators(),
                                     strategy.getobservers()))
@@ -226,17 +212,16 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             if hasattr(o, 'data'):
                 print('HAS DATA', get_clock_obj(o.data))
 
-    def _blueprint_strategy(self, strategy, datadomain=False):
+    def _blueprint_strategy(self, figid=0, dataname=False):
+        fp = self.get_figurepage(figid)
+        strategy = fp.strategy
         scheme = self.p.scheme
-        strategy = self._cur_figurepage.strategy
-        self._test(strategy)
-        self._cur_figurepage.reset()
-        self._cur_figurepage.analyzers += [
+        self._test(figid)
+        fp.reset()
+        fp.analyzers += [
             a for _, a in strategy.analyzers.getitems()]
 
-        data_graph, volume_graph = self._build_graph(
-            strategy,
-            datadomain=datadomain)
+        data_graph, volume_graph = self._build_graph(figid, dataname)
 
         # reset hover container to not mix hovers with other strategies
         hoverc = HoverContainer(
@@ -244,7 +229,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             is_multidata=len(strategy.datas) > 1)
 
         # set the cds for figurepage which contains all data
-        cds = self._cur_figurepage.cds
+        cds = fp.cds
 
         strat_figures = []
         for master, slaves in data_graph.items():
@@ -281,7 +266,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         hoverc.apply_hovertips(strat_figures)
 
         # add figures to figurepage
-        self._cur_figurepage.figures += strat_figures
+        fp.figures += strat_figures
 
         # volume graphs
         for v in volume_graph:
@@ -297,17 +282,19 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 is_multidata=len(strategy.datas) > 1,
                 type=FigureType.VOL)
             figure.plot_volume(v)
-            self._cur_figurepage.figures.append(figure)
+            fp.figures.append(figure)
 
-    def _blueprint_optreturn(self, optreturn):
-        self._cur_figurepage.reset()
-        self._cur_figurepage.analyzers += [
+    def _blueprint_optreturn(self, figid=0):
+        fp = self.get_figurepage(figid)
+        optreturn = fp.optreturn
+        fp.reset()
+        fp.analyzers += [
             a for _, a in optreturn.analyzers.getitems()]
 
     def _output_stylesheet(self, template="basic.css.j2"):
         return generate_stylesheet(self.p.scheme, template)
 
-    def _output_plot_file(self, model, figid, filename=None,
+    def _output_plot_file(self, model, figid=0, filename=None,
                           template="basic.html.j2"):
         if filename is None:
             tmpdir = tempfile.gettempdir()
@@ -315,7 +302,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         env = Environment(loader=PackageLoader('btplotting', 'templates'))
         templ = env.get_template(template)
-        now = datetime.datetime.now()
+        now = datetime.now()
         templ.globals['now'] = now.strftime("%Y-%m-%d %H:%M:%S")
 
         html = file_html(model,
@@ -330,53 +317,50 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return filename
 
-    def _reset(self):
-        self.figurepages = []
-        self._is_optreturn = False
-
     def create_figurepage(self, obj, figid=0, start=None, end=None,
-                          datadomain=False, filldata=True):
+                          dataname=False, filldata=True):
         '''
         Creates new FigurePage for given obj.
         The obj can be either an instance of bt.Strategy or bt.OptReturn
         '''
         fp = FigurePage(obj)
-        self.figurepages[figid] = fp
-        self._cur_figurepage_id = figid
-        self._is_optreturn = isinstance(obj, bt.OptReturn)
+        if figid in self._figurepages:
+            raise Exception(f'FigurePage with figid "{figid}" already exists')
+        self._figurepages[figid] = fp
 
         if isinstance(obj, bt.Strategy):
-            self._configure_plotting(obj)
-            self._blueprint_strategy(obj, datadomain=datadomain)
+            self._configure_plotting(figid)
+            self._blueprint_strategy(figid, dataname)
             if filldata:
-                df = self.generate_data(start=start, end=end)
-                self._cur_figurepage.set_data_from_df(df)
+                df = self.generate_data(figid, start=start, end=end)
+                fp.set_data_from_df(df)
         elif isinstance(obj, bt.OptReturn):
-            self._blueprint_optreturn(obj)
+            self._blueprint_optreturn(figid)
         else:
             raise Exception(
                 f'Unsupported plot source object: {str(type(obj))}')
-        return self._current_fig_id, self._cur_figurepage
+        return figid, fp
 
-    def update_figurepage(self, figid=0, datadomain=False):
+    def update_figurepage(self, figid=0, dataname=False):
         '''
         Updates the figurepage with the given figid
         '''
-        self._cur_figurepage_id = figid
-        fp = self._cur_figurepage
-        if fp.strategy is not None:
-            self._blueprint_strategy(
-                fp.strategy,
-                datadomain=datadomain)
+        self._blueprint_strategy(figid, dataname)
+
+    def get_figurepage(self, figid=0):
+        '''
+        Returns the FigurePage with the given figid
+        '''
+        if figid not in self._figurepages:
+            raise Exception(f'FigurePage with figid "{figid}" does not exist')
+        return self._figurepages[figid]
 
     def generate_model(self, figid=0):
         '''
         Generates bokeh model used for the current figurepage
         '''
-        self._cur_figurepage_id = figid
-        fp = self._cur_figurepage
-
-        if not self._is_optreturn:
+        fp = self.get_figurepage(figid)
+        if fp.strategy is not None:
             panels = self.generate_model_panels()
         else:
             panels = []
@@ -394,11 +378,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return model
 
-    def generate_model_panels(self):
+    def generate_model_panels(self, figid=0):
         '''
-        Generates bokeh panels used for current figurepage
+        Generates bokeh panels used for figurepage
         '''
-        fp = self._cur_figurepage
+        fp = self.get_figurepage(figid)
         observers = [
             x for x in fp.figures
             if isinstance(x.master, bt.ObserverBase)]
@@ -457,12 +441,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return panels
 
-    def generate_data(self, start=None, end=None, back=None,
+    def generate_data(self, figid=0, start=None, end=None, back=None,
                       preserveidx=False):
         '''
         Generates data for current figurepage
         '''
-        fp = self._cur_figurepage
+        fp = self.get_figurepage(figid)
 
         # collect all objects to generate data for
         objs = defaultdict(list)
@@ -486,9 +470,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         generator = ClockGenerator(strategy, smallest)
         clock_values[smallest] = generator.get_clock(
             start, end, back)
-        clk, _, _ = clock_values[smallest]
-        if len(clk) > 0:
-            clkstart, clkend = clk[0], clk[-1]
+        # create the clock range values for other clocks
+        if len(clock_values[smallest][0]) > 0:
+            if clock_values[smallest][1] > 0:
+                clkstart = generator.get_clock_time_at_idx(
+                    clock_values[smallest][1] - 1) + timedelta(milliseconds=1)
+            else:
+                clkstart = generator.get_clock_time_at_idx(
+                    clock_values[smallest][1])
+            clkend = generator.get_clock_time_at_idx(clock_values[smallest][2])
         else:
             clkstart, clkend = None, None
         # ensure to reset end if no end is set, so we get also new
@@ -561,7 +551,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return self.generate_model(0)
 
     def plot(self, obj, figid=0, numfigs=1, iplot=True, start=None,
-             end=None, use=None, datadomain=False, **kwargs):
+             end=None, use=None, dataname=False, **kwargs):
         '''
         Plot either a strategy or an optimization result
         This method is called by backtrader
@@ -579,17 +569,17 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             figid=figid,
             start=start,
             end=end,
-            datadomain=datadomain)
+            dataname=dataname)
 
         # returns all figurepages
-        return self.figurepages
+        return self._figurepages
 
     def show(self):
         '''
         Display a figure
         This method is called by backtrader
         '''
-        for figid in self.figurepages:
+        for figid in self._figurepages:
             model = self.generate_model(figid)
 
             if self.p.output_mode in ['show', 'save']:
