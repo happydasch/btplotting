@@ -251,7 +251,9 @@ class Scheme(PlotScheme):
         self.axis_tickformat_seconds = '%H:%M:%S'
         self.axis_tickformat_years = '%Y %b'
 
-        self.y_range_padding = 0.5  # used to add padding on the y-axis for all data except volume
+        # used to add padding on the y-axis for all data except volume
+        self.y_range_padding = 0.5
+        # position of y axis for volume
         self.vol_axis_location = 'right'
 
     def _set_args(self, **kwargs):

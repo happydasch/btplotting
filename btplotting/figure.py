@@ -482,7 +482,7 @@ class Figure(object):
                 glyph_fnc = self.figure.line
             else:
                 raise Exception(f'Unknown plotting method "{method}"')
-            
+
             # append renderer
             renderer = glyph_fnc('index', source=self.cds, **kwglyphs)
 
@@ -508,14 +508,24 @@ class Figure(object):
         self._plot_hlines(obj)
 
     def get_type(self):
+        '''
+        Returns the FigureType of this Figure
+        '''
         if self._type is None:
             return FigureType.get_type(self.master)
         return self._type
 
     def set_data_from_df(self, df):
+        '''
+        Sets data from DataFrame
+        Columns will be added if not existing
+        '''
         set_cds_columns_from_df(df, self.cds, self.cds_cols)
 
     def plot(self, obj):
+        '''
+        Common plot method
+        '''
         if isinstance(obj, bt.AbstractDataBase):
             self.plot_data(obj)
         elif isinstance(obj, bt.IndicatorBase):
@@ -537,6 +547,9 @@ class Figure(object):
         self.datas.append(obj)
 
     def plot_data(self, data):
+        '''
+        Plot method for data
+        '''
         source_id = get_source_id(data)
         self.cds_cols += [source_id + x for x in [
             'open', 'high', 'low', 'close',
@@ -612,7 +625,8 @@ class Figure(object):
 
     def plot_volume(self, data, alpha=1.0, extra_axis=False):
         '''
-        extra_axis displays a second axis (for overlay on data plotting)
+        Plot method for volume
+        extra_axis: displays a second axis (for overlay on data plotting)
         '''
         source_id = get_source_id(data)
         self.cds_cols += [source_id + x for x in ['volume', 'colors_volume']]
@@ -634,7 +648,7 @@ class Figure(object):
             # use colorup
             ax_color = convert_color(self._scheme.volup)
 
-            #use only one additional axis
+            # use only one additional axis
             ax = self.figure.select_one({'id': 'axvol'})
             if ax is None:
                 ax = LinearAxis(
@@ -671,7 +685,13 @@ class Figure(object):
             data)
 
     def plot_observer(self, obj):
+        '''
+        Plot method for observer
+        '''
         self._plot_indicator_observer(obj)
 
     def plot_indicator(self, obj):
+        '''
+        Plot method for indicator
+        '''
         self._plot_indicator_observer(obj)
