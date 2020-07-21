@@ -19,11 +19,10 @@ class LiveDataHandler:
     Handler for live data
     '''
 
-    def __init__(self, client, lookback, datadomain):
+    def __init__(self, client, lookback):
         self._lock = Lock()
         self._client = client
         self._lookback = lookback
-        self._datadomain = datadomain
         self._last_idx = -1
         self._datastore = None
         self._patches = []
@@ -150,13 +149,6 @@ class LiveDataHandler:
         '''
         Request to update data with given rows
         '''
-        strategy = self._client.strategy
-        datadomain = self._client.datadomain
-        # don't do anything if datadomain is different than
-        # what the client is showing
-        if datadomain != self._datadomain:
-            return
-
         for idx, row in rows.iterrows():
             with self._lock:
                 if (self._datastore.shape[0] > 0
@@ -180,7 +172,7 @@ class LiveDataHandler:
                         and (row['index']
                              != self._datastore['index'].iloc[-1] + 1)):
                     missing = self._client.app.generate_data(
-                        start=self._datastore['index'].iloc[-1] + 1,
+                        start=self._datastore['index'].iloc[-1],
                         end=row['index'] - 1,
                         preserveidx=True)
                     # add missing rows
