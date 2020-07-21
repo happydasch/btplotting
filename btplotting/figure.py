@@ -482,7 +482,8 @@ class Figure(object):
                 glyph_fnc = self.figure.line
             else:
                 raise Exception(f'Unknown plotting method "{method}"')
-
+            
+            # append renderer
             renderer = glyph_fnc('index', source=self.cds, **kwglyphs)
 
             # make sure the regular y-axis only scales to the normal
@@ -628,21 +629,24 @@ class Figure(object):
 
             self.figure.extra_y_ranges = {source_data_axis: DataRange1d(
                 range_padding=1.0 / self._scheme.volscaling,
-                start=0,
-            )}
+                start=0)}
 
             # use colorup
             ax_color = convert_color(self._scheme.volup)
 
-            ax = LinearAxis(
-                y_range_name=source_data_axis,
-                formatter=ax_formatter,
-                axis_label_text_color=ax_color,
-                axis_line_color=ax_color,
-                major_label_text_color=ax_color,
-                major_tick_line_color=ax_color,
-                minor_tick_line_color=ax_color)
-            self.figure.add_layout(ax, 'left')
+            #use only one additional axis
+            ax = self.figure.select_one({'id': 'axvol'})
+            if ax is None:
+                ax = LinearAxis(
+                    id='axvol',
+                    y_range_name=source_data_axis,
+                    formatter=ax_formatter,
+                    axis_label_text_color=ax_color,
+                    axis_line_color=ax_color,
+                    major_label_text_color=ax_color,
+                    major_tick_line_color=ax_color,
+                    minor_tick_line_color=ax_color)
+                self.figure.add_layout(ax, self._scheme.vol_axis_location)
             kwargs['y_range_name'] = source_data_axis
         else:
             self.figure.yaxis.formatter = ax_formatter

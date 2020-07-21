@@ -22,8 +22,8 @@ from jinja2 import Environment, PackageLoader
 
 from .schemes import Scheme, Blackly
 
-from .utils import get_dataname, get_source_id, filter_by_dataname, \
-    get_indicator_data
+from .utils import get_dataname, get_datanames, get_source_id, \
+    filter_by_dataname, get_indicator_data
 from .figure import FigurePage, FigureType, Figure, HoverContainer
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
@@ -409,9 +409,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # groupby expects the groups to be sorted or else will produce
         # duplicated groups
         data_sort = {False: 0}
+        for i, d in enumerate(get_datanames(fp.strategy), start=1):
+            data_sort[d] = i
         sorted_figs = list(itertools.chain(datas, inds, observers))
-        for i, d in enumerate(datas, start=1):
-            data_sort[get_dataname(d.master)] = i
         sorted_figs.sort(key=lambda x: (
             x.plotorder,
             data_sort[get_dataname(x.master)],
@@ -448,21 +448,26 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         '''
         fp = self.get_figurepage(figid)
 
-        # collect all objects to generate data for
+        # collect all objects to generate data for, also collect all datas in
+        # a list
         objs = defaultdict(list)
+        datanames = []
         for f in fp.figures:
             dataname = get_dataname(f.master)
             objs[dataname].append(f.master)
+            if dataname not in datanames:
+                datanames.append(dataname)
             for s in f.slaves:
+                dataname = get_dataname(s)
                 objs[dataname].append(s)
+                if dataname not in datanames:
+                    datanames.append(dataname)
         strategy = fp.strategy
 
         # use first data as clock
         smallest = False
-        for k in objs.keys():
-            if k is not False:
-                smallest = k
-                break
+        if len(datanames) > 0:
+            smallest = datanames[0]
 
         # create clock values
         clock_values = {}
@@ -486,10 +491,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         if end is None:
             clkend = None
         # generate remaining clock values
-        for k in objs.keys():
-            if k not in clock_values:
-                generator = ClockGenerator(strategy, k)
-                clock_values[k] = generator.get_clock(
+        for dataname in datanames:
+            if dataname not in clock_values:
+                generator = ClockGenerator(strategy, dataname)
+                clock_values[dataname] = generator.get_clock(
                     clkstart, clkend)
 
         # generate clock handlers
