@@ -160,8 +160,7 @@ class LiveClient:
         # create new data handler
         self._datahandler = LiveDataHandler(
             self,
-            self._lookback,
-            self.datadomain)
+            self._lookback)
 
         # notify model about change
         self._update_fnc()
