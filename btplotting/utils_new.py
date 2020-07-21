@@ -8,14 +8,14 @@ def get_last_avail_idx(strategy, dataname=False):
     if dataname is not False:
         data = strategy.getdatabyname(dataname)
     else:
-        data = strategy.data
-    if data.islive():
-        # this is a workaround for live data being a strategy
-        # clock and generating a empty new row before any data
-        # is available which makes the index bigger than it
-        # actually is
-        return len(data) - 2
-    return len(data) - 1
+        data = strategy
+    offset = 0
+    while True:
+        if data.datetime[-offset] != data.datetime[-offset]:
+            offset += 1
+            continue
+        break
+    return len(data) - 1 - offset
 
 
 def get_datanames(strategy):

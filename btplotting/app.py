@@ -22,9 +22,8 @@ from jinja2 import Environment, PackageLoader
 
 from .schemes import Scheme, Blackly
 
-from .utils_new import get_dataname
-from .utils import get_indicator_data, get_datadomain, \
-    filter_by_datadomain, get_source_id
+from .utils_new import get_dataname, get_source_id
+from .utils import get_indicator_data, filter_by_datadomain
 from .figure import FigurePage, FigureType, Figure, HoverContainer
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
@@ -428,10 +427,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         data_sort = {False: 0}
         sorted_figs = list(itertools.chain(datas, inds, observers))
         for i, d in enumerate(datas, start=1):
-            data_sort[get_datadomain(d.master)] = i
+            data_sort[get_dataname(d.master)] = i
         sorted_figs.sort(key=lambda x: (
             x.plotorder,
-            data_sort[get_datadomain(x.master)],
+            data_sort[get_dataname(x.master)],
             x.get_type().value))
         sorted_figs.sort(key=lambda x: x.plottab)
         tabgroups = itertools.groupby(sorted_figs, lambda x: x.plottab)
@@ -464,6 +463,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Generates data for current figurepage
         '''
         fp = self._cur_figurepage
+
+        # collect all objects to generate data for
         objs = defaultdict(list)
         for f in fp.figures:
             dataname = get_dataname(f.master)
@@ -488,15 +489,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         clk, _, _ = clock_values[smallest]
         if len(clk) > 0:
             clkstart, clkend = clk[0], clk[-1]
-            # ensure to reset end if no end is set, so we get also new
-            # data for current candle
-            if end is None:
-                clkend = None
         else:
             clkstart, clkend = None, None
+        # ensure to reset end if no end is set, so we get also new
+        # data for current candle
+        if end is None:
+            clkend = None
         # generate remaining clock values
         for k in objs.keys():
-            if k not in clock_values and k is not False:
+            if k not in clock_values:
                 generator = ClockGenerator(strategy, k)
                 clock_values[k] = generator.get_clock(
                     clkstart, clkend)
@@ -504,10 +505,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # generate clock handlers
         clocks = {}
         for name in clock_values:
-            clk, clkstart, clkend = clock_values[name]
-            clocks[name] = ClockHandler(clk, clkstart, clkend)
-        # for objects not haivng a dataname, use smallest clock
-        clocks[False] = clocks[smallest]
+            tclk, tstart, tend = clock_values[name]
+            clocks[name] = ClockHandler(tclk, tstart, tend)
 
         # get the clock to use to align everything to
         clock = clocks[smallest]
@@ -527,7 +526,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # generate data for all figurepage objects
         for d in objs:
             for obj in objs[d]:
-                tmpclk = clocks[get_datadomain(obj)]
+                tmpclk = clocks[get_dataname(obj)]
                 if isinstance(obj, bt.AbstractDataBase):
                     source_id = get_source_id(obj)
                     df_data = tmpclk.get_df_from_series(
@@ -541,7 +540,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     df = df.join(df_data)
                     df = df.join(df_colors)
                 else:
-                    tmpclk = clocks[get_datadomain(obj)]
                     for lineidx, line in enumerate(obj.lines):
                         source_id = get_source_id(line)
                         new_line = tmpclk.get_list_from_line(line, clkidx)

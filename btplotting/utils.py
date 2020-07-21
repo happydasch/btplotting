@@ -15,29 +15,6 @@ def get_indicator_data(indicator):
         return data
 
 
-def get_last_idx(strategy, datadomain=False):
-    '''
-    Returns the last index of a datadomain
-    '''
-    if datadomain is not False:
-        data = strategy.getdatabyname(datadomain)
-    else:
-        data = strategy.data
-    if data.islive():
-        # this is a workaround for live data being a strategy clock
-        # and generating a empty new row before any data is available
-        # which makes the index bigger than it actually is
-        return len(data) - 2
-    return len(data) - 1
-
-
-def list_datadomains(strategy):
-    datadomains = []
-    for d in strategy.datas:
-        datadomains.append(get_datadomain(d))
-    return datadomains
-
-
 def filter_by_datadomain(obj, datadomain):
     '''
     Returns if the given object should be included in datadomain.
@@ -118,10 +95,3 @@ def get_clock_line(obj):
     clk = get_clock_obj(obj)
     return clk.lines.datetime
 
-
-def get_source_id(source):
-    '''
-    Returns a unique source id for given source.
-    This is used for unique column names.
-    '''
-    return str(id(source))

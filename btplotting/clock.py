@@ -45,7 +45,7 @@ class ClockGenerator:
             data = strategy.getdatabyname(dataname)
             return data.datetime, data._tz
         # if no dataname provided, use first data
-        return strategy.data.datetime, strategy.data._tz
+        return strategy.datetime, strategy.data._tz
 
     def _get_clock_array(self):
         '''
@@ -144,7 +144,7 @@ class ClockHandler:
         aligned to the given clock list
         '''
         end = min(len(line) - 1, self.end)
-        start = max(0, min(end, self.start))
+        start = max(0, min(self.start, len(line) - 1))
         llist = get_slice_with_end(line.array, start, end)
 
         if clkalign is None:

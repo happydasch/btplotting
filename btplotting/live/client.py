@@ -7,7 +7,7 @@ from bokeh.models import Select, Spacer, Tabs, Button
 
 from .datahandler import LiveDataHandler
 from ..tabs import ConfigTab
-from ..utils import get_last_idx, list_datadomains
+from ..utils_new import get_last_avail_idx, get_datanames
 
 _logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ class LiveClient:
 
         def update_nav_buttons(self):
             last_idx = self._datahandler.get_last_idx()
-            last_avail_idx = get_last_idx(self.strategy, self.datadomain)
+            last_avail_idx = get_last_avail_idx(self.strategy, self.datadomain)
 
             if last_idx < self._lookback:
                 btn_nav_prev.disabled = True
@@ -101,12 +101,12 @@ class LiveClient:
             else:
                 btn_nav_action.label = "❙❙"
 
-        # datadomain selection
-        datadomains = list_datadomains(self.strategy)
-        self.datadomain = datadomains[0]
+        # dataname selection
+        datanames = get_datanames(self.strategy)
+        self.datadomain = datanames[0]
         select_datadomain = Select(
             value=self.datadomain,
-            options=datadomains)
+            options=datanames)
         select_datadomain.on_change(
             'value',
             partial(on_select_datadomain, self))
@@ -179,7 +179,7 @@ class LiveClient:
         # if a index is provided, ensure that index is within data range
         if idx:
             # don't allow idx to be bigger than max idx
-            last_avail_idx = get_last_idx(self.strategy, self.datadomain)
+            last_avail_idx = get_last_avail_idx(self.strategy, self.datadomain)
             idx = min(idx, last_avail_idx)
             # don't allow idx to be smaller than lookback - 1
             idx = max(idx, self._lookback - 1)
@@ -198,8 +198,11 @@ class LiveClient:
         Request for updating data with rows
         '''
         if not self._paused and self._datahandler:
+            # its neccessary to fetch at least 2 rows
+            # so data can be aligned correctly between
+            # bounds of rows
             data = self.app.generate_data(
-                back=1,
+                back=2,
                 preserveidx=True)
             self._datahandler.update(data)
         if self._update_fnc:

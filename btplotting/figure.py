@@ -14,7 +14,7 @@ from bokeh.models.formatters import NumeralTickFormatter
 from bokeh.models import ColumnDataSource, FuncTickFormatter, \
     DatetimeTickFormatter, CustomJS
 
-from .utils import get_datadomain, get_source_id
+from .utils_new import get_source_id
 from .helper.label import datatarget2label, obj2label
 from .helper.bokeh import convert_color, sanitize_source_name, \
     set_cds_columns_from_df
@@ -155,12 +155,6 @@ class FigurePage(object):
         # the whole generated model will we attached here after plotting
         self.model = None
 
-    def get_datadomains(self):
-        datadomain = set()
-        for f in self.figures:
-            datadomain = datadomain.union(get_datadomain(f.master))
-        return list(datadomain)
-
     def set_data_from_df(self, df):
         set_cds_columns_from_df(df, self.cds, self.cds_cols)
         for f in self.figures:
@@ -183,6 +177,8 @@ class Figure(object):
     After the Figure is configured, it is required to fill the figure at
     least once with a DataFrame using set_data_from_df. After this, the
     ColumnDataSource is ready for use.
+
+    https://www.backtrader.com/docu/plotting/plotting/
     '''
 
     _tools = "pan,wheel_zoom,box_zoom,reset"
@@ -269,6 +265,11 @@ class Figure(object):
         # TODO: backend webgl (output_backend="webgl") removed due to this bug:
         # https://github.com/bokeh/bokeh/issues/7568
         f.y_range.range_padding = self._scheme.y_range_padding
+        # remove any spacing if there is no title, so there is no spacing between
+        # plots
+        if not self._scheme.plot_title:
+            f.min_border_bottom = 0
+            f.min_border_top = 0
 
         f.border_fill_color = convert_color(self._scheme.border_fill)
 
