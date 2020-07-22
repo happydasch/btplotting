@@ -223,3 +223,6 @@ class LiveDataHandler:
         Stops the datahandler
         '''
         self._running = False
+        # it would not really be neccessary to join this thread but doing
+        # it for readability
+        self._thread.join(0)

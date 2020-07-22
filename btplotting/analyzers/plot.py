@@ -73,7 +73,9 @@ class LivePlotAnalyzer(bt.Analyzer):
         t.start()
 
     def stop(self):
-        pass
+        with self._lock:
+            for c in self._clients.values():
+                c.stop()
 
     def next(self):
         with self._lock:
