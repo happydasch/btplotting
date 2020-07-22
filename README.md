@@ -1,24 +1,42 @@
 # btplotting
 
-Library to add extended plotting capabilities to `backtrader` (<https://www.backtrader.com/>).
+Library to add extended plotting capabilities to `backtrader` (<https://www.backtrader.com/>) using bokeh.
 
 btplotting is a fork based on the awesome `backtrader_plotting` (<https://github.com/verybadsoldier/backtrader_plotting>)
 
-Since most of the inner workings are updated this fork may not
+Since most of the inner workings are changed, this fork may not
 work correctly for you. Please use `backtrader_plotting` instead.
 
-**This fork has some changes compared to backtrader_plotting:**
+**What is different:**
+
+Basic:
 
 * No need for custom backtrader
 * Different naming / structure
-* Live plotting is done using an analyzer
-* Navigation in live client (Pausing, Backward, Forward)
-* Log panel to also include logging information
-* Different data generation which allows to generate data for different datadomains. This is
-  useful when replaying data, to remove gaps when using multiple data sources.
+* Different data generation which allows to generate data for different data sources. This is
+  useful when replaying or resampling data, for example to remove gaps.
+* Support for replay data
 * Every figure has its own ColumnDataSource, so the live client can patch without having issues
-  with nan values
+  with nan values, every figure is updated individually
+* Display of plots looks more like backtrader plotting (order, heights, etc.)
+
+Plotting:
+
+* Datas, Indicators, Observer and Volume have own aspect ratios
+* Only one axis for volume will be added when using multiple data sources on one figure
+* Volume axis position is configureable
+
+Tabs:
+
+* Default tabs can be completely removed
+* New log panel to also include logging information
 * Can be extended with custom tabs (for example order execution with live client, custom analysis, etc.)
+
+Live plotting:
+
+* Navigation in live client (Pause, Backward, Forward)
+* Live plotting is done using an analyzer
+* Live plotting data update works in a single thread and is done by a DataHandler
 
 ## Features
 
@@ -28,11 +46,11 @@ work correctly for you. Please use `backtrader_plotting` instead.
 * Different skinnable themes
 * Easy to use
 
-Needs Python >= 3.6.
+Python >= 3.6 is required.
 
 ## Demos
 
-https://happydasch.github.io/btplotting/
+<https://happydasch.github.io/btplotting/>
 
 ## Installation
 
