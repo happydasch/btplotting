@@ -59,10 +59,9 @@ class LiveDataHandler:
                 preserveidx=True)
             if self._datastore.shape[0] > 0:
                 self._last_idx = self._datastore['index'].iloc[-1]
-            # init figurepage and figure cds by calling set_data_from_df
-            # after this, all cds will already contain data, so no need
-            # to push adds
-            self._figurepage.set_data_from_df(self._datastore)
+            # init by calling set_cds_columns_from_df
+            # after this, all cds will already contain data
+            self._figurepage.set_cds_columns_from_df(self._datastore)
 
     @gen.coroutine
     def _cb_push_adds(self):

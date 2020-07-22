@@ -11,13 +11,13 @@ from bokeh.plotting import figure
 from bokeh.models import HoverTool, CrosshairTool
 from bokeh.models import LinearAxis, DataRange1d
 from bokeh.models.formatters import NumeralTickFormatter
-from bokeh.models import ColumnDataSource, FuncTickFormatter, \
-    DatetimeTickFormatter, CustomJS
+from bokeh.models import CustomJS, FuncTickFormatter, \
+    DatetimeTickFormatter
 
+from .abstract import CDSObject
 from .utils import get_source_id
 from .helper.label import datatarget2label, obj2label
-from .helper.bokeh import convert_color, sanitize_source_name, \
-    set_cds_columns_from_df
+from .helper.bokeh import convert_color, sanitize_source_name
 from .helper.marker import get_marker_info
 
 
@@ -138,7 +138,7 @@ class HoverContainer(metaclass=bt.MetaParams):
                 break
 
 
-class FigurePage(object):
+class FigurePage(CDSObject):
 
     '''
     FigurePage represents a strategy or optimization result
@@ -147,8 +147,7 @@ class FigurePage(object):
     def __init__(self, obj):
         # columns the FigurePage is using
         # set to None for all, currently only datetime is used
-        self.cds_cols = ['datetime']
-        self.cds = ColumnDataSource()
+        super(FigurePage, self).__init__(['datetime'])
         self.figures = []
         self.analyzers = []
         self.strategy = obj if isinstance(obj, bt.Strategy) else None
@@ -156,18 +155,18 @@ class FigurePage(object):
         # the whole generated model will we attached here after plotting
         self.model = None
 
-    def set_data_from_df(self, df):
-        set_cds_columns_from_df(df, self.cds, self.cds_cols)
+    def set_cds_columns_from_df(self, df):
+        super(FigurePage, self).set_cds_columns_from_df(df)
         for f in self.figures:
-            f.set_data_from_df(df)
+            f.set_cds_columns_from_df(df)
 
     def reset(self):
-        self.cds = ColumnDataSource()
+        self.cds_reset()
         self.figures = []
         self.analyzers = []
 
 
-class Figure(object):
+class Figure(CDSObject):
 
     '''
     Figure represents a figure plotted with bokeh
@@ -176,9 +175,10 @@ class Figure(object):
     single figure.
     The Figure is configured by calling plot()
     After the Figure is configured, it is required to fill the figure at
-    least once with a DataFrame using set_data_from_df. After this, the
-    ColumnDataSource is ready for use.
+    least once with a DataFrame using set_cds_columns_from_df. After this,
+    the CDSObject is ready for use.
 
+    backtrader plotting options:
     https://www.backtrader.com/docu/plotting/plotting/
     '''
 
@@ -196,7 +196,7 @@ class Figure(object):
 
     def __init__(self, cds, hoverc, scheme, master, slaves,
                  plotorder, is_multidata, type=None):
-
+        super(Figure, self).__init__([])
         self._scheme = scheme
         self._hover_line_set = False
         self._hover = None
@@ -205,8 +205,6 @@ class Figure(object):
         self._is_multidata = is_multidata
         self._type = type
         self._page_cds = cds
-        self.cds_cols = []
-        self.cds = ColumnDataSource()
         self.figure = None
         self.master = master
         self.slaves = slaves
@@ -387,7 +385,7 @@ class Figure(object):
 
         for lineidx, line in enumerate(obj.lines):
             source_id = get_source_id(line)
-            self.cds_cols.append(source_id)
+            self.set_cds_col(source_id)
             linealias = obj.lines._getlinealias(lineidx)
 
             lineplotinfo = getattr(obj.plotlines, '_%d' % lineidx, None)
@@ -416,7 +414,7 @@ class Figure(object):
             # or only the ind/obs as a whole
             label = indlabel
             if obj.size() > 1 and plotinfo.plotlinelabels:
-                label += ' ' + (lineplotinfo._get('_name', '_name')
+                label += ' ' + (lineplotinfo._get('_name', None)
                                 or linealias)
             kwglyphs['legend_label'] = label
 
@@ -515,13 +513,6 @@ class Figure(object):
             return FigureType.get_type(self.master)
         return self._type
 
-    def set_data_from_df(self, df):
-        '''
-        Sets data from DataFrame
-        Columns will be added if not existing
-        '''
-        set_cds_columns_from_df(df, self.cds, self.cds_cols)
-
     def plot(self, obj):
         '''
         Common plot method
@@ -551,10 +542,11 @@ class Figure(object):
         Plot method for data
         '''
         source_id = get_source_id(data)
-        self.cds_cols += [source_id + x for x in [
-            'open', 'high', 'low', 'close',
-            'colors_bars', 'colors_wicks',
-            'colors_outline']]
+        self.set_cds_col(
+            [source_id + x for x in [
+             'open', 'high', 'low', 'close',
+             'colors_bars', 'colors_wicks',
+             'colors_outline']])
 
         title = sanitize_source_name(datatarget2label([data]))
         if self._scheme.plot_title:
@@ -629,7 +621,7 @@ class Figure(object):
         extra_axis: displays a second axis (for overlay on data plotting)
         '''
         source_id = get_source_id(data)
-        self.cds_cols += [source_id + x for x in ['volume', 'colors_volume']]
+        self.set_cds_col([source_id + x for x in ['volume', 'colors_volume']])
 
         kwargs = {'fill_alpha': alpha,
                   'line_alpha': alpha,

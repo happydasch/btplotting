@@ -125,7 +125,7 @@ class ClockHandler:
                 if sc == c:
                     # store current value and remember source clock
                     # position for next iteration (c_idx)
-                    if v != v and sc_prev:
+                    if llist[sc_idx] != llist[sc_idx] and sc_prev:
                         v = llist[idx_prev]
                     else:
                         v = llist[sc_idx]

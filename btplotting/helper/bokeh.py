@@ -129,41 +129,6 @@ def generate_stylesheet(scheme, template='basic.css.j2'):
     return css
 
 
-def set_cds_columns_from_df(df, cds, columns=None, dropna=True):
-    '''
-    Sets the ColumnDataSource columns based on the given DataFrame using
-    the given columns. Only the given columns will be added, all will be
-    added if columns=None
-    '''
-    if columns is None:
-        columns = list(df.columns)
-    c_df = df.loc[:, columns]
-    # remove empty rows
-    if dropna:
-        c_df = c_df.dropna(how='all')
-    # use text nan for nan values
-    c_df.fillna('NaN')
-    # add all columns and values
-    for c in c_df:
-        if c in ['index', 'datetime']:
-            continue
-        if c in cds.column_names:
-            cds.remove(c)
-        cds.add(np.array(c_df.loc[:, c]), c)
-    # ensure cds contains index
-    if 'index' in cds.column_names:
-        cds.remove('index')
-    cds.add(
-        np.array(df.loc[c_df.index, 'index'], dtype=np.int64),
-        'index')
-    # ensure cds contains corresponding datetime entries
-    if 'datetime' in cds.column_names:
-        cds.remove('datetime')
-    cds.add(
-        np.array(df.loc[c_df.index, 'datetime'], dtype=np.datetime64),
-        'datetime')
-
-
 def get_streamdata_from_df(df, columns=None):
     '''
     Creates stream data from a pandas DataFrame
