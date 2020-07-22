@@ -17,7 +17,7 @@ class ConfigTab(BacktraderPlottingTab):
         self.scheme = app.p.scheme
 
     def _is_useable(self):
-        return (self.client is not None)
+        return (self._client is not None)
 
     def _on_button_save_config(self):
         # update scheme with new aspect ratios
@@ -26,7 +26,7 @@ class ConfigTab(BacktraderPlottingTab):
         self.scheme.vol_aspectratio = self.sld_vol_ar.value
         self.scheme.ind_aspectratio = self.sld_ind_ar.value
         # apply new aspect ratios
-        for f in self.figurepage.figures:
+        for f in self._figurepage.figures:
             ftype = f.get_type()
             if ftype == FigureType.OBS:
                 f.figure.aspect_ratio = self.sld_obs_ar.value

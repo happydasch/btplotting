@@ -23,7 +23,7 @@ from jinja2 import Environment, PackageLoader
 from .schemes import Scheme, Blackly
 
 from .utils import get_dataname, get_datanames, get_source_id, \
-    filter_by_dataname, get_indicator_data
+    filter_by_dataname, get_indicator_data, get_last_avail_idx
 from .figure import FigurePage, FigureType, Figure, HoverContainer
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
@@ -316,6 +316,24 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             f.write(html)
 
         return filename
+
+    def get_last_idx(self, figid=0):
+        '''
+        Returns the last index of figurepage data
+        '''
+        fp = self.get_figurepage(figid)
+        datanames = []
+        for f in fp.figures:
+            dataname = get_dataname(f.master)
+            if dataname not in datanames:
+                datanames.append(dataname)
+            for s in f.slaves:
+                dataname = get_dataname(s)
+                if dataname not in datanames:
+                    datanames.append(dataname)
+        return get_last_avail_idx(
+            fp.strategy,
+            datanames[0] if len(datanames) > 0 else False)
 
     def create_figurepage(self, obj, figid=0, start=None, end=None,
                           dataname=False, filldata=True):

@@ -11,10 +11,10 @@ class BacktraderPlottingTab:
     '''
 
     def __init__(self, app, figurepage, client=None):
-        self.app = app
-        self.figurepage = figurepage
-        self.client = client
-        self.panel = None
+        self._app = app
+        self._figurepage = figurepage
+        self._client = client
+        self._panel = None
 
     def _is_useable(self):
         raise Exception('_is_useable needs to be implemented.')
@@ -33,5 +33,5 @@ class BacktraderPlottingTab:
         Returns the panel to show as a tab
         '''
         child, title = self._get_panel()
-        self.panel = Panel(child=child, title=title)
-        return self.panel
+        self._panel = Panel(child=child, title=title)
+        return self._panel

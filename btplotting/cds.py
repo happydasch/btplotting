@@ -38,10 +38,13 @@ class CDSObject:
         the given columns. Only the given columns will be added, all will be
         added if columns=None
         '''
-        if len(self._cds_cols) > 0:
-            c_df = df.loc[:, self._cds_cols]
-        else:
-            c_df = df.loc[:, df.columns]
+        try:
+            if len(self._cds_cols) > 0:
+                c_df = df.loc[:, self._cds_cols]
+            else:
+                c_df = df.loc[:, df.columns]
+        except Exception:
+            return None
         # remove empty rows
         if dropna:
             c_df = c_df.dropna(how='all')
@@ -71,10 +74,13 @@ class CDSObject:
         '''
         Creates stream data from a pandas DataFrame
         '''
-        if len(self._cds_cols) > 0:
-            c_df = df.loc[:, self._cds_cols]
-        else:
-            c_df = df.loc[:, df.columns]
+        try:
+            if len(self._cds_cols) > 0:
+                c_df = df.loc[:, self._cds_cols]
+            else:
+                c_df = df.loc[:, df.columns]
+        except Exception:
+            return None
         # use text NaN for nan values
         c_df.fillna('NaN')
         # ensure c_df contains index
@@ -89,10 +95,6 @@ class CDSObject:
         '''
         Creates patch data from a pandas Series
         '''
-        if len(self._cds_cols) > 0:
-            columns = list(self._cds_cols)
-        else:
-            columns = list(df.columns)
         p_data = defaultdict(list)
         s_data = defaultdict(list)
         idx_map = {d: idx for idx, d in enumerate(self._cds.data['index'])}
@@ -103,7 +105,9 @@ class CDSObject:
             idx = False
         # create patch or stream data based on given series
         if idx is not False:
-            for c in columns:
+            for c in series.axes[0]:
+                if c not in self._cds.data:
+                    continue
                 val = series[c]
                 cds_val = self._cds.data[c][idx]
                 if (val == val and val != cds_val):

@@ -6,7 +6,7 @@ from bokeh.models import Select, Spacer, Tabs, Button
 
 from .datahandler import LiveDataHandler
 from ..tabs import ConfigTab
-from ..utils import get_last_avail_idx, get_datanames
+from ..utils import get_datanames
 
 _logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ class LiveClient:
     NAV_BUTTON_WIDTH = 38
 
     def __init__(self, doc, app, strategy, lookback):
+        self._app = app
         self._strategy = strategy
         self._lookback = lookback
         self._refresh_fnc = None
@@ -27,16 +28,16 @@ class LiveClient:
         self._paused = False
         self._figurepage = None
         self._dataname = False
+        # bokeh document for client
         self.doc = doc
-        self.app = app
         # model is the root model for bokeh and will be set in baseapp
         self.model = None
 
         # append config tab if default tabs should be added
-        if self.app.p.use_default_tabs:
-            self.app.p.tabs.append(ConfigTab)
+        if self._app.p.use_default_tabs:
+            self._app.p.tabs.append(ConfigTab)
         # create figurepage
-        self._figid, self._figurepage = self.app.create_figurepage(
+        self._figid, self._figurepage = self._app.create_figurepage(
             self._strategy, filldata=False)
         # create model
         self.model, self._refresh_fnc = self._createmodel()
@@ -47,6 +48,9 @@ class LiveClient:
 
         def on_select_dataname(self, a, old, new):
             _logger.debug(f'Switching data {new}...')
+            # ensure datahandler is stopped
+            self._datahandler.stop()
+            # switch to new data source
             self._dataname = new
             self.doc.hold()
             self._updatemodel()
@@ -80,7 +84,7 @@ class LiveClient:
 
         def update_nav_buttons(self):
             last_idx = self._datahandler.get_last_idx()
-            last_avail_idx = get_last_avail_idx(self._strategy, self._dataname)
+            last_avail_idx = self._app.get_last_idx(self._figid)
 
             if last_idx < self._lookback:
                 btn_nav_prev.disabled = True
@@ -129,7 +133,9 @@ class LiveClient:
                       btn_nav_next,
                       btn_nav_next_big])
         # tabs
-        tabs = Tabs(id='tabs', sizing_mode=self.app.p.scheme.plot_sizing_mode)
+        tabs = Tabs(
+            id='tabs',
+            sizing_mode=self._app.p.scheme.plot_sizing_mode)
         # model
         model = layout(
             [
@@ -145,10 +151,10 @@ class LiveClient:
         return model, partial(refresh, self)
 
     def _updatemodel(self):
-        self.app.update_figurepage(dataname=self._dataname)
-        panels = self.app.generate_model_panels()
-        for t in self.app.p.tabs:
-            tab = t(self.app, self._figurepage, self)
+        self._app.update_figurepage(dataname=self._dataname)
+        panels = self._app.generate_model_panels()
+        for t in self._app.p.tabs:
+            tab = t(self._app, self._figurepage, self)
             if tab.is_useable():
                 panels.append(tab.get_panel())
 
@@ -160,7 +166,7 @@ class LiveClient:
             self._datahandler.stop()
         self._datahandler = LiveDataHandler(
             self.doc,
-            self.app,
+            self._app,
             self._figid,
             self._lookback)
 
@@ -180,12 +186,12 @@ class LiveClient:
         # if a index is provided, ensure that index is within data range
         if idx:
             # don't allow idx to be bigger than max idx
-            last_avail_idx = get_last_avail_idx(self._strategy, self._dataname)
+            last_avail_idx = self._app.get_last_idx(self._figid)
             idx = min(idx, last_avail_idx)
             # don't allow idx to be smaller than lookback - 1
             idx = max(idx, self._lookback - 1)
         # create DataFrame based on last index with length of lookback
-        df = self.app.generate_data(
+        df = self._app.generate_data(
             figid=self._figid,
             end=idx,
             back=self._lookback,

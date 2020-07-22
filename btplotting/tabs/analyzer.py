@@ -11,18 +11,18 @@ class AnalyzerTab(BacktraderPlottingTab):
         self.content = None
 
     def _is_useable(self):
-        return len(self.figurepage.analyzers) > 0
+        return len(self._figurepage.analyzers) > 0
 
     def _get_analyzer_info(self):
-        tablegen = AnalysisTableGenerator(self.app.p.scheme)
+        tablegen = AnalysisTableGenerator(self._app.p.scheme)
         acolumns = []
-        for analyzer in self.figurepage.analyzers:
+        for analyzer in self._figurepage.analyzers:
             table_header, elements = tablegen.get_tables(analyzer)
             if table_header and elements:
                 acolumns.append(column([table_header] + elements))
         info = gridplot(
             acolumns,
-            ncols=self.app.p.scheme.analyzer_tab_num_cols,
+            ncols=self._app.p.scheme.analyzer_tab_num_cols,
             sizing_mode='stretch_width',
             toolbar_options={'logo': None})
         return info
@@ -36,7 +36,7 @@ class AnalyzerTab(BacktraderPlottingTab):
             text='Available Analyzer Results',
             css_classes=['panel-title'])
         title_area.append(row([title], width_policy='min'))
-        if self.client:
+        if self._client:
             btn_refresh = Button(label='Refresh', width_policy='min')
             btn_refresh.on_click(self._on_update_analyzer_info)
             title_area.append(Spacer())

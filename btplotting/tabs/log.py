@@ -16,43 +16,43 @@ class CDSHandler(logging.Handler):
 
     def __init__(self, level=logging.NOTSET):
         super(CDSHandler, self).__init__(level)
-        self._messages = []
-        self._idx = {}
-        self._cds = {}
-        self._cb = {}
+        self.messages = []
+        self.idx = {}
+        self.cds = {}
+        self.cb = {}
 
     def emit(self, record):
         message = record.message
-        self._messages.append(message)
-        for doc in self._cds:
+        self.messages.append(message)
+        for doc in self.cds:
             try:
-                doc.remove_next_tick_callback(self._cb[doc])
+                doc.remove_next_tick_callback(self.cb[doc])
             except ValueError:
                 pass
-            self._cb[doc] = doc.add_next_tick_callback(
+            self.cb[doc] = doc.add_next_tick_callback(
                 partial(self._stream_to_cds, doc))
 
     def get_cds(self, doc):
-        if doc not in self._cds:
-            self._cds[doc] = ColumnDataSource(
-                data=dict(message=self._messages.copy()))
-            self._cb[doc] = None
-            self._idx[doc] = len(self._messages) - 1
-            self._cds[doc].selected.indices = [self._idx[doc]]
-        return self._cds[doc]
+        if doc not in self.cds:
+            self.cds[doc] = ColumnDataSource(
+                data=dict(message=self.messages.copy()))
+            self.cb[doc] = None
+            self.idx[doc] = len(self.messages) - 1
+            self.cds[doc].selected.indices = [self.idx[doc]]
+        return self.cds[doc]
 
     @gen.coroutine
     def _stream_to_cds(self, doc):
-        messages = self._messages[self._idx[doc] + 1:]
+        messages = self.messages[self.idx[doc] + 1:]
         if not len(messages):
             return
-        self._idx[doc] = len(self._messages) - 1
-        self._cds[doc].stream({'message': messages})
+        self.idx[doc] = len(self.messages) - 1
+        self.cds[doc].stream({'message': messages})
         # move only to last if there is a selected row
         # when no row is selected, then don't move to new
         # row
-        if len(self._cds[doc].selected.indices) > 0:
-            self._cds[doc].selected.indices = [self._idx[doc]]
+        if len(self.cds[doc].selected.indices) > 0:
+            self.cds[doc].selected.indices = [self.idx[doc]]
 
 
 class CDSFilter(logging.Filter):
@@ -92,8 +92,8 @@ class LogTab(BacktraderPlottingTab):
 
         if handler is None:
             init_log_tab([])
-        if self.client is not None:
-            doc = self.client.doc
+        if self._client is not None:
+            doc = self._client.doc
         else:
             doc = curdoc()
 

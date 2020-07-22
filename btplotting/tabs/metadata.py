@@ -100,10 +100,10 @@ class MetadataTab(BacktraderPlottingTab):
         return acolumns
 
     def _get_metadata_info(self):
-        acolumns = self._get_metadata_columns(self.figurepage.strategy)
+        acolumns = self._get_metadata_columns(self._figurepage.strategy)
         info = gridplot(
             acolumns,
-            ncols=self.app.p.scheme.metadata_tab_num_cols,
+            ncols=self._app.p.scheme.metadata_tab_num_cols,
             sizing_mode='stretch_width',
             toolbar_options={'logo': None})
         return info
@@ -117,7 +117,7 @@ class MetadataTab(BacktraderPlottingTab):
             text='Strategy Metadata Overview',
             css_classes=['panel-title'])
         title_area.append(row([title], width_policy='min'))
-        if self.client:
+        if self._client:
             btn_refresh = Button(label='Refresh', width_policy='min')
             btn_refresh.on_click(self._on_update_metadata_info)
             title_area.append(Spacer())

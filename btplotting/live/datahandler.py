@@ -78,15 +78,17 @@ class LiveDataHandler:
         # create stream data for figurepage
         data = fp.get_cds_streamdata_from_df(update_df)
         _logger.debug(f'Sending stream for figurepage: {data}')
-        fp.cds.stream(
-            data, self._get_data_stream_length())
+        if data:
+            fp.cds.stream(
+                data, self._get_data_stream_length())
 
         # create stream df for every figure
         for f in fp.figures:
             data = f.get_cds_streamdata_from_df(update_df)
             _logger.debug(f'Sending stream for figure: {data}')
-            f.cds.stream(
-                data, self._get_data_stream_length())
+            if data:
+                f.cds.stream(
+                    data, self._get_data_stream_length())
 
     @gen.coroutine
     def _cb_push_patches(self):
@@ -175,9 +177,19 @@ class LiveDataHandler:
         '''
         while self._running:
             if self._new_data:
-                data = self._app.generate_data(
-                    start=self._last_idx,
-                    preserveidx=True)
+                last_avail_idx = self._app.get_last_idx(self._figid)
+                if last_avail_idx - self._last_idx > self._lookback:
+                    # if there is more new data then lookback length
+                    # don't load from last index but from end of data
+                    data = self._app.generate_data(
+                        back=self._lookback,
+                        preserveidx=True)
+                else:
+                    # if there is just some new data (less then lookback)
+                    # load from last index, so no data is skipped
+                    data = self._app.generate_data(
+                        start=self._last_idx,
+                        preserveidx=True)
                 self._new_data = False
                 self._process(data)
             time.sleep(self._timeout)
