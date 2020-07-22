@@ -375,12 +375,9 @@ class Figure(CDSObject):
         self.figure.title.text += title
 
     def _plot_indicator_observer(self, obj):
-        pl = obj2label(obj, True)
         if self._scheme.plot_title:
-            self._figure_append_title(pl)
-            indlabel = obj2label(obj)
-        else:
-            indlabel = pl
+            self._figure_append_title(obj2label(obj, True))
+        indlabel = obj2label(obj)
         plotinfo = obj.plotinfo
 
         for lineidx, line in enumerate(obj.lines):

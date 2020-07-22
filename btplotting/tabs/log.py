@@ -12,6 +12,20 @@ handler = None
 logger = logging.getLogger(__name__)
 
 
+def init_log_tab(names, level=logging.NOTSET):
+    logging.basicConfig(level=level)
+    global handler
+    if handler is None:
+        handler = CDSHandler(level=level)
+        handler.addFilter(CDSFilter(names))
+        logging.getLogger().addHandler(handler)
+
+
+def is_log_tab_initialized():
+    global handler
+    return handler is not None
+
+
 class CDSHandler(logging.Handler):
 
     def __init__(self, level=logging.NOTSET):
@@ -43,10 +57,11 @@ class CDSHandler(logging.Handler):
 
     @gen.coroutine
     def _stream_to_cds(self, doc):
-        messages = self.messages[self.idx[doc] + 1:]
+        last = len(self.messages) - 1
+        messages = self.messages[self.idx[doc] + 1:last + 1]
         if not len(messages):
             return
-        self.idx[doc] = len(self.messages) - 1
+        self.idx[doc] = last
         self.cds[doc].stream({'message': messages})
         # move only to last if there is a selected row
         # when no row is selected, then don't move to new
@@ -66,20 +81,6 @@ class CDSFilter(logging.Filter):
         if name in self.logger or len(self.logger) == 0:
             return True
         return False
-
-
-def init_log_tab(names, level=logging.NOTSET):
-    logging.basicConfig(level=level)
-    global handler
-    if handler is None:
-        handler = CDSHandler(level=level)
-        handler.addFilter(CDSFilter(names))
-        logging.getLogger().addHandler(handler)
-
-
-def is_log_tab_initialized():
-    global handler
-    return handler is not None
 
 
 class LogTab(BacktraderPlottingTab):

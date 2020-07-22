@@ -14,7 +14,7 @@ from ..tab import BacktraderPlottingTab
 class MetadataTab(BacktraderPlottingTab):
 
     def __init__(self, app, figurepage, client=None):
-        super(MetadataTab, self).__init__(app, figurepage, client=client)
+        super(MetadataTab, self).__init__(app, figurepage, client)
         self.content = None
 
     def _is_useable(self):

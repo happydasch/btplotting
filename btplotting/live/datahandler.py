@@ -167,8 +167,7 @@ class LiveDataHandler:
                 # append data and remove old data
                 with self._lock:
                     self._datastore = self._datastore.append(row)
-                    self._datastore = self._datastore.tail(
-                        self._get_data_stream_length())
+                    self._datastore = self._datastore.tail(self._lookback)
                 self._push_adds()
 
     def _t_thread(self):

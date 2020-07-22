@@ -7,7 +7,7 @@ from ..tab import BacktraderPlottingTab
 class AnalyzerTab(BacktraderPlottingTab):
 
     def __init__(self, app, figurepage, client=None):
-        super(AnalyzerTab, self).__init__(app, figurepage, client=client)
+        super(AnalyzerTab, self).__init__(app, figurepage, client)
         self.content = None
 
     def _is_useable(self):

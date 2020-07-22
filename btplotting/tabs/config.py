@@ -8,7 +8,7 @@ from ..tab import BacktraderPlottingTab
 class ConfigTab(BacktraderPlottingTab):
 
     def __init__(self, app, figurepage, client=None):
-        super(ConfigTab, self).__init__(app, figurepage, client=client)
+        super(ConfigTab, self).__init__(app, figurepage, client)
         self.content = None
         self.sld_obs_ar = None
         self.sld_data_ar = None
