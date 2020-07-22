@@ -67,17 +67,27 @@ class LivePlotAnalyzer(bt.Analyzer):
         return client.model
 
     def start(self):
+        '''
+        Start from backtrader
+        '''
         _logger.debug('Starting PlotListener...')
         t = threading.Thread(target=self._t_server)
         t.daemon = True
         t.start()
 
     def stop(self):
+        '''
+        Stop from backtrader
+        '''
+        _logger.debug('Stopping PlotListener...')
         with self._lock:
             for c in self._clients.values():
                 c.stop()
 
     def next(self):
+        '''
+        Next from backtrader, new data arrives
+        '''
         with self._lock:
             for c in self._clients.values():
                 c.next()
