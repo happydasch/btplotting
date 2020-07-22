@@ -23,14 +23,16 @@ class CDSObject:
         return self._cds_cols
 
     def set_cds_col(self, col):
-        if isinstance(col, list):
-            for c in col:
+        '''
+        Sets ColumnDataSource columns to use
+        '''
+        if not isinstance(col, list):
+            col = list(col)
+        for c in col:
+            if isinstance(c, str) and c not in self._cds_cols:
                 self._cds_cols.append(c)
-        elif isinstance(col, str):
-            if col not in self._cds_cols:
-                self._cds_cols.append(col)
-        else:
-            raise Exception("Unsupported col provided")
+            else:
+                raise Exception("Unsupported col provided")
 
     def set_cds_columns_from_df(self, df, dropna=True):
         '''
@@ -124,6 +126,9 @@ class CDSObject:
         return p_data, s_data
 
     def cds_reset(self):
+        '''
+        Resets the ColumnDataSource and other config to default
+        '''
         self._cds = ColumnDataSource()
         self._cds_cols = []
         self.set_cds_col(self._cds_cols_default)

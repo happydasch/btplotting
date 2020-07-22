@@ -197,26 +197,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return data_graph, volume_graph
 
-    def _test(self, figid=0):
-        fp = self.get_figurepage(figid)
-        strategy = fp.strategy
-        from libs.btplotting.utils import get_dataname, get_clock_obj
-        objs = list(itertools.chain(strategy.datas,
-                                    strategy.getindicators(),
-                                    strategy.getobservers()))
-        for o in objs:
-            if not isinstance(o, (bt.AbstractDataBase, bt.IndicatorBase, bt.ObserverBase)):
-                continue
-            print('OBJ', obj2label(o), get_dataname(o),
-                  get_clock_obj(o))
-            if hasattr(o, 'data'):
-                print('HAS DATA', get_clock_obj(o.data))
-
     def _blueprint_strategy(self, figid=0, dataname=False):
         fp = self.get_figurepage(figid)
         strategy = fp.strategy
         scheme = self.p.scheme
-        self._test(figid)
         fp.reset()
         fp.analyzers += [
             a for _, a in strategy.analyzers.getitems()]
