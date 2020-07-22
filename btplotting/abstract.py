@@ -7,6 +7,7 @@ class CDSObject:
 
     def __init__(self, cols=[]):
         self._cds_cols = []
+        self._cds_cols_default = cols
         self._cds = ColumnDataSource()
         self.set_cds_col(cols)
 
@@ -63,3 +64,4 @@ class CDSObject:
     def cds_reset(self):
         self._cds = ColumnDataSource()
         self._cds_cols = []
+        self.set_cds_col(self._cds_cols_default)
