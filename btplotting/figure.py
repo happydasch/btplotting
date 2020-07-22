@@ -14,7 +14,7 @@ from bokeh.models.formatters import NumeralTickFormatter
 from bokeh.models import CustomJS, FuncTickFormatter, \
     DatetimeTickFormatter
 
-from .abstract import CDSObject
+from .cds import CDSObject
 from .utils import get_source_id
 from .helper.label import datatarget2label, obj2label
 from .helper.bokeh import convert_color, sanitize_source_name

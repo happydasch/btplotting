@@ -12,7 +12,6 @@ from ..webapp import Webapp
 from ..schemes import Blackly
 from ..live.client import LiveClient
 
-
 _logger = logging.getLogger(__name__)
 
 

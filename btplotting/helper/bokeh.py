@@ -1,12 +1,7 @@
 from jinja2 import Environment, PackageLoader
 
-from collections import defaultdict
-
 import matplotlib.colors
-import numpy as np
 import pandas as pd
-
-from bokeh.models import ColumnDataSource
 
 
 def convert_color(color):
@@ -45,22 +40,22 @@ def build_color_lines(df, scheme, col_open='open', col_close='close',
 
     color_df = pd.DataFrame(index=df.index)
     color_df[col_prefix + 'colors_bars'] = [
-        np.nan if n != n
+        float('nan') if n != n
         else colorup if x
         else colordown
         for x, n in zip(is_up, nan_ref)]
     color_df[col_prefix + 'colors_wicks'] = [
-        np.nan if n != n
+        float('nan') if n != n
         else colorup_wick if x
         else colordown_wick
         for x, n in zip(is_up, nan_ref)]
     color_df[col_prefix + 'colors_outline'] = [
-        np.nan if n != n
+        float('nan') if n != n
         else colorup_outline if x
         else colordown_outline
         for x, n in zip(is_up, nan_ref)]
     color_df[col_prefix + 'colors_volume'] = [
-        np.nan if n != n
+        float('nan') if n != n
         else volup if x
         else voldown
         for x, n in zip(is_up, nan_ref)]
@@ -127,55 +122,6 @@ def generate_stylesheet(scheme, template='basic.css.j2'):
         headline_color=scheme.plot_title_text_color,
         text_color=scheme.text_color))
     return css
-
-
-def get_streamdata_from_df(df, columns=None):
-    '''
-    Creates stream data from a pandas DataFrame
-    '''
-    if columns is None:
-        columns = list(df.columns)
-    c_df = df.loc[:, columns]
-    # use text NaN for nan values
-    c_df.fillna('NaN')
-    # ensure c_df contains index
-    if 'index' not in c_df.columns:
-        c_df.index = df.loc[c_df.index, 'index']
-    # ensure c_df contains corresponding datetime entries
-    if 'datetime' not in c_df.columns:
-        c_df['datetime'] = df.loc[c_df.index, 'datetime']
-    return ColumnDataSource.from_df(c_df)
-
-
-def get_patchdata_from_series(series, cds, columns=None):
-    '''
-    Creates patch data from a pandas Series
-    '''
-    p_data = defaultdict(list)
-    s_data = defaultdict(list)
-    idx_map = {d: idx for idx, d in enumerate(cds.data['index'])}
-    # get the index in cds for series index
-    if series['index'] in idx_map:
-        idx = idx_map[series['index']]
-    else:
-        idx = False
-    # create patch or stream data based on given series
-    if idx is not False:
-        for c in columns:
-            val = series[c]
-            cds_val = cds.data[c][idx]
-            if (val == val and val != cds_val):
-                p_data[c].append((idx, val))
-        # ensure datetime is always patched
-        if 'datetime' not in p_data:
-            p_data['datetime'].append((idx, series['datetime']))
-    else:
-        # add all columns to stream result. This may be needed if a value
-        # was nan and therefore not added before
-        for c in cds.column_names:
-            val = series[c] if not pd.isna(series[c]) else 'NaN'
-            s_data[c].append(val)
-    return p_data, s_data
 
 
 def get_plotmaster(obj):

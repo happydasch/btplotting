@@ -4,8 +4,6 @@ from enum import Enum
 from threading import Thread, Lock
 from tornado import gen
 
-from ..helper.bokeh import get_streamdata_from_df, get_patchdata_from_series
-
 _logger = logging.getLogger(__name__)
 
 
@@ -20,7 +18,7 @@ class LiveDataHandler:
     Handler for live data
     '''
 
-    def __init__(self, doc, app, figid, lookback, timeout=0.5):
+    def __init__(self, doc, app, figid, lookback, timeout=1):
         # doc of client
         self._doc = doc
         # app instance
@@ -78,16 +76,14 @@ class LiveDataHandler:
 
         fp = self._figurepage
         # create stream data for figurepage
-        data = get_streamdata_from_df(
-            update_df,
-            fp.cds_cols)
+        data = fp.get_cds_streamdata_from_df(update_df)
         _logger.debug(f'Sending stream for figurepage: {data}')
         fp.cds.stream(
             data, self._get_data_stream_length())
 
         # create stream df for every figure
         for f in fp.figures:
-            data = get_streamdata_from_df(update_df, f.cds_cols)
+            data = f.get_cds_streamdata_from_df(update_df)
             _logger.debug(f'Sending stream for figure: {data}')
             f.cds.stream(
                 data, self._get_data_stream_length())
@@ -109,8 +105,7 @@ class LiveDataHandler:
             fp = self._figurepage
 
             # patch figurepage
-            p_data, s_data = get_patchdata_from_series(
-                patch, fp.cds, fp.cds_cols)
+            p_data, s_data = fp.get_cds_patchdata_from_series(patch)
             if len(p_data) > 0:
                 _logger.debug(f'Sending patch for figurepage: {p_data}')
                 fp.cds.patch(p_data)
@@ -121,8 +116,7 @@ class LiveDataHandler:
 
             # patch all figures
             for f in fp.figures:
-                p_data, s_data = get_patchdata_from_series(
-                    patch, f.cds, f.cds_cols)
+                p_data, s_data = f.get_cds_patchdata_from_series(patch)
                 if len(p_data) > 0:
                     _logger.debug(f'Sending patch for figure: {p_data}')
                     f.cds.patch(p_data)
