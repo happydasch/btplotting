@@ -129,7 +129,7 @@ class PlotScheme(object):
         self.subtxtsize = 9
 
         # Transparency for the legend
-        self.legendtrans = 0.5
+        self.legendtrans = 0.66
         # Wether indicators have a leged displaey in their charts
         self.legendind = True
         # Location of the legend for indicators (see matplotlib)

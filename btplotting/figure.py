@@ -2,6 +2,7 @@ import collections
 import itertools
 import pkgutil
 
+from functools import partial
 from enum import Enum
 
 import backtrader as bt
@@ -304,6 +305,9 @@ class Figure(CDSObject):
         return convert_color(self._scheme.color(self._coloridx[key]))
 
     def _init_figure(self):
+        '''
+        Initializes the figure
+        '''
         ftype = self.get_type()
         if ftype == FigureType.IND:
             aspectratio = self._scheme.ind_aspectratio
@@ -401,7 +405,9 @@ class Figure(CDSObject):
         self.figure = f
 
     def _figure_append_title(self, title):
-        # append to title
+        '''
+        Appends a title to figure
+        '''
         if len(self.figure.title.text) > 0:
             self.figure.title.text += ' | '
         self.figure.title.text += title
@@ -410,16 +416,19 @@ class Figure(CDSObject):
         '''
         Appends renderer to figure and updates the hover renderer
         '''
-        kwargs['source'] = self.cds
+        if 'source' not in kwargs:
+            kwargs['source'] = self.cds
+        elif kwargs['source'] is None:
+            del kwargs['source']
         renderer = func(**kwargs)
 
         # add renderer to y_range
         if 'y_range_name' in kwargs:
-            ax = self.figure.select_one({'y_range_name': kwargs['y_range_name']})
-            if not isinstance(ax.renderers, list):
-                ax.renderers = [renderer]
+            range = self.figure.extra_y_ranges[kwargs['y_range_name']]
+            if isinstance(range.renderers, list):
+                range.renderers = [renderer]
             else:
-                ax.renderers.append(renderer)
+                range.renderers.append(renderer)
         else:
             # if no y_range id provided, use default y_range
             if not isinstance(self.figure.y_range.renderers, list):
@@ -590,6 +599,9 @@ class Figure(CDSObject):
         self._plot_hlines(obj)
 
     def _set_yticks(self, obj):
+        '''
+        Plots ticks on y axis
+        '''
         yticks = obj.plotinfo._get('plotyticks', [])
         if not yticks:
             yticks = obj.plotinfo._get('plotyhlines', [])
@@ -597,6 +609,9 @@ class Figure(CDSObject):
             self.figure.yaxis.ticker = yticks
 
     def _plot_hlines(self, obj):
+        '''
+        Plots horizontal lines on figure
+        '''
         hlines = obj.plotinfo._get('plothlines', [])
         if not hlines:
             hlines = obj.plotinfo._get('plotyhlines', [])
@@ -650,10 +665,35 @@ class Figure(CDSObject):
         '''
         source_id = get_source_id(data)
         self.set_cds_col(
-            [source_id + x for x in [
-             'open', 'high', 'low', 'close',
-             'colors_bars', 'colors_wicks',
-             'colors_outline']])
+            [source_id + x for x in ['open', 'high', 'low', 'close']])
+        # create color columns
+        colorup = convert_color(self._scheme.barup)
+        colordown = convert_color(self._scheme.bardown)
+        self.set_cds_col((
+            source_id + 'colors_bars',
+            source_id + 'open',
+            source_id + 'close',
+            partial(self._cds_op_color,
+                    color_up=colorup,
+                    color_down=colordown)))
+        colorup_wick = convert_color(self._scheme.barup_wick)
+        colordown_wick = convert_color(self._scheme.bardown_wick)
+        self.set_cds_col((
+            source_id + 'colors_wicks',
+            source_id + 'open',
+            source_id + 'close',
+            partial(self._cds_op_color,
+                    color_up=colorup_wick,
+                    color_down=colordown_wick)))
+        colorup_outline = convert_color(self._scheme.barup_outline)
+        colordown_outline = convert_color(self._scheme.bardown_outline)
+        self.set_cds_col((
+            source_id + 'colors_outline',
+            source_id + 'open',
+            source_id + 'close',
+            partial(self._cds_op_color,
+                    color_up=colorup_outline,
+                    color_down=colordown_outline)))
 
         title = sanitize_source_name(datatarget2label([data]))
         if self._scheme.plot_title:
@@ -725,8 +765,19 @@ class Figure(CDSObject):
         extra_axis: displays a second axis (for overlay on data plotting)
         '''
         source_id = get_source_id(data)
-        self.set_cds_col([source_id + x for x in ['volume', 'colors_volume']])
+        self.set_cds_col(source_id + 'volume')
+        # create color columns
+        volup = convert_color(self._scheme.volup)
+        voldown = convert_color(self._scheme.voldown)
+        self.set_cds_col((
+            source_id + 'colors_volume',
+            source_id + 'open',
+            source_id + 'close',
+            partial(self._cds_op_color,
+                    color_up=volup,
+                    color_down=voldown)))
 
+        # prepare bar kwargs
         kwargs = {
             'x': 'index',
             'width': self._bar_width,
@@ -747,13 +798,14 @@ class Figure(CDSObject):
             ax_color = convert_color(self._scheme.volup)
             # use only one additional axis to prevent multiple axis being added
             # to a single figure
-            ax = self.figure.select_one({'y_range_name': source_data_axis})
+            ax = self.figure.select_one({'name': source_data_axis})
             if ax is None:
                 # create new axis if not already available
                 self.figure.extra_y_ranges = {source_data_axis: DataRange1d(
                     range_padding=1.0 / self._scheme.volscaling,
                     start=0)}
                 ax = LinearAxis(
+                    name=source_data_axis,
                     y_range_name=source_data_axis,
                     formatter=ax_formatter,
                     axis_label_text_color=ax_color,

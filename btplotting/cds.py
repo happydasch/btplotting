@@ -61,6 +61,16 @@ class CDSObject:
         '''
         return b
 
+    def _cds_op_color(self, a, b, color_up, color_down):
+        '''
+        Operator for color generation
+        will return a column with colors
+        '''
+        c_up = np.full(len(a), color_up)
+        c_down = np.full(len(a), color_down)
+        res = np.where(b >= a, c_up, c_down)
+        return res
+
     def _get_cds_cols(self):
         '''
         Returns all set columns

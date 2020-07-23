@@ -17,56 +17,6 @@ def convert_color(color):
         return matplotlib.colors.to_hex(color)
 
 
-def build_color_lines(df, scheme, col_open='open', col_close='close',
-                      col_prefix=''):
-    '''
-    Creates columns with color infos for given DataFrame
-    '''
-    # build color strings from scheme
-    colorup = convert_color(scheme.barup)
-    colordown = convert_color(scheme.bardown)
-    colorup_wick = convert_color(scheme.barup_wick)
-    colordown_wick = convert_color(scheme.bardown_wick)
-    colorup_outline = convert_color(scheme.barup_outline)
-    colordown_outline = convert_color(scheme.bardown_outline)
-    volup = convert_color(scheme.volup)
-    voldown = convert_color(scheme.voldown)
-
-    # build binary series determining if up or down bar
-    is_up: pd.DataFrame = df[col_close] >= df[col_open]
-
-    # we use the open-line as a indicator for NaN values
-    nan_ref = df[col_open]
-
-    color_df = pd.DataFrame(index=df.index)
-    color_df[col_prefix + 'colors_bars'] = [
-        float('nan') if n != n
-        else colorup if x
-        else colordown
-        for x, n in zip(is_up, nan_ref)]
-    color_df[col_prefix + 'colors_wicks'] = [
-        float('nan') if n != n
-        else colorup_wick if x
-        else colordown_wick
-        for x, n in zip(is_up, nan_ref)]
-    color_df[col_prefix + 'colors_outline'] = [
-        float('nan') if n != n
-        else colorup_outline if x
-        else colordown_outline
-        for x, n in zip(is_up, nan_ref)]
-    color_df[col_prefix + 'colors_volume'] = [
-        float('nan') if n != n
-        else volup if x
-        else voldown
-        for x, n in zip(is_up, nan_ref)]
-
-    # convert to object since we want to hold str and NaN
-    for c in color_df.columns:
-        color_df[c] = color_df[c].astype(object)
-
-    return color_df
-
-
 def sanitize_source_name(name: str):
     '''
     removes illegal characters from source name to make it
@@ -76,27 +26,6 @@ def sanitize_source_name(name: str):
     for fc in forbidden_chars:
         name = name.replace(fc, '_')
     return name
-
-
-def adapt_yranges(y_range, data, padding_factor=200.0):
-    nnan_data = [x for x in data if not x != x]
-    dmin = min(nnan_data, default=None)
-    dmax = max(nnan_data, default=None)
-
-    if dmin is None or dmax is None:
-        return
-
-    diff = ((dmax - dmin) or dmin) * padding_factor
-    dmin -= diff
-    dmax += diff
-
-    if y_range.start is not None:
-        dmin = min(dmin, y_range.start)
-    y_range.start = dmin
-
-    if y_range.end is not None:
-        dmax = max(dmax, y_range.end)
-    y_range.end = dmax
 
 
 def generate_stylesheet(scheme, template='basic.css.j2'):

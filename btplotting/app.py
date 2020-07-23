@@ -27,8 +27,7 @@ from .utils import get_dataname, get_datanames, get_source_id, \
 from .figure import FigurePage, FigureType, Figure
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
-from .helper.bokeh import generate_stylesheet, build_color_lines, \
-    get_plotmaster
+from .helper.bokeh import generate_stylesheet, get_plotmaster
 from .tab import BacktraderPlottingTab
 from .tabs import AnalyzerTab, MetadataTab, LogTab
 
@@ -510,14 +509,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     source_id = get_source_id(obj)
                     df_data = tmpclk.get_df_from_series(
                         obj, clkidx, source_id, ['datetime'])
-                    df_colors = build_color_lines(
-                        df_data,
-                        self.p.scheme,
-                        col_open=source_id + 'open',
-                        col_close=source_id + 'close',
-                        col_prefix=source_id)
                     df = df.join(df_data)
-                    df = df.join(df_colors)
                 else:
                     for lineidx, line in enumerate(obj.lines):
                         source_id = get_source_id(line)
