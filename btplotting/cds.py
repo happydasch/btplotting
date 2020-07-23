@@ -9,8 +9,7 @@ from bokeh.models import ColumnDataSource
 class CDSObject:
 
     '''
-    Base class for FigurePage and Figure
-    this will add ColumnDataSource support.
+    Base class for FigurePage and Figure with ColumnDataSource support
     also alows to create custom columns which are not available in
     provided data.
     It will create data for stream, patch and set up the columns

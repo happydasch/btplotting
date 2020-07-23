@@ -281,7 +281,6 @@ class Figure(CDSObject):
         '''
         if self._hover_line_set:
             return
-
         self._hover.renderers = [renderer]
         self._hover_line_set = True
 
@@ -292,7 +291,6 @@ class Figure(CDSObject):
         '''
         if self._hover_line_set:
             return
-
         if isinstance(self._hover.renderers, list):
             self._hover.renderers.append(renderer)
         else:
@@ -402,37 +400,44 @@ class Figure(CDSObject):
         # set figure
         self.figure = f
 
-    def _set_yticks(self, obj):
-        yticks = obj.plotinfo._get('plotyticks', [])
-        if not yticks:
-            yticks = obj.plotinfo._get('plotyhlines', [])
-
-        if yticks:
-            self.figure.yaxis.ticker = yticks
-
-    def _plot_hlines(self, obj):
-        hlines = obj.plotinfo._get('plothlines', [])
-        if not hlines:
-            hlines = obj.plotinfo._get('plotyhlines', [])
-
-        # Horizontal Lines
-        hline_color = convert_color(self._scheme.hlinescolor)
-        for hline in hlines:
-            span = Span(location=hline,
-                        dimension='width',
-                        line_color=hline_color,
-                        line_dash=self._style_mpl2bokeh[
-                            self._scheme.hlinesstyle],
-                        line_width=self._scheme.hlineswidth)
-            self.figure.renderers.append(span)
-
     def _figure_append_title(self, title):
         # append to title
         if len(self.figure.title.text) > 0:
             self.figure.title.text += ' | '
         self.figure.title.text += title
 
+    def _figure_append_renderer(self, func, marker=False, **kwargs):
+        '''
+        Appends renderer to figure and updates the hover renderer
+        '''
+        kwargs['source'] = self.cds
+        renderer = func(**kwargs)
+
+        # add renderer to y_range
+        if 'y_range_name' in kwargs:
+            ax = self.figure.select_one({'y_range_name': kwargs['y_range_name']})
+            if not isinstance(ax.renderers, list):
+                ax.renderers = [renderer]
+            else:
+                ax.renderers.append(renderer)
+        else:
+            # if no y_range id provided, use default y_range
+            if not isinstance(self.figure.y_range.renderers, list):
+                self.figure.y_range.renderers = [renderer]
+            else:
+                self.figure.y_range.renderers.append(renderer)
+
+        # for markers add additional renderer so hover pops up for all
+        # of them (this will only apply if no line renderer is set)
+        if marker:
+            self._add_hover_renderer(renderer)
+        else:
+            self._set_single_hover_renderer(renderer)
+
     def _plot_indicator_observer(self, obj):
+        '''
+        Common method to plot observer and indicator lines
+        '''
         if self._scheme.plot_title:
             self._figure_append_title(obj2label(obj, True))
         indlabel = obj2label(obj)
@@ -443,19 +448,20 @@ class Figure(CDSObject):
             self.set_cds_col(source_id)
             linealias = obj.lines._getlinealias(lineidx)
 
+            # get plotinfo
             lineplotinfo = getattr(obj.plotlines, '_%d' % lineidx, None)
             if not lineplotinfo:
                 lineplotinfo = getattr(obj.plotlines, linealias, None)
-
             if not lineplotinfo:
                 lineplotinfo = bt.AutoInfoClass()
-
             if lineplotinfo._get('_plotskip', False):
                 continue
 
+            # check if marker and get method to plot line
             marker = lineplotinfo._get('marker', None)
             method = lineplotinfo._get('_method', 'line')
 
+            # get a color
             color = getattr(lineplotinfo, 'color', None)
             if color is None:
                 if not lineplotinfo._get('_samecolor', False):
@@ -463,15 +469,15 @@ class Figure(CDSObject):
                 color = self._color()
             color = convert_color(color)
 
-            kwglyphs = {'name': linealias}
-
+            # prepare glyph args
+            kwglyph = {'x': 'index', 'name': linealias}
             # either all individual lines of are displayed in the legend
             # or only the ind/obs as a whole
             label = indlabel
             if obj.size() > 1 and plotinfo.plotlinelabels:
                 label += ' ' + (lineplotinfo._get('_name', None)
                                 or linealias)
-            kwglyphs['legend_label'] = label
+            kwglyph['legend_label'] = label
 
             if marker is not None:
                 fnc_name, attrs, vals, updates = get_marker_info(marker)
@@ -487,7 +493,7 @@ class Figure(CDSObject):
                             + f' "{marker}". Please report to GitHub.')
                         return
                 # set kwglyph values
-                kwglyphs['y'] = source_id
+                kwglyph['y'] = source_id
                 for v in attrs:
                     val = None
                     if v in ['color', 'fill_color', 'text_color']:
@@ -499,39 +505,38 @@ class Figure(CDSObject):
                     elif v in ['text']:
                         val = {'value': marker[1:-1]}
                     if val is not None:
-                        kwglyphs[v] = val
+                        kwglyph[v] = val
                 for v in vals:
                     val = vals[v]
-                    kwglyphs[v] = val
+                    kwglyph[v] = val
                 for u in updates:
                     val = updates[u]
-                    if u in kwglyphs:
-                        kwglyphs[u] = max(
-                            1, kwglyphs[u] + val)
+                    if u in kwglyph:
+                        kwglyph[u] = max(
+                            1, kwglyph[u] + val)
                     else:
                         raise Exception(
                             f'{u} for {marker} is not set but needs to be set')
                 glyph_fnc = getattr(self.figure, fnc_name)
             elif method == 'bar':
-                kwglyphs['bottom'] = 0
-                kwglyphs['line_color'] = color
-                kwglyphs['fill_color'] = color
-                kwglyphs['width'] = self._bar_width
-                kwglyphs['top'] = source_id
-
+                kwglyph['level'] = 'underlay'
+                kwglyph['top'] = source_id
+                kwglyph['bottom'] = 0
+                kwglyph['line_color'] = color
+                kwglyph['fill_color'] = color
+                kwglyph['width'] = self._bar_width
                 glyph_fnc = self.figure.vbar
             elif method == 'line':
-                kwglyphs['line_width'] = 1
-                kwglyphs['color'] = color
-                kwglyphs['y'] = source_id
-
+                kwglyph['level'] = 'underlay'
+                kwglyph['line_width'] = 1
+                kwglyph['color'] = color
+                kwglyph['y'] = source_id
                 linestyle = getattr(lineplotinfo, 'ls', None)
                 if linestyle is not None:
-                    kwglyphs['line_dash'] = self._style_mpl2bokeh[linestyle]
+                    kwglyph['line_dash'] = self._style_mpl2bokeh[linestyle]
                 linewidth = getattr(lineplotinfo, 'lw', None)
                 if linewidth is not None:
-                    kwglyphs['line_width'] = linewidth
-
+                    kwglyph['line_width'] = linewidth
                 glyph_fnc = self.figure.line
 
                 # check for fill_between
@@ -558,35 +563,24 @@ class Figure(CDSObject):
                         if isinstance(fcolor, tuple):
                             fcolor, falpha = fcolor
                         fcolor = convert_color(fcolor)
-                        # create area
-                        renderer = self.figure.varea(
-                            x='index',
-                            y1=source_id,
-                            y2=col_name,
-                            fill_alpha=falpha,
-                            color=fcolor,
-                            legend_label=label,
-                            source=self.cds)
-                        self.figure.y_range.renderers.append(renderer)
+                        # create varea
+                        kwargs = {
+                            'x': 'index',
+                            'y1': source_id,
+                            'y2': col_name,
+                            'fill_alpha': falpha,
+                            'color': fcolor,
+                            'legend_label': label,
+                            'level': 'underlay'}
+                        self._figure_append_renderer(
+                            self.figure.varea, **kwargs)
             else:
                 raise Exception(f'Unknown plotting method "{method}"')
 
             # append renderer
-            renderer = glyph_fnc('index', source=self.cds, **kwglyphs)
-
-            # make sure the regular y-axis only scales to the normal
-            # data (data + ind/obs) on 1st axis (not to e.g. volume
-            # data on 2nd axis)
-            self.figure.y_range.renderers.append(renderer)
-
-            # for markers add additional renderer so hover pops up for all
-            # of them
-            if marker is None:
-                self._set_single_hover_renderer(renderer)
-            else:
-                self._add_hover_renderer(renderer)
-
-            # we need no suffix if there is just one line in the indicator
+            self._figure_append_renderer(
+                glyph_fnc, marker=(marker is not None), **kwglyph)
+            # set hover label
             hover_label_suffix = f' - {linealias}' if obj.size() > 1 else ''
             hover_label = indlabel + hover_label_suffix
             hover_data = f'@{source_id}{{{self._scheme.number_format}}}'
@@ -594,6 +588,29 @@ class Figure(CDSObject):
 
         self._set_yticks(obj)
         self._plot_hlines(obj)
+
+    def _set_yticks(self, obj):
+        yticks = obj.plotinfo._get('plotyticks', [])
+        if not yticks:
+            yticks = obj.plotinfo._get('plotyhlines', [])
+        if yticks:
+            self.figure.yaxis.ticker = yticks
+
+    def _plot_hlines(self, obj):
+        hlines = obj.plotinfo._get('plothlines', [])
+        if not hlines:
+            hlines = obj.plotinfo._get('plotyhlines', [])
+        # Horizontal Lines
+        hline_color = convert_color(self._scheme.hlinescolor)
+        for hline in hlines:
+            span = Span(location=hline,
+                        dimension='width',
+                        line_color=hline_color,
+                        line_dash=self._style_mpl2bokeh[
+                            self._scheme.hlinesstyle],
+                        line_width=self._scheme.hlineswidth,
+                        level='underlay')
+            self.figure.renderers.append(span)
 
     def get_type(self):
         '''
@@ -648,37 +665,38 @@ class Figure(CDSObject):
             else:
                 self._nextcolor(data.plotinfo.plotmaster)
                 color = convert_color(self._color(data.plotinfo.plotmaster))
-
-            renderer = self.figure.line(
-                'index',
-                source_id + 'close',
-                source=self.cds,
-                line_color=color,
-                legend_label=title)
-            self._set_single_hover_renderer(renderer)
-
+            kwargs = {
+                'x': 'index',
+                'y': source_id + 'close',
+                'line_color': color,
+                'legend_label': title
+            }
+            # append renderer
+            self._figure_append_renderer(self.figure.line, **kwargs)
+            # set hover label
             self._fp.hover.add_hovertip('Close', f'@{source_id}close', data)
         elif self._scheme.style in ['bar', 'candle']:
-            self.figure.segment(
-                'index',
-                source_id + 'high',
-                'index',
-                source_id + 'low',
-                source=self.cds,
-                color=source_id + 'colors_wicks',
-                legend_label=title)
-            renderer = self.figure.vbar(
-                'index',
-                self._bar_width,
-                source_id + 'open',
-                source_id + 'close',
-                source=self.cds,
-                fill_color=source_id + 'colors_bars',
-                line_color=source_id + 'colors_outline',
-                legend_label=title)
-
-            self._set_single_hover_renderer(renderer)
-
+            kwargs_seg = {
+                'x0': 'index',
+                'y0': source_id + 'high',
+                'x1': 'index',
+                'y1': source_id + 'low',
+                'color': source_id + 'colors_wicks',
+                'legend_label': title
+            }
+            kwargs_vbar = {
+                'x': 'index',
+                'width': self._bar_width,
+                'top': source_id + 'open',
+                'bottom': source_id + 'close',
+                'fill_color': source_id + 'colors_bars',
+                'line_color': source_id + 'colors_outline',
+                'legend_label': title
+            }
+            # append renderer
+            self._figure_append_renderer(self.figure.segment, **kwargs_seg)
+            self._figure_append_renderer(self.figure.vbar, **kwargs_vbar)
+            # set hover label
             self._fp.hover.add_hovertip(
                 'Open',
                 f'@{source_id}open{{{self._scheme.number_format}}}',
@@ -698,10 +716,6 @@ class Figure(CDSObject):
         else:
             raise Exception(f'Unsupported style "{self._scheme.style}"')
 
-        # make sure the regular y-axis only scales to the normal data
-        # on 1st axis (not to e.g. volume data on 2nd axis)
-        self.figure.y_range.renderers = [renderer]
-
         if self._scheme.volume and self._scheme.voloverlay:
             self.plot_volume(data, self._scheme.voltrans, True)
 
@@ -713,28 +727,33 @@ class Figure(CDSObject):
         source_id = get_source_id(data)
         self.set_cds_col([source_id + x for x in ['volume', 'colors_volume']])
 
-        kwargs = {'fill_alpha': alpha,
-                  'line_alpha': alpha,
-                  'name': 'Volume',
-                  'legend_label': 'Volume'}
+        kwargs = {
+            'x': 'index',
+            'width': self._bar_width,
+            'top': source_id + 'volume',
+            'bottom': 0,
+            'fill_color': source_id + 'colors_volume',
+            'line_color': source_id + 'colors_volume',
+            'fill_alpha': alpha,
+            'line_alpha': alpha,
+            'name': 'Volume',
+            'legend_label': 'Volume'}
 
+        # set axis
         ax_formatter = NumeralTickFormatter(format=self._scheme.number_format)
-
         if extra_axis:
             source_data_axis = 'axvol'
-
-            self.figure.extra_y_ranges = {source_data_axis: DataRange1d(
-                range_padding=1.0 / self._scheme.volscaling,
-                start=0)}
-
             # use colorup
             ax_color = convert_color(self._scheme.volup)
-
-            # use only one additional axis
-            ax = self.figure.select_one({'id': 'axvol'})
+            # use only one additional axis to prevent multiple axis being added
+            # to a single figure
+            ax = self.figure.select_one({'y_range_name': source_data_axis})
             if ax is None:
+                # create new axis if not already available
+                self.figure.extra_y_ranges = {source_data_axis: DataRange1d(
+                    range_padding=1.0 / self._scheme.volscaling,
+                    start=0)}
                 ax = LinearAxis(
-                    id='axvol',
                     y_range_name=source_data_axis,
                     formatter=ax_formatter,
                     axis_label_text_color=ax_color,
@@ -747,20 +766,9 @@ class Figure(CDSObject):
         else:
             self.figure.yaxis.formatter = ax_formatter
 
-        vbars = self.figure.vbar(
-            'index',
-            self._bar_width,
-            f'{source_id}volume',
-            0,
-            source=self.cds,
-            fill_color=f'{source_id}colors_volume',
-            line_color=f'{source_id}colors_volume',
-            **kwargs)
-
-        # make sure the new axis only auto-scales to the volume data
-        if extra_axis:
-            self.figure.extra_y_ranges['axvol'].renderers = [vbars]
-
+        # append renderer
+        self._figure_append_renderer(self.figure.vbar, **kwargs)
+        # set hover label
         self._fp.hover.add_hovertip(
             'Volume',
             f'@{source_id}volume{{({self._scheme.number_format})}}',
