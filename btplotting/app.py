@@ -24,7 +24,7 @@ from .schemes import Scheme, Blackly
 
 from .utils import get_dataname, get_datanames, get_source_id, \
     filter_by_dataname, get_indicator_data, get_last_avail_idx
-from .figure import FigurePage, FigureType, Figure, HoverContainer
+from .figure import FigurePage, FigureType, Figure
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
 from .helper.bokeh import generate_stylesheet, build_color_lines, \
@@ -200,54 +200,31 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def _blueprint_strategy(self, figid=0, dataname=False):
         fp = self.get_figurepage(figid)
         strategy = fp.strategy
-        scheme = self.p.scheme
         fp.reset()
         fp.analyzers += [
             a for _, a in strategy.analyzers.getitems()]
 
         data_graph, volume_graph = self._build_graph(figid, dataname)
 
-        # reset hover container to not mix hovers with other strategies
-        hoverc = HoverContainer(
-            hover_tooltip_config=scheme.hover_tooltip_config,
-            is_multidata=len(strategy.datas) > 1)
-
-        # set the cds for figurepage which contains all data
-        cds = fp.cds
-
+        # create figures
         strat_figures = []
         for master, slaves in data_graph.items():
             plotorder = getattr(master.plotinfo, 'plotorder', 0)
             figure = Figure(
-                cds=cds,
-                hoverc=hoverc,
-                scheme=scheme,
+                fp=fp,
                 master=master,
                 slaves=slaves,
                 plotorder=plotorder,
                 is_multidata=len(strategy.datas) > 1)
-
             figure.plot(master)
-
             for s in slaves:
                 figure.plot(s)
+            figure.apply()
             strat_figures.append(figure)
-
-        # apply legend configuration to figures
-        for f in strat_figures:
-            legend = f.figure.legend
-            legend.click_policy = scheme.legend_click
-            legend.location = scheme.legend_location
-            legend.background_fill_color = scheme.legend_background_color
-            legend.label_text_color = scheme.legend_text_color
-            legend.orientation = scheme.legend_orientation
 
         # link axis
         for i in range(1, len(strat_figures)):
             strat_figures[i].figure.x_range = strat_figures[0].figure.x_range
-
-        # apply hover tooltips
-        hoverc.apply_hovertips(strat_figures)
 
         # add figures to figurepage
         fp.figures += strat_figures
@@ -256,17 +233,19 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         for v in volume_graph:
             plotorder = getattr(v.plotinfo, 'plotorder', 0)
             figure = Figure(
-                strategy=strategy,
-                cds=cds,
-                hoverc=hoverc,
-                scheme=self.p.scheme,
+                fp=fp,
                 master=v,
                 slaves=[],
                 plotorder=plotorder,
                 is_multidata=len(strategy.datas) > 1,
                 type=FigureType.VOL)
             figure.plot_volume(v)
+            figure.apply()
             fp.figures.append(figure)
+
+        # apply all figurepage related functionality after all figures
+        # are set
+        fp.apply()
 
     def _blueprint_optreturn(self, figid=0):
         fp = self.get_figurepage(figid)
@@ -325,7 +304,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Creates new FigurePage for given obj.
         The obj can be either an instance of bt.Strategy or bt.OptReturn
         '''
-        fp = FigurePage(obj)
+        fp = FigurePage(obj, self.p.scheme)
         if figid in self._figurepages:
             raise Exception(f'FigurePage with figid "{figid}" already exists')
         self._figurepages[figid] = fp

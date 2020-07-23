@@ -133,7 +133,6 @@ class HoverContainer(metaclass=bt.MetaParams):
             for t in f.figure.tools:
                 if not isinstance(t, HoverTool):
                     continue
-
                 self._apply_to_figure(f, t)
                 break
 
@@ -144,26 +143,78 @@ class FigurePage(CDSObject):
     FigurePage represents a strategy or optimization result
     '''
 
-    def __init__(self, obj):
+    def __init__(self, obj, scheme):
         # columns the FigurePage is using
         # set to None for all, currently only datetime is used
         super(FigurePage, self).__init__(['datetime'])
+        self.scheme = scheme
         self.figures = []
         self.analyzers = []
         self.strategy = obj if isinstance(obj, bt.Strategy) else None
         self.optreturn = obj if isinstance(obj, bt.OptReturn) else None
         # the whole generated model will we attached here after plotting
         self.model = None
+        # add hover container if strategy
+        self.hover = None
+        self._set_hover_container()
+
+    def _set_hover_container(self):
+        '''
+        Sets a new HoverContainer if a strategy is available
+        '''
+        if self.strategy is not None:
+            self.hover = HoverContainer(
+                hover_tooltip_config=self.scheme.hover_tooltip_config,
+                is_multidata=len(self.strategy.datas) > 1)
+        else:
+            self.hover = None
+
+    def _set_linked_crosshairs(self, figures):
+        '''
+        Link crosshairs across all figures
+        '''
+        js_leave = ''
+        js_move = 'if(cross.spans.height.location){\n'
+        for i in range(len(figures) - 1):
+            js_move += '\t\t\tother%d.spans.height.location = cb_obj.sx\n' % i
+        js_move += '}else{\n'
+        for i in range(len(figures) - 1):
+            js_move += '\t\t\tother%d.spans.height.location = null\n' % i
+            js_leave += '\t\t\tother%d.spans.height.location = null\n' % i
+        js_move += '}'
+        crosses = [CrosshairTool() for fig in figures]
+        for i, fig in enumerate(figures):
+            fig.figure.add_tools(crosses[i])
+            args = {'fig': fig.figure, 'cross': crosses[i]}
+            k = 0
+            for j in range(len(figures)):
+                if i != j:
+                    args['other%d' % k] = crosses[j]
+                    k += 1
+            fig.figure.js_on_event('mousemove', CustomJS(args=args, code=js_move))
+            fig.figure.js_on_event('mouseleave', CustomJS(args=args, code=js_leave))
 
     def set_cds_columns_from_df(self, df):
         super(FigurePage, self).set_cds_columns_from_df(df)
         for f in self.figures:
             f.set_cds_columns_from_df(df)
 
+    def apply(self):
+        '''
+        Apply additional configuration after all figures are set
+        '''
+        if self.hover:
+            self.hover.apply_hovertips(self.figures)
+        self._set_linked_crosshairs(self.figures)
+
     def reset(self):
+        '''
+        Resets the FigurePage
+        '''
         self.cds_reset()
         self.figures = []
         self.analyzers = []
+        self._set_hover_container()
 
 
 class Figure(CDSObject):
@@ -194,17 +245,17 @@ class Figure(CDSObject):
 
     _bar_width = 0.5
 
-    def __init__(self, cds, hoverc, scheme, master, slaves,
-                 plotorder, is_multidata, type=None):
+    def __init__(self, fp, master, slaves, plotorder, is_multidata, type=None):
         super(Figure, self).__init__([])
-        self._scheme = scheme
+        self._fp = fp
+        self._scheme = fp.scheme
+        self._hoverc = fp.hover
+        self._page_cds = fp.cds
         self._hover_line_set = False
         self._hover = None
-        self._hoverc = hoverc
         self._coloridx = collections.defaultdict(lambda: -1)
         self._is_multidata = is_multidata
         self._type = type
-        self._page_cds = cds
         self.figure = None
         self.master = master
         self.slaves = slaves
@@ -323,9 +374,6 @@ class Figure(CDSObject):
             ),
             code=formatter_code)
 
-        ch = CrosshairTool(line_color=self._scheme.crosshair_line_color)
-        f.tools.append(ch)
-
         hover_code = pkgutil.get_data(
             __name__,
             'templates/js/hover_tooltips.js').decode()
@@ -339,9 +387,9 @@ class Figure(CDSObject):
             args=dict(source=self.cds, hover=h), code=hover_code)
         h.callback = callback
         f.tools.append(h)
-
-        self._cross = ch
         self._hover = h
+
+        # set figure
         self.figure = f
 
     def _set_yticks(self, obj):
@@ -475,6 +523,46 @@ class Figure(CDSObject):
                     kwglyphs['line_width'] = linewidth
 
                 glyph_fnc = self.figure.line
+
+                #
+                '''
+                fill_gt = lineplotinfo._get('_fill_gt', None):
+                fill_lt = lineplotinfo._get('_fill_lt', None):
+                if fill_gt is not None:
+                    src_line = fill_gt[0]
+                    if isinstance(src_col, str):
+                        scr_ref = source_id(getattr(obj, scr_line))
+                    else:
+                        scr_ref = (scr_line, str(scr_line))
+                    self.add_cds_col(src_ref)
+                '''
+                '''
+                farts = (('_gt', operator.gt), ('_lt', operator.lt), ('', None),)
+                for fcmp, fop in farts:
+                    fattr = '_fill' + fcmp
+                    fref, fcol = lineplotinfo._get(fattr, (None, None))
+                    if fref is not None:
+                        y1 = np.array(lplot)
+                        if isinstance(fref, integer_types):
+                            y2 = np.full_like(y1, fref)
+                        else:  # string, naming a line, nothing else is supported
+                            l2 = getattr(ind, fref)
+                            prl2 = l2.plotrange(self.pinf.xstart, self.pinf.xend)
+                            y2 = np.array(prl2)
+                        kwargs = dict()
+                        if fop is not None:
+                            kwargs['where'] = fop(y1, y2)
+
+                        falpha = self.pinf.sch.fillalpha
+                        if isinstance(fcol, (list, tuple)):
+                            fcol, falpha = fcol
+
+                        ax.fill_between(self.pinf.xdata, y1, y2,
+                                        facecolor=fcol,
+                                        alpha=falpha,
+                                        interpolate=True,
+                                        **kwargs)
+                '''
             else:
                 raise Exception(f'Unknown plotting method "{method}"')
 
@@ -684,3 +772,13 @@ class Figure(CDSObject):
         Plot method for indicator
         '''
         self._plot_indicator_observer(obj)
+
+    def apply(self):
+        # apply legend configuration to figure
+        legend = self.figure.legend
+        legend.background_fill_alpha = self._scheme.legendtrans
+        legend.click_policy = self._scheme.legend_click
+        legend.location = self._scheme.legend_location
+        legend.background_fill_color = self._scheme.legend_background_color
+        legend.label_text_color = self._scheme.legend_text_color
+        legend.orientation = self._scheme.legend_orientation

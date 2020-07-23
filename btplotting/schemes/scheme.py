@@ -128,8 +128,8 @@ class PlotScheme(object):
         # Default font text size for labels on the chart
         self.subtxtsize = 9
 
-        # Transparency for the legend (NOT USED CURRENTLY)
-        self.legendtrans = 0.25
+        # Transparency for the legend
+        self.legendtrans = 0.5
         # Wether indicators have a leged displaey in their charts
         self.legendind = True
         # Location of the legend for indicators (see matplotlib)
@@ -190,7 +190,7 @@ class Scheme(PlotScheme):
         self.legend_background_color = '#3C3F41'
         self.legend_text_color = 'lightgrey'
         self.legend_location = 'top_left'
-        self.legend_orientation = 'horizontal'
+        self.legend_orientation = 'vertical'
 
         self.loc = 'lightgray'
         self.background_fill = '#222222'

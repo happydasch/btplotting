@@ -27,7 +27,7 @@ class CDSObject:
         Sets ColumnDataSource columns to use
         '''
         if not isinstance(col, list):
-            col = list(col)
+            col = [col]
         for c in col:
             if isinstance(c, str) and c not in self._cds_cols:
                 self._cds_cols.append(c)
