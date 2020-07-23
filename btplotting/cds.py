@@ -76,10 +76,10 @@ class CDSObject:
         Returns all set columns
         2 lissts will be returned:
         - columns: columns from data source
-        - additional: additional data sources which should be 
+        - additional: additional data sources which should be
           created from data source
         '''
-        columns = []
+        columns = ['datetime']
         additional = []
         for c in self._cds_cols:
             if isinstance(c, str):
