@@ -200,6 +200,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def _blueprint_strategy(self, figid=0, dataname=False):
         fp = self.get_figurepage(figid)
         strategy = fp.strategy
+        scheme = self.p.scheme
         fp.reset()
         fp.analyzers += [
             a for _, a in strategy.analyzers.getitems()]
@@ -212,6 +213,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             plotorder = getattr(master.plotinfo, 'plotorder', 0)
             figure = Figure(
                 fp=fp,
+                scheme=scheme,
                 master=master,
                 slaves=slaves,
                 plotorder=plotorder,
@@ -234,6 +236,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             plotorder = getattr(v.plotinfo, 'plotorder', 0)
             figure = Figure(
                 fp=fp,
+                scheme=scheme,
                 master=v,
                 slaves=[],
                 plotorder=plotorder,
@@ -582,7 +585,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 pass
             else:
                 raise RuntimeError(
-                    f'Invalid parameter "output_mode"'
-                    + ' with value: {self.p.output_mode}')
+                    'Invalid parameter "output_mode"'
+                    + f' with value: {self.p.output_mode}')
 
         self._reset()

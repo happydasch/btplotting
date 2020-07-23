@@ -245,12 +245,10 @@ class Figure(CDSObject):
 
     _bar_width = 0.5
 
-    def __init__(self, fp, master, slaves, plotorder, is_multidata, type=None):
+    def __init__(self, fp, scheme, master, slaves, plotorder, is_multidata, type=None):
         super(Figure, self).__init__([])
         self._fp = fp
-        self._scheme = fp.scheme
-        self._hoverc = fp.hover
-        self._page_cds = fp.cds
+        self._scheme = scheme
         self._hover_line_set = False
         self._hover = None
         self._coloridx = collections.defaultdict(lambda: -1)
@@ -370,7 +368,7 @@ class Figure(CDSObject):
                     days=[self._scheme.axis_tickformat_days],
                     months=[self._scheme.axis_tickformat_months],
                     years=[self._scheme.axis_tickformat_years]),
-                source=self._page_cds,
+                source=self._fp.cds,
             ),
             code=formatter_code)
 
@@ -585,7 +583,7 @@ class Figure(CDSObject):
             hover_label_suffix = f' - {linealias}' if obj.size() > 1 else ''
             hover_label = indlabel + hover_label_suffix
             hover_data = f'@{source_id}{{{self._scheme.number_format}}}'
-            self._hoverc.add_hovertip(hover_label, hover_data, obj)
+            self._fp.hover.add_hovertip(hover_label, hover_data, obj)
 
         self._set_yticks(obj)
         self._plot_hlines(obj)
@@ -652,7 +650,7 @@ class Figure(CDSObject):
                 legend_label=title)
             self._set_single_hover_renderer(renderer)
 
-            self._hoverc.add_hovertip('Close', f'@{source_id}close', data)
+            self._fp.hover.add_hovertip('Close', f'@{source_id}close', data)
         elif self._scheme.style in ['bar', 'candle']:
             self.figure.segment(
                 'index',
@@ -674,19 +672,19 @@ class Figure(CDSObject):
 
             self._set_single_hover_renderer(renderer)
 
-            self._hoverc.add_hovertip(
+            self._fp.hover.add_hovertip(
                 'Open',
                 f'@{source_id}open{{{self._scheme.number_format}}}',
                 data)
-            self._hoverc.add_hovertip(
+            self._fp.hover.add_hovertip(
                 'High',
                 f'@{source_id}high{{{self._scheme.number_format}}}',
                 data)
-            self._hoverc.add_hovertip(
+            self._fp.hover.add_hovertip(
                 'Low',
                 f'@{source_id}low{{{self._scheme.number_format}}}',
                 data)
-            self._hoverc.add_hovertip(
+            self._fp.hover.add_hovertip(
                 'Close',
                 f'@{source_id}close{{{self._scheme.number_format}}}',
                 data)
@@ -756,7 +754,7 @@ class Figure(CDSObject):
         if extra_axis:
             self.figure.extra_y_ranges['axvol'].renderers = [vbars]
 
-        self._hoverc.add_hovertip(
+        self._fp.hover.add_hovertip(
             'Volume',
             f'@{source_id}volume{{({self._scheme.number_format})}}',
             data)

@@ -25,6 +25,7 @@ Plotting:
 * Datas, Indicators, Observer and Volume have own aspect ratios
 * Only one axis for volume will be added when using multiple data sources on one figure
 * Volume axis position is configureable
+* Linked Crosshair across all figures
 
 Tabs:
 
