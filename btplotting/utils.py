@@ -25,7 +25,7 @@ def get_last_avail_idx(strategy, dataname=False):
         data = strategy
     offset = 0
     while True:
-        if data.datetime[-offset] != data.datetime[-offset]:
+        if len(data) > offset and data.datetime[-offset] != data.datetime[-offset]:
             offset += 1
             continue
         break

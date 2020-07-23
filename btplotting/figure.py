@@ -172,6 +172,8 @@ class FigurePage(CDSObject):
     def _set_linked_crosshairs(self, figures):
         '''
         Link crosshairs across all figures
+        src:
+        https://stackoverflow.com/questions/37965669/how-do-i-link-the-crosshairtool-in-bokeh-over-several-plots
         '''
         js_leave = ''
         js_move = 'if(cross.spans.height.location){\n'
@@ -191,10 +193,17 @@ class FigurePage(CDSObject):
                 if i != j:
                     args['other%d' % k] = crosses[j]
                     k += 1
-            fig.figure.js_on_event('mousemove', CustomJS(args=args, code=js_move))
-            fig.figure.js_on_event('mouseleave', CustomJS(args=args, code=js_leave))
+            fig.figure.js_on_event(
+                'mousemove', CustomJS(args=args, code=js_move))
+            fig.figure.js_on_event(
+                'mouseleave', CustomJS(args=args, code=js_leave))
 
     def set_cds_columns_from_df(self, df):
+        '''
+        Setup the FigurePage and Figures from DataFrame
+        Note: this needs to be done at least once to prepare
+        all cds with columns
+        '''
         super(FigurePage, self).set_cds_columns_from_df(df)
         for f in self.figures:
             f.set_cds_columns_from_df(df)
@@ -202,6 +211,7 @@ class FigurePage(CDSObject):
     def apply(self):
         '''
         Apply additional configuration after all figures are set
+        Note: this method will be called from BacktraderPlotting
         '''
         if self.hover:
             self.hover.apply_hovertips(self.figures)
@@ -245,7 +255,8 @@ class Figure(CDSObject):
 
     _bar_width = 0.5
 
-    def __init__(self, fp, scheme, master, slaves, plotorder, is_multidata, type=None):
+    def __init__(self, fp, scheme, master, slaves, plotorder,
+                 is_multidata, type=None):
         super(Figure, self).__init__([])
         self._fp = fp
         self._scheme = scheme
@@ -254,13 +265,14 @@ class Figure(CDSObject):
         self._coloridx = collections.defaultdict(lambda: -1)
         self._is_multidata = is_multidata
         self._type = type
-        self.figure = None
         self.master = master
         self.slaves = slaves
+        self.figure = None
         self.plottab = None
         self.plotorder = plotorder
         # list of all datas that have been plotted to this figure
         self.datas = []
+        # initialize figure with scheme settings
         self._init_figure()
 
     def _set_single_hover_renderer(self, renderer):
@@ -522,45 +534,40 @@ class Figure(CDSObject):
 
                 glyph_fnc = self.figure.line
 
-                #
-                '''
-                fill_gt = lineplotinfo._get('_fill_gt', None):
-                fill_lt = lineplotinfo._get('_fill_lt', None):
-                if fill_gt is not None:
-                    src_line = fill_gt[0]
-                    if isinstance(src_col, str):
-                        scr_ref = source_id(getattr(obj, scr_line))
-                    else:
-                        scr_ref = (scr_line, str(scr_line))
-                    self.add_cds_col(src_ref)
-                '''
-                '''
-                farts = (('_gt', operator.gt), ('_lt', operator.lt), ('', None),)
-                for fcmp, fop in farts:
-                    fattr = '_fill' + fcmp
-                    fref, fcol = lineplotinfo._get(fattr, (None, None))
+                # check for fill_between
+                for ftype, fop in [
+                        ('_gt', self._cds_op_gt),
+                        ('_lt', self._cds_op_lt),
+                        ('', self._cds_op_non)]:
+                    fattr = '_fill' + ftype
+                    fref, fcolor = lineplotinfo._get(fattr, (None, None))
                     if fref is not None:
-                        y1 = np.array(lplot)
-                        if isinstance(fref, integer_types):
-                            y2 = np.full_like(y1, fref)
-                        else:  # string, naming a line, nothing else is supported
-                            l2 = getattr(ind, fref)
-                            prl2 = l2.plotrange(self.pinf.xstart, self.pinf.xend)
-                            y2 = np.array(prl2)
-                        kwargs = dict()
-                        if fop is not None:
-                            kwargs['where'] = fop(y1, y2)
-
-                        falpha = self.pinf.sch.fillalpha
-                        if isinstance(fcol, (list, tuple)):
-                            fcol, falpha = fcol
-
-                        ax.fill_between(self.pinf.xdata, y1, y2,
-                                        facecolor=fcol,
-                                        alpha=falpha,
-                                        interpolate=True,
-                                        **kwargs)
-                '''
+                        # set name for new column
+                        col_name = source_id + ftype
+                        # check if ref is a number or a column
+                        if isinstance(fref, str):
+                            source_id_other = get_source_id(
+                                getattr(obj, fref))
+                        else:
+                            source_id_other = fref
+                        # create new cds column
+                        col = (col_name, source_id, source_id_other, fop)
+                        self.set_cds_col(col)
+                        # set alpha and check color
+                        falpha = self._scheme.fillalpha
+                        if isinstance(fcolor, tuple):
+                            fcolor, falpha = fcolor
+                        fcolor = convert_color(fcolor)
+                        # create area
+                        renderer = self.figure.varea(
+                            x='index',
+                            y1=source_id,
+                            y2=col_name,
+                            fill_alpha=falpha,
+                            color=fcolor,
+                            legend_label=label,
+                            source=self.cds)
+                        self.figure.y_range.renderers.append(renderer)
             else:
                 raise Exception(f'Unknown plotting method "{method}"')
 
@@ -772,6 +779,10 @@ class Figure(CDSObject):
         self._plot_indicator_observer(obj)
 
     def apply(self):
+        '''
+        Apply additional configuration after the figure was plotted
+        Note: this method will be called from BacktraderPlotting
+        '''
         # apply legend configuration to figure
         legend = self.figure.legend
         legend.background_fill_alpha = self._scheme.legendtrans

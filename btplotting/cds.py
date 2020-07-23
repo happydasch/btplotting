@@ -8,6 +8,15 @@ from bokeh.models import ColumnDataSource
 
 class CDSObject:
 
+    '''
+    Base class for FigurePage and Figure
+    this will add ColumnDataSource support.
+    also alows to create custom columns which are not available in
+    provided data.
+    It will create data for stream, patch and set up the columns
+    in ColumnDataSource
+    '''
+
     def __init__(self, cols=[]):
         self._cds_cols = []
         self._cds_cols_default = cols
@@ -16,20 +25,98 @@ class CDSObject:
 
     @property
     def cds(self):
+        '''
+        Property for ColumnDataSource
+        '''
         return self._cds
 
     @property
     def cds_cols(self):
+        '''
+        Property for Columns in ColumnDataSource
+        '''
         return self._cds_cols
+
+    def _cds_op_gt(self, a, b):
+        '''
+        Operator for gt
+        will create a new column with values
+        from b if a > b else a
+        '''
+        res = np.where(a > b, b, a)
+        return res
+
+    def _cds_op_lt(self, a, b):
+        '''
+        Operator for lt
+        will create a new column with values
+        from b if a < b else a
+        '''
+        res = np.where(a < b, b, a)
+        return res
+
+    def _cds_op_non(self, a, b):
+        '''
+        Operator for non
+        will return b as new column
+        '''
+        return b
+
+    def _get_cds_cols(self):
+        '''
+        Returns all set columns
+        2 lissts will be returned:
+        - columns: columns from data source
+        - additional: additional data sources which should be 
+          created from data source
+        '''
+        columns = []
+        additional = []
+        for c in self._cds_cols:
+            if isinstance(c, str):
+                columns.append(c)
+            else:
+                additional.append(c)
+        return columns, additional
+
+    def _create_cds_col_from_df(self, op, df):
+        '''
+        Creates a column from DataFrame
+        op - tuple: [0] - name of column
+                    [1] - source column
+                    [2] - other column or value
+                    [3] - op method
+        '''
+        a = np.array(df[op[1]])
+        if isinstance(op[2], str):
+            b = np.array(df[op[2]])
+        else:
+            b = np.full(df.shape[0], df[op[2]])
+        arr = op[3](a, b)
+        return arr
+
+    def _create_cds_col_from_series(self, op, series):
+        '''
+        Creates a column from Series
+        '''
+        arr = self._create_cds_col_from_df(op, pd.DataFrame([series]))
+        return arr[0]
 
     def set_cds_col(self, col):
         '''
         Sets ColumnDataSource columns to use
+        allowed column types are string, tuple
+        col can contain multiple columns in a list
+        tuples will be used to create a new column from
+        existing columns
         '''
         if not isinstance(col, list):
             col = [col]
         for c in col:
-            if isinstance(c, str) and c not in self._cds_cols:
+            if isinstance(c, str):
+                if c not in self._cds_cols:
+                    self._cds_cols.append(c)
+            elif isinstance(c, tuple) and len(c) == 4:
                 self._cds_cols.append(c)
             else:
                 raise Exception("Unsupported col provided")
@@ -40,11 +127,11 @@ class CDSObject:
         the given columns. Only the given columns will be added, all will be
         added if columns=None
         '''
+        columns, additional = self._get_cds_cols()
+        if not len(columns) > 0:
+            columns = list(df.columns)
         try:
-            if len(self._cds_cols) > 0:
-                c_df = df.loc[:, self._cds_cols]
-            else:
-                c_df = df.loc[:, df.columns]
+            c_df = df.loc[:, columns]
         except Exception:
             return None
         # remove empty rows
@@ -71,16 +158,20 @@ class CDSObject:
         self._cds.add(
             np.array(df.loc[c_df.index, 'datetime'], dtype=np.datetime64),
             'datetime')
+        # add additional columns
+        for a in additional:
+            col = self._create_cds_col_from_df(a, df)
+            self._cds.add(col, a[0])
 
     def get_cds_streamdata_from_df(self, df):
         '''
         Creates stream data from a pandas DataFrame
         '''
+        columns, additional = self._get_cds_cols()
+        if not len(columns) > 0:
+            columns = list(df.columns)
         try:
-            if len(self._cds_cols) > 0:
-                c_df = df.loc[:, self._cds_cols]
-            else:
-                c_df = df.loc[:, df.columns]
+            c_df = df.loc[:, columns]
         except Exception:
             return None
         # use text NaN for nan values
@@ -91,6 +182,10 @@ class CDSObject:
         # ensure c_df contains corresponding datetime entries
         if 'datetime' not in c_df.columns:
             c_df['datetime'] = df.loc[c_df.index, 'datetime']
+        # add additional columns
+        for a in additional:
+            col = self._create_cds_col_from_df(a, df)
+            c_df[a[0]] = col
         return ColumnDataSource.from_df(c_df)
 
     def get_cds_patchdata_from_series(self, series):
@@ -99,6 +194,7 @@ class CDSObject:
         '''
         p_data = defaultdict(list)
         s_data = defaultdict(list)
+        columns, additional = self._get_cds_cols()
         idx_map = {d: idx for idx, d in enumerate(self._cds.data['index'])}
         # get the index in cds for series index
         if series['index'] in idx_map:
@@ -107,22 +203,24 @@ class CDSObject:
             idx = False
         # create patch or stream data based on given series
         if idx is not False:
-            for c in series.axes[0]:
-                if c not in self._cds.data:
+            for c in columns:
+                try:
+                    val = series[c]
+                    cds_val = self._cds.data[c][idx]
+                    if (val == val and val != cds_val):
+                        p_data[c].append((idx, val))
+                except Exception:
                     continue
-                val = series[c]
+            for a in additional:
+                c = a[0]
                 cds_val = self._cds.data[c][idx]
-                if (val == val and val != cds_val):
+                val = self._create_cds_col_from_series(a, series)
+                if cds_val != val:
                     p_data[c].append((idx, val))
-            # ensure datetime is always patched
-            if 'datetime' not in p_data:
-                p_data['datetime'].append((idx, series['datetime']))
         else:
             # add all columns to stream result. This may be needed if a value
             # was nan and therefore not added before
-            for c in self._cds.column_names:
-                val = series[c] if not pd.isna(series[c]) else 'NaN'
-                s_data[c].append(val)
+            s_data = self.get_cds_streamdata_from_df(pd.DataFrame([series]))
         return p_data, s_data
 
     def cds_reset(self):
