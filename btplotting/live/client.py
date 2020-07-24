@@ -25,9 +25,9 @@ class LiveClient:
         self._lookback = lookback
         self._refresh_fnc = None
         self._datahandler = None
-        self._paused = False
         self._figurepage = None
-        self._dataname = False
+        self._paused = False
+        self._filter = ''
         # bokeh document for client
         self.doc = doc
         # model is the root model for bokeh and will be set in baseapp
@@ -46,16 +46,15 @@ class LiveClient:
 
     def _createmodel(self):
 
-        def on_select_dataname(self, a, old, new):
-            _logger.debug(f'Switching data {new}...')
+        def on_select_filter(self, a, old, new):
+            _logger.debug(f'Switching filter to {new}...')
             # ensure datahandler is stopped
             self._datahandler.stop()
-            # switch to new data source
-            self._dataname = new
+            self._filter = new
             self.doc.hold()
             self._updatemodel()
             self.doc.unhold()
-            _logger.debug('Switching data finished')
+            _logger.debug('Switching filter finished')
 
         def on_click_nav_action(self):
             if not self._paused:
@@ -103,15 +102,17 @@ class LiveClient:
             else:
                 btn_nav_action.label = '❙❙'
 
-        # dataname selection
+        # filter selection
         datanames = get_datanames(self._strategy)
-        self._dataname = datanames[0]
-        select_dataname = Select(
-            value=self._dataname,
-            options=datanames)
-        select_dataname.on_change(
+        options = [('', 'Strategy')]
+        for d in datanames:
+            options.append(('D-' + d, f'Data: {d}'))
+        select_filter = Select(
+            value='D-' + datanames[0],
+            options=options)
+        select_filter.on_change(
             'value',
-            partial(on_select_dataname, self))
+            partial(on_select_filter, self))
         # nav
         btn_nav_prev = Button(label='❮', width=self.NAV_BUTTON_WIDTH)
         btn_nav_prev.on_click(partial(on_click_nav_prev, self))
@@ -125,7 +126,7 @@ class LiveClient:
         btn_nav_next_big.on_click(partial(on_click_nav_next, self, 10))
         # layout
         controls = row(
-            children=[select_dataname])
+            children=[select_filter])
         nav = row(
             children=[btn_nav_prev_big,
                       btn_nav_prev,
@@ -151,7 +152,7 @@ class LiveClient:
         return model, partial(refresh, self)
 
     def _updatemodel(self):
-        self._app.update_figurepage(dataname=self._dataname)
+        self._app.update_figurepage(**self._get_filter())
         panels = self._app.generate_model_panels()
         for t in self._app.p.tabs:
             tab = t(self._app, self._figurepage, self)
@@ -172,6 +173,12 @@ class LiveClient:
 
         # refresh model
         self._refresh_fnc()
+
+    def _get_filter(self):
+        res = {}
+        if self._filter.startswith('D-'):
+            res['dataname'] = self._filter[2:]
+        return res
 
     def _pause(self):
         self._paused = True

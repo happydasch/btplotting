@@ -6,7 +6,22 @@ from ..tab import BacktraderPlottingTab
 
 
 class ConfigTab(BacktraderPlottingTab):
-
+    '''
+    def _test(self, figid=0):
+        fp = self.get_figurepage(figid)
+        strategy = fp.strategy
+        from libs.btplotting.utils import get_dataname, get_clock_obj
+        objs = list(itertools.chain(strategy.datas,
+                                    strategy.getindicators(),
+                                    strategy.getobservers()))
+        for o in objs:
+            if not isinstance(o, (bt.AbstractDataBase, bt.IndicatorBase, bt.ObserverBase)):
+                continue
+            print('OBJ', obj2label(o), get_dataname(o),
+                  get_clock_obj(o))
+            if hasattr(o, 'data'):
+                print('HAS DATA', get_clock_obj(o.data))
+    '''
     def __init__(self, app, figurepage, client=None):
         super(ConfigTab, self).__init__(app, figurepage, client)
         self.content = None
