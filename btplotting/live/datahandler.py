@@ -220,13 +220,24 @@ class LiveDataHandler:
         '''
         Notifies datahandler of new data
         '''
-        self._new_data = True
+        if self._running:
+            self._new_data = True
 
     def stop(self):
         '''
         Stops the datahandler
         '''
+        # mark as not running
         self._running = False
+        # ensure no pending calls are set
+        try:
+            self._doc.remove_next_tick_callback(self._cb_patch)
+        except ValueError:
+            pass
+        try:
+            self._doc.remove_next_tick_callback(self._cb_add)
+        except ValueError:
+            pass
         # it would not really be neccessary to join this thread but doing
         # it for readability
         self._thread.join(0)

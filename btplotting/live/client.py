@@ -55,7 +55,7 @@ class LiveClient:
             self.doc.hold()
             self._updatemodel()
             self.doc.unhold()
-            _logger.debug(f'Switching data finished')
+            _logger.debug('Switching data finished')
 
         def on_click_nav_action(self):
             if not self._paused:
