@@ -17,8 +17,9 @@ from bokeh.models import CustomJS, FuncTickFormatter, \
 
 from .cds import CDSObject
 from .utils import get_source_id
+from .helper.bokeh import convert_color, sanitize_source_name, \
+    get_plotmaster
 from .helper.label import datatarget2label, obj2label
-from .helper.bokeh import convert_color, sanitize_source_name
 from .helper.marker import get_marker_info
 
 
@@ -94,9 +95,10 @@ class HoverContainer(metaclass=bt.MetaParams):
                 # if plotmaster is set then it will decide where to add,
                 # otherwise clock is used
                 if src_obj.plotinfo.plotmaster is not None:
-                    apply = src_obj.plotinfo.plotmaster is fig.master
+                    apply = (get_plotmaster(src_obj.plotinfo.plotmaster)
+                             is fig.master)
                 else:
-                    apply = src_obj._clock is fig.master
+                    apply = (get_plotmaster(src_obj._clock) is fig.master)
             if not apply:
                 for c in self._config:
                     if (isinstance(src_obj, c[0])
@@ -335,10 +337,8 @@ class Figure(CDSObject):
 
         f.border_fill_color = convert_color(self._scheme.border_fill)
 
-        f.xaxis.axis_line_color = convert_color(
-            self._scheme.axis_line_color)
-        f.yaxis.axis_line_color = convert_color(
-            self._scheme.axis_line_color)
+        f.xaxis.axis_line_color = convert_color(self._scheme.axis_line_color)
+        f.yaxis.axis_line_color = convert_color(self._scheme.axis_line_color)
         f.xaxis.minor_tick_line_color = convert_color(
             self._scheme.tick_line_color)
         f.yaxis.minor_tick_line_color = convert_color(
@@ -353,12 +353,9 @@ class Figure(CDSObject):
         f.yaxis.major_label_text_color = convert_color(
             self._scheme.axis_label_text_color)
 
-        f.xgrid.grid_line_color = convert_color(
-            self._scheme.grid_line_color)
-        f.ygrid.grid_line_color = convert_color(
-            self._scheme.grid_line_color)
-        f.title.text_color = convert_color(
-            self._scheme.plot_title_text_color)
+        f.xgrid.grid_line_color = convert_color(self._scheme.grid_line_color)
+        f.ygrid.grid_line_color = convert_color(self._scheme.grid_line_color)
+        f.title.text_color = convert_color(self._scheme.plot_title_text_color)
 
         f.left[0].formatter.use_scientific = False
         f.background_fill_color = convert_color(self._scheme.background_fill)

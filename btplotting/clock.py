@@ -136,11 +136,12 @@ class ClockHandler:
                 elif (sc_prev and sc_prev < c and sc > c):
                     # get last value, current value is already on new clock pos
                     v = llist[idx_prev]
-                    c_idx = idx_prev
+                    c_idx = idx_prev + 1
                     break
                 elif sc > c:
                     break
                 if llist[sc_idx] == llist[sc_idx]:
+                    # remember current value if not nan
                     sc_prev = sc
                     idx_prev = sc_idx
             data.append(v)

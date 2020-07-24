@@ -1,7 +1,6 @@
 from jinja2 import Environment, PackageLoader
 
 import matplotlib.colors
-import pandas as pd
 
 
 def convert_color(color):

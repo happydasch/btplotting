@@ -14,6 +14,16 @@ class CDSObject:
     provided data.
     It will create data for stream, patch and set up the columns
     in ColumnDataSource
+
+    It is using index and datetime columns as special cases:
+
+    -index is added, so stream has also the real index of the row
+     without it, the index would be resetted in ColumnDataSource
+    -datetime is added only if there are any rows to prevent gaps
+     in data, so this column should only be set in cds_cols if all
+     values needs to be added
+
+    This special cases will be available in every row
     '''
 
     def __init__(self, cols=[]):
@@ -79,7 +89,7 @@ class CDSObject:
         - additional: additional data sources which should be
           created from data source
         '''
-        columns = ['datetime']
+        columns = []
         additional = []
         for c in self._cds_cols:
             if isinstance(c, str):
@@ -94,7 +104,7 @@ class CDSObject:
         op - tuple: [0] - name of column
                     [1] - source column
                     [2] - other column or value
-                    [3] - op method
+                    [3] - op method (callable with 2 params: a, b)
         '''
         a = np.array(df[op[1]])
         if isinstance(op[2], str):
@@ -151,6 +161,9 @@ class CDSObject:
         # add all columns and values
         for c in c_df:
             if c in ['index', 'datetime']:
+                # skip index and datetime since these are special
+                # cases. they will be added later with the correct
+                # dtype
                 continue
             if c in self._cds.column_names:
                 self._cds.remove(c)
@@ -185,10 +198,9 @@ class CDSObject:
             return None
         # use text NaN for nan values
         c_df.fillna('NaN')
-        # ensure c_df contains index
+        # ensure c_df contains index and datetime
         if 'index' not in c_df.columns:
             c_df.index = df.loc[c_df.index, 'index']
-        # ensure c_df contains corresponding datetime entries
         if 'datetime' not in c_df.columns:
             c_df['datetime'] = df.loc[c_df.index, 'datetime']
         # add additional columns
@@ -212,6 +224,9 @@ class CDSObject:
             idx = False
         # create patch or stream data based on given series
         if idx is not False:
+            # ensure datetime is checked for changes
+            if 'datetime' not in columns:
+                columns.append('datetime')
             for c in columns:
                 try:
                     val = series[c]
