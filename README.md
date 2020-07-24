@@ -19,6 +19,7 @@ Basic:
 * Every figure has its own ColumnDataSource, so the live client can patch without having issues
   with nan values, every figure is updated individually
 * Display of plots looks more like backtrader plotting (order, heights, etc.)
+* Allows to add custom columns (for example colors, fill columns, etc.)
 
 Plotting:
 
@@ -26,6 +27,7 @@ Plotting:
 * Only one axis for volume will be added when using multiple data sources on one figure
 * Volume axis position is configureable
 * Linked Crosshair across all figures
+* fill_gt, fill_lt, fill support
 
 Tabs:
 
@@ -38,6 +40,7 @@ Live plotting:
 * Navigation in live client (Pause, Backward, Forward)
 * Live plotting is done using an analyzer
 * Live plotting data update works in a single thread and is done by a DataHandler
+* Data update is being done every n seconds, this is configureable
 
 ## Features
 
