@@ -155,7 +155,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         data_graph = {}
         volume_graph = []
         for d in datas:
-            if not d.plotinfo.plot:
+            if not d.plotinfo.plot or not filter_by_dataname(d, dataname):
                 continue
 
             pmaster = get_plotmaster(d.plotinfo.plotmaster)

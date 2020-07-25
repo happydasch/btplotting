@@ -60,13 +60,14 @@ def filter_by_dataname(obj, dataname):
     return obj_dataname is False or obj_dataname == dataname
 
 
-def get_datanames(strategy):
+def get_datanames(strategy, filter=True):
     '''
     Returns the names of all data sources
     '''
     datanames = []
     for d in strategy.datas:
-        datanames.append(get_dataname(d))
+        if not filter or d.plotinfo.plot is not False:
+            datanames.append(get_dataname(d))
     return datanames
 
 
