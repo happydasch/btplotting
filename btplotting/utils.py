@@ -1,6 +1,22 @@
 import backtrader as bt
 
 
+def get_plotmaster(obj):
+    '''
+    Resolves the plotmaster of the given object
+    '''
+    if obj is None:
+        return None
+
+    while True:
+        pm = obj.plotinfo.plotmaster
+        if pm is None:
+            break
+        else:
+            obj = pm
+    return obj
+
+
 def get_indicator_data(indicator):
     '''
     The indicator might have been created using a specific line

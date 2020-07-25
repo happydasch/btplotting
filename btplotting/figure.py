@@ -17,8 +17,7 @@ from bokeh.models import CustomJS, FuncTickFormatter, \
 
 from .cds import CDSObject
 from .utils import get_source_id
-from .helper.bokeh import convert_color, sanitize_source_name, \
-    get_plotmaster
+from .helper.bokeh import convert_color, sanitize_source_name
 from .helper.label import datatarget2label, obj2label
 from .helper.marker import get_marker_info
 
@@ -57,8 +56,7 @@ class HoverContainer(metaclass=bt.MetaParams):
     hovers will be applied by calling apply_hovertips
     '''
 
-    params = (('hover_tooltip_config', None),
-              ('is_multidata', False))
+    params = (('hover_tooltip_config', None),)
 
     def __init__(self):
         self._hover_tooltips = []
@@ -84,45 +82,19 @@ class HoverContainer(metaclass=bt.MetaParams):
         tooltips_top = []
         tooltips_bottom = []
         for label, tmpl, src_obj in self._hover_tooltips:
-            apply: bool = src_obj is fig.master  # apply to own
-            foreign = False
-            if (not apply
-                    and (isinstance(src_obj, bt.ObserverBase)
-                         or isinstance(src_obj, bt.IndicatorBase))
-                    and src_obj.plotinfo.subplot is False):
-                # add objects that are on the same figure cause subplot
-                # is False (for Indicators and Observers)
-                # if plotmaster is set then it will decide where to add,
-                # otherwise clock is used
-                if src_obj.plotinfo.plotmaster is not None:
-                    apply = (get_plotmaster(src_obj.plotinfo.plotmaster)
-                             is fig.master)
-                else:
-                    apply = (get_plotmaster(src_obj._clock) is fig.master)
-            if not apply:
-                for c in self._config:
-                    if (isinstance(src_obj, c[0])
-                            and isinstance(fig.master, c[1])):
-                        apply = True
-                        foreign = True
-                        break
-
-            if apply:
-                prefix = ''
-                top = True
-                # prefix with data name if we got multiple datas
-                if self.p.is_multidata and foreign:
-                    if isinstance(src_obj, bt.IndicatorBase):
-                        prefix = datatarget2label(src_obj.datas) + ' - '
+            if src_obj is fig.master:
+                item = (label, tmpl)
+                tooltips_top.append(item)
+            for i in fig.slaves:
+                if src_obj is i:
+                    prefix = ''
+                    if isinstance(src_obj, bt.Indicator):
+                        prefix = datatarget2label(src_obj.datas) + " - "
                     elif isinstance(src_obj, bt.AbstractDataBase):
-                        prefix = datatarget2label([src_obj]) + ' - '
-                    top = False
-
-                item = (prefix + label, tmpl)
-                if top:
-                    tooltips_top.append(item)
-                else:
+                        prefix = datatarget2label([src_obj]) + " - "
+                    item = (prefix + label, tmpl)
                     tooltips_bottom.append(item)
+                    break
 
         # first apply all top hover then all bottoms
         for t in itertools.chain(tooltips_top, tooltips_bottom):
@@ -167,8 +139,7 @@ class FigurePage(CDSObject):
         '''
         if self.strategy is not None:
             self.hover = HoverContainer(
-                hover_tooltip_config=self.scheme.hover_tooltip_config,
-                is_multidata=len(self.strategy.datas) > 1)
+                hover_tooltip_config=self.scheme.hover_tooltip_config)
         else:
             self.hover = None
 
@@ -258,15 +229,13 @@ class Figure(CDSObject):
 
     _bar_width = 0.5
 
-    def __init__(self, fp, scheme, master, slaves, plotorder,
-                 is_multidata, type=None):
+    def __init__(self, fp, scheme, master, slaves, plotorder, type=None):
         super(Figure, self).__init__([])
         self._fp = fp
         self._scheme = scheme
         self._hover_line_set = False
         self._hover = None
         self._coloridx = collections.defaultdict(lambda: -1)
-        self._is_multidata = is_multidata
         self._type = type
         self.master = master
         self.slaves = slaves

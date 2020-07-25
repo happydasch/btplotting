@@ -50,19 +50,3 @@ def generate_stylesheet(scheme, template='basic.css.j2'):
         headline_color=scheme.plot_title_text_color,
         text_color=scheme.text_color))
     return css
-
-
-def get_plotmaster(obj):
-    '''
-    Resolves the plotmaster of the given object
-    '''
-    if obj is None:
-        return None
-
-    while True:
-        pm = obj.plotinfo.plotmaster
-        if pm is None:
-            break
-        else:
-            obj = pm
-    return obj

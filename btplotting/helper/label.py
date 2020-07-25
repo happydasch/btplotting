@@ -47,6 +47,8 @@ def datatarget2label(datas):
             labels.append(indicator2label(d))
         elif isinstance(d, bt.AbstractDataBase):
             labels.append(get_dataname(d))
+        elif isinstance(d, bt.Strategy):
+            labels.append(strategy2label(d))
         else:
             raise RuntimeError(f'Unexpected data type: {d.__class__}')
 

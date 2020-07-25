@@ -23,11 +23,12 @@ from jinja2 import Environment, PackageLoader
 from .schemes import Scheme, Blackly
 
 from .utils import get_dataname, get_datanames, get_source_id, \
-    filter_by_dataname, get_indicator_data, get_last_avail_idx
+    filter_by_dataname, get_indicator_data, get_last_avail_idx, \
+    get_plotmaster
 from .figure import FigurePage, FigureType, Figure
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
-from .helper.bokeh import generate_stylesheet, get_plotmaster
+from .helper.bokeh import generate_stylesheet
 from .tab import BacktraderPlottingTab
 from .tabs import AnalyzerTab, MetadataTab, LogTab
 
@@ -198,11 +199,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
     def _blueprint_strategy(self, figid=0, dataname=False):
         fp = self.get_figurepage(figid)
-        strategy = fp.strategy
         scheme = self.p.scheme
         fp.reset()
         fp.analyzers += [
-            a for _, a in strategy.analyzers.getitems()]
+            a for _, a in fp.strategy.analyzers.getitems()]
 
         data_graph, volume_graph = self._build_graph(figid, dataname)
 
@@ -215,8 +215,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 scheme=scheme,
                 master=master,
                 slaves=slaves,
-                plotorder=plotorder,
-                is_multidata=len(strategy.datas) > 1)
+                plotorder=plotorder)
             figure.plot(master)
             for s in slaves:
                 figure.plot(s)
@@ -239,7 +238,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 master=v,
                 slaves=[],
                 plotorder=plotorder,
-                is_multidata=len(strategy.datas) > 1,
                 type=FigureType.VOL)
             figure.plot_volume(v)
             figure.apply()
