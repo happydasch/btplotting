@@ -17,6 +17,8 @@ from bokeh.models import CustomJS, FuncTickFormatter, \
 
 from .cds import CDSObject
 from .utils import get_source_id
+from .helper.cds_ops import cds_op_gt, cds_op_lt, cds_op_non, \
+    cds_op_color
 from .helper.bokeh import convert_color, sanitize_source_name
 from .helper.label import datatarget2label, obj2label
 from .helper.marker import get_marker_info
@@ -515,9 +517,9 @@ class Figure(CDSObject):
 
                 # check for fill_between
                 for ftype, fop in [
-                        ('_gt', self._cds_op_gt),
-                        ('_lt', self._cds_op_lt),
-                        ('', self._cds_op_non)]:
+                        ('_gt', cds_op_gt),
+                        ('_lt', cds_op_lt),
+                        ('', cds_op_non)]:
                     fattr = '_fill' + ftype
                     fref, fcolor = lineplotinfo._get(fattr, (None, None))
                     if fref is not None:
@@ -638,7 +640,7 @@ class Figure(CDSObject):
             source_id + 'colors_bars',
             source_id + 'open',
             source_id + 'close',
-            partial(self._cds_op_color,
+            partial(cds_op_color,
                     color_up=colorup,
                     color_down=colordown)))
         colorup_wick = convert_color(self._scheme.barup_wick)
@@ -647,7 +649,7 @@ class Figure(CDSObject):
             source_id + 'colors_wicks',
             source_id + 'open',
             source_id + 'close',
-            partial(self._cds_op_color,
+            partial(cds_op_color,
                     color_up=colorup_wick,
                     color_down=colordown_wick)))
         colorup_outline = convert_color(self._scheme.barup_outline)
@@ -656,7 +658,7 @@ class Figure(CDSObject):
             source_id + 'colors_outline',
             source_id + 'open',
             source_id + 'close',
-            partial(self._cds_op_color,
+            partial(cds_op_color,
                     color_up=colorup_outline,
                     color_down=colordown_outline)))
 
@@ -738,7 +740,7 @@ class Figure(CDSObject):
             source_id + 'colors_volume',
             source_id + 'open',
             source_id + 'close',
-            partial(self._cds_op_color,
+            partial(cds_op_color,
                     color_up=volup,
                     color_down=voldown)))
 
