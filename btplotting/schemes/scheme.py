@@ -220,9 +220,9 @@ class Scheme(PlotScheme):
         self.metadata_tab_num_cols = 3
         self.plot_sizing_mode = 'scale_width'
         self.data_aspectratio = 2.5
-        self.vol_aspectratio = 5.5
-        self.obs_aspectratio = 8.5
-        self.ind_aspectratio = 11.5
+        self.vol_aspectratio = 5.0
+        self.obs_aspectratio = 5.0
+        self.ind_aspectratio = 5.0
 
         self.toolbar_location = 'right'
 
