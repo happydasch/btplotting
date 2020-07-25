@@ -58,19 +58,19 @@ class ConfigTab(BacktraderPlottingTab):
         self.sld_obs_ar = Slider(
             title='Observer Aspect Ratio',
             value=self.scheme.obs_aspectratio,
-            start=0.1, end=10.0, step=0.1)
+            start=0.1, end=20.0, step=0.1)
         self.sld_data_ar = Slider(
             title='Data Aspect Ratio',
             value=self.scheme.data_aspectratio,
-            start=0.1, end=10.0, step=0.1)
+            start=0.1, end=20.0, step=0.1)
         self.sld_vol_ar = Slider(
             title='Volume Aspect Ratio',
             value=self.scheme.vol_aspectratio,
-            start=0.1, end=10.0, step=0.1)
+            start=0.1, end=20.0, step=0.1)
         self.sld_ind_ar = Slider(
             title='Indicator Aspect Ratio',
             value=self.scheme.ind_aspectratio,
-            start=0.1, end=10.0, step=0.1)
+            start=0.1, end=20.0, step=0.1)
 
         button = Button(
             label='Save',

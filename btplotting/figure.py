@@ -292,6 +292,7 @@ class Figure(CDSObject):
             raise Exception(f'Unknown type "{ftype}"')
 
         f = figure(
+            width=1000,
             tools=Figure._tools,
             x_axis_type='linear',
             aspect_ratio=aspectratio)
