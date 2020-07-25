@@ -155,8 +155,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         data_graph = {}
         volume_graph = []
         for d in datas:
-            if (not d.plotinfo.plot
-                    or not filter_by_dataname(d, dataname)):
+            if not d.plotinfo.plot:
                 continue
 
             pmaster = get_plotmaster(d.plotinfo.plotmaster)
@@ -167,6 +166,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     if pmaster not in data_graph:
                         data_graph[pmaster] = []
                     data_graph[pmaster].append(d)
+                else:
+                    continue
 
             if self.p.scheme.volume and self.p.scheme.voloverlay is False:
                 volume_graph.append(d)
@@ -192,7 +193,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 if pmaster is None:
                     pmaster = get_plotmaster(get_indicator_data(obj))
                 if pmaster not in data_graph:
-                    data_graph[pmaster] = []
+                    continue
                 data_graph[pmaster].append(obj)
 
         return data_graph, volume_graph
