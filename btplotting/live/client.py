@@ -107,8 +107,9 @@ class LiveClient:
         options = [('', 'Strategy')]
         for d in datanames:
             options.append(('D-' + d, f'Data: {d}'))
+        self._filter = 'D-' + datanames[0]
         select_filter = Select(
-            value='D-' + datanames[0],
+            value=self._filter,
             options=options)
         select_filter.on_change(
             'value',
