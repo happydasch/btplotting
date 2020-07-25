@@ -427,9 +427,7 @@ class Figure(CDSObject):
             lineplotinfo = getattr(obj.plotlines, '_%d' % lineidx, None)
             if not lineplotinfo:
                 lineplotinfo = getattr(obj.plotlines, linealias, None)
-            if not lineplotinfo:
-                lineplotinfo = bt.AutoInfoClass()
-            if lineplotinfo._get('_plotskip', False):
+            if not lineplotinfo or lineplotinfo._get('_plotskip', False):
                 continue
 
             # check if marker and get method to plot line
