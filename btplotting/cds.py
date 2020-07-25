@@ -182,7 +182,7 @@ class CDSObject:
             'datetime')
         # add additional columns
         for a in additional:
-            col = self._create_cds_col_from_df(a, df)
+            col = self._create_cds_col_from_df(a, c_df)
             self._cds.add(col, a[0])
 
     def get_cds_streamdata_from_df(self, df):
@@ -205,7 +205,7 @@ class CDSObject:
             c_df['datetime'] = df.loc[c_df.index, 'datetime']
         # add additional columns
         for a in additional:
-            col = self._create_cds_col_from_df(a, df)
+            col = self._create_cds_col_from_df(a, c_df)
             c_df[a[0]] = col
         return ColumnDataSource.from_df(c_df)
 
