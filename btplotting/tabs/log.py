@@ -9,16 +9,14 @@ from bokeh.layouts import column
 from ..tab import BacktraderPlottingTab
 
 handler = None
-logger = logging.getLogger(__name__)
 
 
 def init_log_tab(names, level=logging.NOTSET):
-    logging.basicConfig(level=level)
     global handler
     if handler is None:
         handler = CDSHandler(level=level)
-        handler.addFilter(CDSFilter(names))
-        logging.getLogger().addHandler(handler)
+        for n in names:
+            logging.getLogger(n).addHandler(handler)
 
 
 def is_log_tab_initialized():
@@ -29,14 +27,14 @@ def is_log_tab_initialized():
 class CDSHandler(logging.Handler):
 
     def __init__(self, level=logging.NOTSET):
-        super(CDSHandler, self).__init__(level)
+        super(CDSHandler, self).__init__(level=level)
         self.messages = []
         self.idx = {}
         self.cds = {}
         self.cb = {}
 
     def emit(self, record):
-        message = record.message
+        message = record.msg
         self.messages.append(message)
         for doc in self.cds:
             try:
@@ -68,19 +66,6 @@ class CDSHandler(logging.Handler):
         # row
         if len(self.cds[doc].selected.indices) > 0:
             self.cds[doc].selected.indices = [self.idx[doc]]
-
-
-class CDSFilter(logging.Filter):
-
-    def __init__(self, logger):
-        super(CDSFilter, self).__init__()
-        self.logger = logger
-
-    def filter(self, record):
-        name = record.name
-        if name in self.logger or len(self.logger) == 0:
-            return True
-        return False
 
 
 class LogTab(BacktraderPlottingTab):
