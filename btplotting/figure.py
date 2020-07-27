@@ -20,7 +20,7 @@ from .utils import get_source_id
 from .helper.cds_ops import cds_op_gt, cds_op_lt, cds_op_non, \
     cds_op_color
 from .helper.bokeh import convert_color, sanitize_source_name
-from .helper.label import datatarget2label, obj2label
+from .helper.label import obj2label
 from .helper.marker import get_marker_info
 
 
@@ -90,10 +90,7 @@ class HoverContainer(metaclass=bt.MetaParams):
             for i in fig.slaves:
                 if src_obj is i:
                     prefix = ''
-                    if isinstance(src_obj, bt.Indicator):
-                        prefix = datatarget2label(src_obj.datas) + " - "
-                    elif isinstance(src_obj, bt.AbstractDataBase):
-                        prefix = datatarget2label([src_obj]) + " - "
+                    prefix = obj2label(src_obj) + " - "
                     item = (prefix + label, tmpl)
                     tooltips_bottom.append(item)
                     break
@@ -662,7 +659,7 @@ class Figure(CDSObject):
                     color_up=colorup_outline,
                     color_down=colordown_outline)))
 
-        title = sanitize_source_name(datatarget2label([data]))
+        title = sanitize_source_name(obj2label(data))
         if self._scheme.plot_title:
             self._figure_append_title(title)
 

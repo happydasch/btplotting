@@ -23,8 +23,8 @@ from jinja2 import Environment, PackageLoader
 from .schemes import Scheme, Blackly
 
 from .utils import get_dataname, get_datanames, get_source_id, \
-    filter_by_dataname, get_indicator_data, get_last_avail_idx, \
-    get_plotmaster
+    filter_by_dataname, get_clock_obj, get_last_avail_idx, \
+    get_plotmaster, get_plot_objs
 from .figure import FigurePage, FigureType, Figure
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
@@ -191,7 +191,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 data_graph[obj] = []
             else:
                 if pmaster is None:
-                    pmaster = get_plotmaster(get_indicator_data(obj))
+                    pmaster = get_plotmaster(get_clock_obj(obj, True))
                 if pmaster not in data_graph:
                     continue
                 data_graph[pmaster].append(obj)

@@ -119,7 +119,7 @@ class ClockHandler:
             sc_prev = None
             idx_prev = None
             v = float('nan')
-            for sc_idx in range(c_idx, len(llist)):
+            for sc_idx in range(c_idx, min(len(self.clk), len(llist))):
                 sc = self.clk[sc_idx]
                 # match source clock (sc) on target clock by direct hit
                 if sc == c:

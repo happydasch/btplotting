@@ -1,30 +1,19 @@
-from bokeh.layouts import column, row
-from bokeh.models import Slider, Button, Paragraph
+from bokeh.layouts import column
+from bokeh.models import Slider, Button, Paragraph, CheckboxGroup, \
+    CheckboxButtonGroup, Spacer
 
 from ..figure import FigureType
 from ..tab import BacktraderPlottingTab
+from ..utils import get_plot_objs
+from ..helper.label import obj2label
+
+import backtrader as bt
 
 
 class ConfigTab(BacktraderPlottingTab):
-    '''
-    def _test(self, figid=0):
-        fp = self.get_figurepage(figid)
-        strategy = fp.strategy
-        from libs.btplotting.utils import get_dataname, get_clock_obj
-        objs = list(itertools.chain(strategy.datas,
-                                    strategy.getindicators(),
-                                    strategy.getobservers()))
-        for o in objs:
-            if not isinstance(o, (bt.AbstractDataBase, bt.IndicatorBase, bt.ObserverBase)):
-                continue
-            print('OBJ', obj2label(o), get_dataname(o),
-                  get_clock_obj(o))
-            if hasattr(o, 'data'):
-                print('HAS DATA', get_clock_obj(o.data))
-    '''
+
     def __init__(self, app, figurepage, client=None):
         super(ConfigTab, self).__init__(app, figurepage, client)
-        self.content = None
         self.sld_obs_ar = None
         self.sld_data_ar = None
         self.sld_vol_ar = None
@@ -35,6 +24,66 @@ class ConfigTab(BacktraderPlottingTab):
         return (self._client is not None)
 
     def _on_button_save_config(self):
+        self._apply_strategy_plot_config()
+        self._apply_aspectratio_config()
+
+    def _create_strategy_plot_config(self):
+        title = Paragraph(
+            text='Strategy Plot Selection',
+            css_classes=['config-title'])
+        options = []
+
+        objs = get_plot_objs(
+            self._figurepage.strategy,
+            order_by_plotmaster=True)
+        print('-' * 50)
+        for d in objs:
+            if not isinstance(d, bt.Strategy):
+                options.append(CheckboxButtonGroup(
+                    labels=[obj2label(d)], active=[0]))
+            childs = []
+            active = []
+            for i, o in enumerate(objs[d]):
+                childs.append(obj2label(o))
+                active.append(i)
+            if len(childs):
+                options.append(CheckboxButtonGroup(
+                    labels=childs, active=active))
+            options.append(Spacer(height=20))
+
+        return column([title] + options)
+
+    def _apply_strategy_plot_config(self):
+        pass
+
+    def _create_aspectratio_config(self):
+        title = Paragraph(
+            text='Aspect Ratios',
+            css_classes=['config-title'])
+        self.sld_obs_ar = Slider(
+            title='Observer Aspect Ratio',
+            value=self.scheme.obs_aspectratio,
+            start=0.1, end=20.0, step=0.1)
+        self.sld_data_ar = Slider(
+            title='Data Aspect Ratio',
+            value=self.scheme.data_aspectratio,
+            start=0.1, end=20.0, step=0.1)
+        self.sld_vol_ar = Slider(
+            title='Volume Aspect Ratio',
+            value=self.scheme.vol_aspectratio,
+            start=0.1, end=20.0, step=0.1)
+        self.sld_ind_ar = Slider(
+            title='Indicator Aspect Ratio',
+            value=self.scheme.ind_aspectratio,
+            start=0.1, end=20.0, step=0.1)
+
+        return column([title,
+                       self.sld_obs_ar,
+                       self.sld_data_ar,
+                       self.sld_vol_ar,
+                       self.sld_ind_ar])
+
+    def _apply_aspectratio_config(self):
         # update scheme with new aspect ratios
         self.scheme.obs_aspectratio = self.sld_obs_ar.value
         self.scheme.data_aspectratio = self.sld_data_ar.value
@@ -55,42 +104,24 @@ class ConfigTab(BacktraderPlottingTab):
                 raise Exception(f'Unknown type {ftype}')
 
     def _get_panel(self):
-        self.sld_obs_ar = Slider(
-            title='Observer Aspect Ratio',
-            value=self.scheme.obs_aspectratio,
-            start=0.1, end=20.0, step=0.1)
-        self.sld_data_ar = Slider(
-            title='Data Aspect Ratio',
-            value=self.scheme.data_aspectratio,
-            start=0.1, end=20.0, step=0.1)
-        self.sld_vol_ar = Slider(
-            title='Volume Aspect Ratio',
-            value=self.scheme.vol_aspectratio,
-            start=0.1, end=20.0, step=0.1)
-        self.sld_ind_ar = Slider(
-            title='Indicator Aspect Ratio',
-            value=self.scheme.ind_aspectratio,
-            start=0.1, end=20.0, step=0.1)
-
+        title = Paragraph(
+            text='Client Configuration',
+            css_classes=['panel-title'])
         button = Button(
             label='Save',
             button_type='success',
             width_policy='min')
         button.on_click(self._on_button_save_config)
-
-        title = Paragraph(
-            text='Client Configuration',
-            css_classes=['panel-title'])
-        r1 = column(
-            [self.sld_obs_ar,
-             self.sld_data_ar,
-             self.sld_vol_ar,
-             self.sld_ind_ar],
+        # layout for config area
+        config = column(
+            [self._create_strategy_plot_config(),
+             self._create_aspectratio_config()],
             sizing_mode='scale_width')
-        r2 = row(
-            [button])
+        # layout for config buttons
+        buttons = column([button])
+        # config layout
         child = column(
-            children=[title, r1, r2],
+            children=[title, config, buttons],
             sizing_mode='scale_width')
 
         return child, 'Config'

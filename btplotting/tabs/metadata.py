@@ -87,7 +87,7 @@ class MetadataTab(BacktraderPlottingTab):
                 tabdata['Time From:'] = str(bt.num2date(data.fromdate))
             if not math.isinf(data.todate):
                 tabdata['Time To:'] = str(bt.num2date(data.todate))
-            childs.append(self._get_title(f'Data Feed: {obj2label(data)}'))
+            childs.append(self._get_title(f'Data Feed: {obj2label(data, True)}'))
             childs.append(self._get_values_table(tabdata))
         columns.append(column(childs))
         return columns

@@ -12,10 +12,13 @@ def obj2label(obj, fullid=False):
             return indicator2label(obj)
         else:
             return f'{indicator2label(obj)}@{indicator2fullid(obj)}'
+    elif isinstance(obj, bt.AbstractDataBase):
+        if not fullid:
+            return get_dataname(obj)
+        else:
+            return f'{get_dataname(obj)}-{obj.__class__.__name__}'
     elif isinstance(obj, bt.ObserverBase):
         return observer2label(obj)
-    elif isinstance(obj, bt.AbstractDataBase):
-        return obj.__class__.__name__
     elif isinstance(obj, bt.Analyzer):
         return obj.__class__.__name__
     elif isinstance(obj, (bt.LinesOperation,
@@ -33,28 +36,6 @@ def strategy2label(strategy, params=False):
         if len(param_labels) > 0:
             label += f' [{param_labels}]'
     return label
-
-
-def datatarget2label(datas):
-    '''
-    Convert datas (usually a datafeed but might also be an indicator if
-    one indicator operates on another indicator) to a readable string.
-    If a name was provided manually then use that.
-    '''
-    labels = []
-    for d in datas:
-        if isinstance(d, bt.IndicatorBase):
-            labels.append(indicator2label(d))
-        elif isinstance(d, bt.AbstractDataBase):
-            labels.append(get_dataname(d))
-        elif isinstance(d, bt.Strategy):
-            labels.append(strategy2label(d))
-        else:
-            raise RuntimeError(f'Unexpected data type: {d.__class__}')
-
-    if len(labels) > 0:
-        return ','.join(labels)
-    return ''
 
 
 def observer2label(obs):
@@ -75,11 +56,11 @@ def indicator2fullid(ind):
     names = []
     for x in ind.datas:
         if isinstance(x, bt.AbstractDataBase):
-            return datatarget2label([x])
+            return obj2label(x)
         elif isinstance(x, bt.LineSeriesStub):
             # indicator target is one specific line of a datafeed
             # add [L] at the end
-            return datatarget2label([get_clock_obj(x)]) + ' [L]'
+            return obj2label(get_clock_obj(x)) + ' [L]'
         elif isinstance(x, bt.IndicatorBase):
             names.append(indicator2label(x))
     if len(names) > 0:
