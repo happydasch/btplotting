@@ -160,7 +160,7 @@ class CDSObject:
         try:
             c_df = df.loc[:, columns]
         except Exception:
-            return None
+            return {}
         # use text NaN for nan values
         c_df.fillna('NaN')
         # ensure c_df contains index and datetime
