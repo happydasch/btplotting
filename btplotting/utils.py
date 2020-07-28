@@ -42,71 +42,28 @@ def get_plot_objs(strategy, include_non_plotable=False,
 
     if not order_by_plotmaster:
         return objs
-    
+
     # order objects by its plotmaster
     pobjs = defaultdict(list)
     for d in objs:
         pmaster = get_plotmaster(d)
+        # add all datas, if a data has a plotmaster, add it to plotmaster
         if pmaster is d and pmaster not in pobjs:
             pobjs[pmaster] = []
-        elif pmaster is not d:
+        elif pmaster is not None and pmaster is not d:
             pobjs[pmaster].append(d)
+
         for o in objs[d]:
-            # subplot = create a new figure for this indicator
+            pmaster = get_plotmaster(o.plotinfo.plotmaster)
             subplot = o.plotinfo.subplot
-            if subplot and o not in pobjs:
+            if subplot and not pmaster:
                 pobjs[o] = []
-            elif not subplot:
+            else:
                 pmaster = get_plotmaster(get_clock_obj(o, True))
-                pobjs[pmaster].append(o)
+                if pmaster is not None and pmaster in pobjs:
+                    pobjs[pmaster].append(o)
     # return objects ordered by plotmaster
     return pobjs
-    '''
-    datas = strategy.datas
-    inds = strategy.getindicators()
-    obs = strategy.getobservers()
-    objs = defaultdict(list)
-    # ensure strategy is included
-    objs[strategy] = []
-    # first loop through datas
-    for d in datas:
-        pmaster = get_plotmaster(d.plotinfo.plotmaster)
-        if (not d.plotinfo.plot
-                or (pmaster and not pmaster.plotinfo.plot)):
-            continue
-        pmaster = get_plotmaster(d.plotinfo.plotmaster)
-        # if no plotmaster then data is plotmaster
-        if pmaster is None:
-            objs[d] = []
-        else:
-            objs[pmaster].append(d)
-    # next loop through all ind and obs and set them to
-    # the corresponding data clock
-    for obj in itertools.chain(inds, obs):
-        if not hasattr(obj, 'plotinfo'):
-            # no plotting support cause no plotinfo attribute
-            # available - so far LineSingle derived classes
-            continue
-
-        # should this indicator be plotted?
-        if not obj.plotinfo.plot or obj.plotinfo.plotskip:
-            continue
-
-        # subplot = create a new figure for this indicator
-        subplot = obj.plotinfo.subplot
-        pmaster = get_plotmaster(get_clock_obj(obj, True))
-
-        if subplot and pmaster is None:
-            objs[obj] = []
-        else:
-            if pmaster is None:
-                pmaster = get_plotmaster(obj)
-            if pmaster not in objs:
-                continue
-            objs[pmaster].append(obj)
-
-    return objs
-    '''
 
 
 def get_plotmaster(obj):
@@ -122,6 +79,8 @@ def get_plotmaster(obj):
             break
         else:
             obj = pm
+    if isinstance(obj, bt.Strategy):
+        return None
     return obj
 
 
@@ -135,7 +94,8 @@ def get_last_avail_idx(strategy, dataname=False):
         data = strategy
     offset = 0
     while True:
-        if len(data) > offset and data.datetime[-offset] != data.datetime[-offset]:
+        if (len(data) > offset
+                and data.datetime[-offset] != data.datetime[-offset]):
             offset += 1
             continue
         break
@@ -193,7 +153,7 @@ def get_dataname(obj):
             f'Unsupported data: {obj.__class__}')
 
 
-def get_clock_obj(obj, resolv_to_data=False):
+def get_clock_obj(obj, resolve_to_data=False):
     '''
     Returns a clock object to use for building data
     A clock object can be either a strategy, data source,
@@ -204,19 +164,19 @@ def get_clock_obj(obj, resolv_to_data=False):
         # (instead of e.g. a data object) in that case grab
         # the owner of that line to find the corresponding clock
         # also check for line actions like "macd > data[0]"
-        return get_clock_obj(obj._clock, resolv_to_data)
+        return get_clock_obj(obj._clock, resolve_to_data)
     elif isinstance(obj, bt.LineSingle):
         # if we have a line, return its owners clock
-        return get_clock_obj(obj._owner, resolv_to_data)
+        return get_clock_obj(obj._owner, resolve_to_data)
     elif isinstance(obj, bt.LineSeriesStub):
         # if its a LineSeriesStub object, take the first line
         # and get the clock from it
-        return get_clock_obj(obj.lines[0], resolv_to_data)
+        return get_clock_obj(obj.lines[0], resolve_to_data)
     elif isinstance(obj, (bt.IndicatorBase, bt.ObserverBase)):
         # a indicator and observer can be a clock, internally
         # it is obj._clock
-        if resolv_to_data:
-            return get_clock_obj(obj._clock, resolv_to_data)
+        if resolve_to_data:
+            return get_clock_obj(obj._clock, resolve_to_data)
         clk = obj
     elif isinstance(obj, bt.StrategyBase):
         # a strategy can be a clock, internally it is obj.data

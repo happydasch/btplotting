@@ -23,8 +23,7 @@ from jinja2 import Environment, PackageLoader
 from .schemes import Scheme, Blackly
 
 from .utils import get_dataname, get_datanames, get_source_id, \
-    filter_by_dataname, get_clock_obj, get_last_avail_idx, \
-    get_plotmaster, get_plot_objs
+    filter_by_dataname, get_last_avail_idx, get_plot_objs
 from .figure import FigurePage, FigureType, Figure
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
@@ -149,54 +148,13 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def _build_graph(self, figid=0, dataname=False):
         fp = self.get_figurepage(figid)
         strategy = fp.strategy
-        datas = strategy.datas
-        inds = strategy.getindicators()
-        obs = strategy.getobservers()
+        objs = get_plot_objs(strategy, order_by_plotmaster=True)
         data_graph = {}
-        volume_graph = []
-        for d in datas:
-            if not d.plotinfo.plot or not filter_by_dataname(d, dataname):
+        for o in objs:
+            if not filter_by_dataname(o, dataname):
                 continue
-
-            pmaster = get_plotmaster(d.plotinfo.plotmaster)
-            if pmaster is None:
-                data_graph[d] = []
-            else:
-                if pmaster.plotinfo.plot:
-                    if pmaster not in data_graph:
-                        data_graph[pmaster] = []
-                    data_graph[pmaster].append(d)
-                else:
-                    continue
-
-            if self.p.scheme.volume and self.p.scheme.voloverlay is False:
-                volume_graph.append(d)
-
-        for obj in itertools.chain(inds, obs):
-            if not hasattr(obj, 'plotinfo'):
-                # no plotting support cause no plotinfo attribute
-                # available - so far LineSingle derived classes
-                continue
-
-            # should this indicator be plotted?
-            if (not obj.plotinfo.plot
-                    or obj.plotinfo.plotskip
-                    or not filter_by_dataname(obj, dataname)):
-                continue
-
-            # subplot = create a new figure for this indicator
-            subplot = obj.plotinfo.subplot
-            pmaster = get_plotmaster(obj.plotinfo.plotmaster)
-            if subplot and pmaster is None:
-                data_graph[obj] = []
-            else:
-                if pmaster is None:
-                    pmaster = get_plotmaster(get_clock_obj(obj, True))
-                if pmaster not in data_graph:
-                    continue
-                data_graph[pmaster].append(obj)
-
-        return data_graph, volume_graph
+            data_graph[o] = objs[o]
+        return data_graph
 
     def _blueprint_strategy(self, figid=0, dataname=False):
         fp = self.get_figurepage(figid)
@@ -205,7 +163,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         fp.analyzers += [
             a for _, a in fp.strategy.analyzers.getitems()]
 
-        data_graph, volume_graph = self._build_graph(figid, dataname)
+        data_graph = self._build_graph(figid, dataname)
 
         # create figures
         strat_figures = []
@@ -230,19 +188,22 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # add figures to figurepage
         fp.figures += strat_figures
 
-        # volume graphs
-        for v in volume_graph:
-            plotorder = getattr(v.plotinfo, 'plotorder', 0)
-            figure = Figure(
-                fp=fp,
-                scheme=scheme,
-                master=v,
-                slaves=[],
-                plotorder=plotorder,
-                type=FigureType.VOL)
-            figure.plot_volume(v)
-            figure.apply()
-            fp.figures.append(figure)
+        # volume figures
+        if self.p.scheme.volume and self.p.scheme.voloverlay is False:
+            for f in strat_figures:
+                if not f.get_type() == FigureType.DATA:
+                    continue
+                plotorder = getattr(f.master.plotinfo, 'plotorder', 0)
+                figure = Figure(
+                    fp=fp,
+                    scheme=scheme,
+                    master=f.master,
+                    slaves=[],
+                    plotorder=plotorder,
+                    type=FigureType.VOL)
+                figure.plot_volume(f.master)
+                figure.apply()
+                fp.figures.append(figure)
 
         # apply all figurepage related functionality after all figures
         # are set
@@ -429,6 +390,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Generates data for current figurepage
         '''
         fp = self.get_figurepage(figid)
+        strategy = fp.strategy
 
         # collect all objects to generate data for, also collect all datas in
         # a list
@@ -444,12 +406,13 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 objs[dataname].append(s)
                 if dataname not in datanames:
                     datanames.append(dataname)
-        strategy = fp.strategy
 
         # use first data as clock
         smallest = False
-        if len(datanames) > 0:
-            smallest = datanames[0]
+        for d in datanames:
+            if d:
+                smallest = d
+                break
 
         # create clock values
         clock_values = {}
