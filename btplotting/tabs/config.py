@@ -1,5 +1,5 @@
-from bokeh.layouts import column
-from bokeh.models import Slider, Button, Paragraph, CheckboxGroup, \
+from bokeh.layouts import column, gridplot
+from bokeh.models import Slider, Button, Paragraph, \
     CheckboxButtonGroup, Spacer
 
 from ..figure import FigureType
@@ -35,21 +35,28 @@ class ConfigTab(BacktraderPlottingTab):
 
         objs = get_plot_objs(
             self._figurepage.strategy,
-            order_by_plotmaster=True)
-        print('-' * 50)
+            order_by_plotmaster=False)
+
         for d in objs:
+            options.append(Paragraph(text=f'{obj2label(d)}:'))
             if not isinstance(d, bt.Strategy):
                 options.append(CheckboxButtonGroup(
                     labels=[obj2label(d)], active=[0]))
-            childs = []
-            active = []
-            for i, o in enumerate(objs[d]):
-                childs.append(obj2label(o))
-                active.append(i)
-            if len(childs):
-                options.append(CheckboxButtonGroup(
-                    labels=childs, active=active))
-            options.append(Spacer(height=20))
+            objsd = objs[d]
+            # sort objs by type
+            objsd.sort(key=lambda x: (FigureType.get_type(x).value))
+            # split objs into chunks
+            objsd = [objsd[i:i + 3] for i in range(0, len(objsd), 3)]
+            for x in objsd:
+                childs = []
+                active = []
+                for i, o in enumerate(x):
+                    childs.append(obj2label(o))
+                    active.append(i)
+                if len(childs):
+                    options.append(CheckboxButtonGroup(
+                        labels=childs, active=active))
+            #options.append(Spacer(height=10))
 
         return column([title] + options)
 
