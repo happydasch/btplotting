@@ -1,6 +1,5 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
-import itertools
 import logging
 import re
 import os
@@ -94,6 +93,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     + ' btplotting.tab.BacktraderPlottingTab')
 
     def _reset(self):
+        '''
+        Resets the app
+        '''
         self._figurepages = {}
 
     def _configure_plotting(self, figid=0):
@@ -101,19 +103,28 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Applies config from plotconfig param to objects
         '''
         fp = self.get_figurepage(figid)
-        strategy = fp.strategy
-        datas = strategy.datas
-        inds = strategy.getindicators()
-        obs = strategy.getobservers()
+        objs = get_plot_objs(fp.strategy)
 
-        for objs in [datas, inds, obs]:
-            for idx, obj in enumerate(objs):
-                self._configure_plotobject(obj, idx)
+        i = 0
+        for d in objs:
+            if not isinstance(d, bt.Strategy):
+                self._configure_plotobject(d, i)
+                i += 1
+            for s in objs[d]:
+                self._configure_plotobject(s, i)
+                i += 1
 
     def _configure_plotobject(self, obj, idx):
         '''
         Applies config to a single object
         '''
+
+        # patch every object to contain plotorder and plotid
+        if not hasattr(obj.plotinfo, 'plotid'):
+            obj.plotinfo.plotid = f'{FigureType.get_type(obj).name}{idx}'
+        if not hasattr(obj.plotinfo, 'plotorder'):
+            obj.plotinfo.plotorder = 0
+
         if self.p.plotconfig is None:
             return
 
@@ -137,7 +148,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     continue
                 apply_config(obj, config)
             elif ctype == 'id':  # plotid
-                plotid = getattr(obj.plotinfo, 'plotid', None)
+                plotid = obj.plotinfo.plotid
                 if plotid is None or plotid != target:
                     continue
                 apply_config(obj, config)
@@ -145,61 +156,63 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 raise RuntimeError(
                     f'Unknown config type in plotting config: {k}')
 
-    def _build_graph(self, figid=0, dataname=False):
+    def _get_plot_objects(self, figid=0, dataname=False):
+        '''
+        Returns a filtered dict of objects to be plotted
+        '''
         fp = self.get_figurepage(figid)
-        strategy = fp.strategy
-        objs = get_plot_objs(strategy, order_by_plotmaster=True)
-        data_graph = {}
+        objs = get_plot_objs(fp.strategy, order_by_plotmaster=True)
+        filtered = {}
         for o in objs:
             if not filter_by_dataname(o, dataname):
                 continue
-            data_graph[o] = objs[o]
-        return data_graph
+            filtered[o] = objs[o]
+        return filtered
 
     def _blueprint_strategy(self, figid=0, dataname=False):
+        '''
+        Fills a FigurePage with Figures of all objects to be plotted
+        '''
         fp = self.get_figurepage(figid)
         scheme = self.p.scheme
         fp.reset()
         fp.analyzers += [
             a for _, a in fp.strategy.analyzers.getitems()]
 
-        data_graph = self._build_graph(figid, dataname)
+        # get the objects to be plotted
+        objects = self._get_plot_objects(figid, dataname)
 
         # create figures
-        strat_figures = []
-        for master, slaves in data_graph.items():
-            plotorder = getattr(master.plotinfo, 'plotorder', 0)
+        figures = []
+        for master, slaves in objects.items():
             figure = Figure(
                 fp=fp,
                 scheme=scheme,
                 master=master,
-                slaves=slaves,
-                plotorder=plotorder)
+                slaves=slaves)
             figure.plot(master)
             for s in slaves:
                 figure.plot(s)
             figure.apply()
-            strat_figures.append(figure)
+            figures.append(figure)
 
         # link axis
-        for i in range(1, len(strat_figures)):
-            strat_figures[i].figure.x_range = strat_figures[0].figure.x_range
+        for i in range(1, len(figures)):
+            figures[i].figure.x_range = figures[0].figure.x_range
 
         # add figures to figurepage
-        fp.figures += strat_figures
+        fp.figures += figures
 
         # volume figures
         if self.p.scheme.volume and self.p.scheme.voloverlay is False:
-            for f in strat_figures:
+            for f in figures:
                 if not f.get_type() == FigureType.DATA:
                     continue
-                plotorder = getattr(f.master.plotinfo, 'plotorder', 0)
                 figure = Figure(
                     fp=fp,
                     scheme=scheme,
                     master=f.master,
                     slaves=[],
-                    plotorder=plotorder,
                     type=FigureType.VOL)
                 figure.plot_volume(f.master)
                 figure.apply()
@@ -210,6 +223,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         fp.apply()
 
     def _blueprint_optreturn(self, figid=0):
+        '''
+        Fills a FigurePage with all objects from optimization process
+        '''
         fp = self.get_figurepage(figid)
         optreturn = fp.optreturn
         fp.reset()
@@ -217,10 +233,16 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             a for _, a in optreturn.analyzers.getitems()]
 
     def _output_stylesheet(self, template='basic.css.j2'):
+        '''
+        Renders and returns the stylesheet
+        '''
         return generate_stylesheet(self.p.scheme, template)
 
     def _output_plot_file(self, model, figid=0, filename=None,
                           template='basic.html.j2'):
+        '''
+        Outputs the plot file
+        '''
         if filename is None:
             tmpdir = tempfile.gettempdir()
             filename = os.path.join(tmpdir, f'bt_bokeh_plot_{figid}.html')
@@ -326,61 +348,56 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Generates bokeh panels used for figurepage
         '''
         fp = self.get_figurepage(figid)
-        observers = [
-            x for x in fp.figures
-            if isinstance(x.master, bt.ObserverBase)]
-        datas = [
-            x for x in fp.figures
-            if isinstance(x.master, bt.AbstractDataBase)]
-        inds = [
-            x for x in fp.figures
-            if isinstance(x.master, bt.IndicatorBase)]
 
-        # assign figures to tabs
-        # 1. assign default tabs if no manual tab is assigned
-        multiple_tabs = self.p.scheme.multiple_tabs
-        for figure in [x for x in datas if x.plottab is None]:
-            figure.plottab = 'Datas' if multiple_tabs else 'Plots'
-
-        for figure in [x for x in inds if x.plottab is None]:
-            figure.plottab = 'Indicators' if multiple_tabs else 'Plots'
-
-        for figure in [x for x in observers if x.plottab is None]:
-            figure.plottab = 'Observers' if multiple_tabs else 'Plots'
-
-        # 2. group panels by desired tabs
-        # groupby expects the groups to be sorted or else will produce
-        # duplicated groups
+        # sort figures
         data_sort = {False: 0}
         for i, d in enumerate(get_datanames(fp.strategy), start=1):
             data_sort[d] = i
-        sorted_figs = list(itertools.chain(datas, inds, observers))
+        sorted_figs = list(fp.figures)
         sorted_figs.sort(key=lambda x: (
-            x.plotorder,
+            x.get_plotorder(),
             data_sort[get_dataname(x.master)],
             x.get_type().value))
-        sorted_figs.sort(key=lambda x: x.plottab)
-        tabgroups = itertools.groupby(sorted_figs, lambda x: x.plottab)
 
+        # fill tabs
+        multiple_tabs = self.p.scheme.multiple_tabs
+        tabs = defaultdict(list)
+        for f in sorted_figs:
+            tab = f.get_plottab()
+            if tab:
+                tabs[tab].append(f)
+            elif not multiple_tabs:
+                tabs['Plots'].append(f)
+            else:
+                figtype = f.get_type()
+                if figtype == FigureType.DATA:
+                    tabs['Datas'].append(f)
+                elif figtype == FigureType.OBS:
+                    tabs['Observers'].append(f)
+                elif figtype == FigureType.IND:
+                    tabs['Indicators'].append(f)
+                else:
+                    raise Exception(f'Unknown FigureType "{figtype}"')
+
+        # create panels for tabs
         panels = []
-        for tabname, figures in tabgroups:
-            figures = list(figures)
-            if len(figures) == 0:
+        for tab in tabs:
+            if len(tabs[tab]) == 0:
                 continue
             # configure xaxis visibility
             if self.p.scheme.xaxis_pos == 'bottom':
-                for i, x in enumerate(figures):
+                for i, x in enumerate(tabs[tab]):
                     x.figure.xaxis.visible = (
-                        False if i < len(figures) - 1
+                        False if i < len(tabs[tab]) - 1
                         else True)
             # create gridplot for panel
-            g = gridplot([[x.figure] for x in figures],
+            g = gridplot([[x.figure] for x in tabs[tab]],
                          toolbar_options={'logo': None},
                          toolbar_location=self.p.scheme.toolbar_location,
                          sizing_mode=self.p.scheme.plot_sizing_mode,
                          )
             # append created panel
-            panels.append(Panel(title=tabname, child=g))
+            panels.append(Panel(title=tab, child=g))
 
         return panels
 
@@ -485,6 +502,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return df
 
     def plot_optmodel(self, obj):
+        '''
+        Plots a optimization model
+        '''
         self._reset()
         self.plot(obj)
 
