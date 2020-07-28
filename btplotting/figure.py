@@ -228,7 +228,7 @@ class Figure(CDSObject):
 
     _bar_width = 0.5
 
-    def __init__(self, fp, scheme, master, slaves, plotorder, type=None):
+    def __init__(self, fp, scheme, master, slaves, type=None):
         super(Figure, self).__init__([])
         self._fp = fp
         self._scheme = scheme
@@ -239,10 +239,6 @@ class Figure(CDSObject):
         self.master = master
         self.slaves = slaves
         self.figure = None
-        self.plottab = None
-        self.plotorder = plotorder
-        # list of all datas that have been plotted to this figure
-        self.datas = []
         # initialize figure with scheme settings
         self._init_figure()
 
@@ -599,6 +595,18 @@ class Figure(CDSObject):
             return FigureType.get_type(self.master)
         return self._type
 
+    def get_plotorder(self):
+        '''
+        Returns the plotorder of this Figure
+        '''
+        return self.master.plotinfo.plotorder
+
+    def get_plottab(self):
+        '''
+        Returns the plottab of this Figure
+        '''
+        return getattr(self.master.plotinfo, 'plottab', None)
+
     def plot(self, obj):
         '''
         Common plot method
@@ -611,17 +619,6 @@ class Figure(CDSObject):
             self.plot_observer(obj)
         else:
             raise Exception(f'Unsupported plot object: "{type(obj)}"')
-
-        # first object can apply config
-        if len(self.datas) == 0:
-            tab = getattr(obj.plotinfo, 'plottab', None)
-            if tab is not None:
-                self.plottab = tab
-            order = getattr(obj.plotinfo, 'plotorder', None)
-            if order is not None:
-                self.plotorder = order
-
-        self.datas.append(obj)
 
     def plot_data(self, data):
         '''
