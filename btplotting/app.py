@@ -505,8 +505,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             df.index = indices
         else:
             # ensure the dtype is correct on empty df
-            df['index'].dtype = np.int64
-            df['datetime'].dtype = np.datetime64
+            df['index'] = df['index'].astype(np.int64)
+            df['datetime'] = df['datetime'].astype(np.datetime64)
         return df
 
     def plot_optmodel(self, obj):

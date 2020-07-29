@@ -35,8 +35,8 @@ class ConfigTab(BacktraderPlottingTab):
         self.plotgroup_objs = defaultdict(list)
         self.plotgroup_text = None
 
-        def active_obj(o, selected):
-            if not len(selected) or o.plotinfo.plotid in selected:
+        def active_obj(obj, selected):
+            if not len(selected) or obj.plotinfo.plotid in selected:
                 return True
             return False
 
@@ -64,7 +64,7 @@ class ConfigTab(BacktraderPlottingTab):
                 active = []
                 if active_obj(d, selected_plot_objs):
                     active.append(0)
-                    self.plotgroup.append(d)
+                    self._add_to_plotgroup(d)
                 master_chk = CheckboxButtonGroup(
                     labels=[obj2label(d)], active=active)
 
@@ -82,7 +82,7 @@ class ConfigTab(BacktraderPlottingTab):
                     childs.append(obj2label(o))
                     if active_obj(o, selected_plot_objs):
                         active.append(i)
-                        self.plotgroup.append(o)
+                        self._add_to_plotgroup(o)
                 # create a chk for every chunk
                 if len(childs):
                     chk = CheckboxButtonGroup(
@@ -114,12 +114,25 @@ class ConfigTab(BacktraderPlottingTab):
                 options.append(master_chk)
             for c in childs_chk:
                 options.append(c)
+
+        # text input to display selection
         self.plotgroup_text = TextInput(
-            value=','.join(self._get_plotgroup()),
+            value=','.join(self.plotgroup),
             disabled=True)
-        options.append(Paragraph(text=f'Plot Group Selection:'))
+        options.append(Paragraph(text='Plot Group Selection:'))
         options.append(self.plotgroup_text)
+
         return column([title] + options)
+
+    def _add_to_plotgroup(self, obj):
+        plotid = obj.plotinfo.plotid
+        if plotid not in self.plotgroup:
+            self.plotgroup.append(plotid)
+
+    def _remove_from_plotgroup(self, obj):
+        plotid = obj.plotinfo.plotid
+        if plotid in self.plotgroup:
+            self.plotgroup.remove(plotid)
 
     def _on_update_plotgroups(self, attr, old, new, chk=None, master=None,
                               childs=None):
@@ -127,45 +140,38 @@ class ConfigTab(BacktraderPlottingTab):
         Callback for plot group selection
         '''
         if childs is None:
+            # master was clicked
             if not len(new):
-                if master in self.plotgroup:
-                    self.plotgroup.remove(master)
+                self._remove_from_plotgroup(master)
                 # disable all child chk, master has i=0
                 for i, c in enumerate(chk[1:]):
                     c.disabled = True
                     for o in self.plotgroup_chk[master][i]:
-                        if o in self.plotgroup:
-                            self.plotgroup.remove(o)
+                        self._remove_from_plotgroup(o)
             else:
-                if master not in self.plotgroup:
-                    self.plotgroup.append(master)
+                self._add_to_plotgroup(master)
                 # enable all childs
                 for i, c in enumerate(chk[1:]):
                     c.disabled = False
                     for j in c.active:
                         o = self.plotgroup_chk[master][i][j]
-                        if o not in self.plotgroup:
-                            self.plotgroup.append(o)
+                        self._add_to_plotgroup(o)
         else:
+            # child was clicked
             added_diff = [i for i in old + new if i not in old and i in new]
             removed_diff = [i for i in old + new if i in old and i not in new]
             for i in added_diff:
                 o = childs[i]
-                if o not in self.plotgroup:
-                    self.plotgroup.append(o)
+                self._add_to_plotgroup(o)
             for i in removed_diff:
                 o = childs[i]
-                if o in self.plotgroup:
-                    self.plotgroup.remove(o)
-        self.plotgroup_text.value = ','.join(self._get_plotgroup())
+                self._remove_from_plotgroup(o)
 
-    def _get_plotgroup(self):
-        plotgroup = [x.plotinfo.plotid for x in self.plotgroup]
-        return plotgroup
+        self.plotgroup_text.value = ','.join(self.plotgroup)
 
     def _apply_plotgroup_config(self):
         # update scheme with new plot group
-        self.scheme.plot_group = ','.join(self._get_plotgroup())
+        self.scheme.plot_group = ','.join(self.plotgroup)
 
     def _create_aspectratio_config(self):
         self.sld_obs_ar = None
