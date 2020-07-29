@@ -4,13 +4,13 @@ from collections import defaultdict
 import backtrader as bt
 
 
-def get_plot_objs(strategy, include_non_plotable=False,
-                  order_by_plotmaster=False):
+def get_plotobjs(strategy, include_non_plotable=False,
+                 order_by_plotmaster=False):
     '''
     Returns all plotable objects of a strategy
 
     By default the result will be ordered by the
-    data the object is aligned to. If order_by_plotmastere
+    data the object is aligned to. If order_by_plotmaster
     is True, objects will be aligned to their plotmaster.
     '''
     datas = strategy.datas
@@ -56,7 +56,7 @@ def get_plot_objs(strategy, include_non_plotable=False,
         for o in objs[d]:
             pmaster = get_plotmaster(o.plotinfo.plotmaster)
             subplot = o.plotinfo.subplot
-            if subplot and not pmaster:
+            if subplot and pmaster is None:
                 pobjs[o] = []
             else:
                 pmaster = get_plotmaster(get_clock_obj(o, True))
@@ -102,16 +102,43 @@ def get_last_avail_idx(strategy, dataname=False):
     return len(data) - 1 - offset
 
 
-def filter_by_dataname(obj, dataname):
+def filter_obj(obj, filter):
     '''
-    Returns if the given object should be included
-    True if it should be included, False if not
+    Returns if the given object should be filtered.
+    False if object should not be filtered out, 
+    True if object should be filtered out.
     '''
-    if dataname is False:
-        return True
 
-    obj_dataname = get_dataname(obj)
-    return obj_dataname is False or obj_dataname == dataname
+    if filter is None:
+        return False
+
+    dataname = get_dataname(obj)
+    plotid = obj.plotinfo.plotid
+
+    # filter by dataname
+    if 'dataname' in filter:
+        if dataname is False:
+            return False
+        if isinstance(filter['dataname'], str):
+            if dataname == filter['dataname']:
+                return False
+        elif isinstance(filter['dataname', list]):
+            if dataname in filter['dataname']:
+                return False
+        else:
+            raise Exception(
+                f'Unknown type dataname "{filter["dataname"]}"')
+    if 'group' in filter:
+        if isinstance(filter['group'], str):
+            if filter['group'] == '':
+                return False
+            plotids = filter['group'].split(',')
+            if plotid in plotids:
+                return False
+        else:
+            raise Exception(
+                f'Unknown type group "{filter["group"]}"')
+    return True
 
 
 def get_datanames(strategy, filter=True):

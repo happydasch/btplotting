@@ -218,11 +218,15 @@ class Scheme(PlotScheme):
         self.analyzer_tab_num_cols = 1
         # Number of columns on the metadata tab
         self.metadata_tab_num_cols = 3
+        # Sizing mode for plot figures
         self.plot_sizing_mode = 'scale_width'
+        # Aspect ratios for different figure types
         self.data_aspectratio = 2.5
         self.vol_aspectratio = 5.0
         self.obs_aspectratio = 5.0
         self.ind_aspectratio = 5.0
+        # Plot group string used to filter objects to plot
+        self.plot_group = ''
 
         self.toolbar_location = 'right'
 

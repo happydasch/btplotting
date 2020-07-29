@@ -42,7 +42,7 @@ class LiveClient:
         # create model
         self.model, self._refresh_fnc = self._createmodel()
         # update model with current figurepage
-        self._updatemodel()
+        self.updatemodel()
 
     def _createmodel(self):
 
@@ -51,9 +51,7 @@ class LiveClient:
             # ensure datahandler is stopped
             self._datahandler.stop()
             self._filter = new
-            self.doc.hold()
-            self._updatemodel()
-            self.doc.unhold()
+            self.updatemodel()
             _logger.debug('Switching filter finished')
 
         def on_click_nav_action(self):
@@ -106,8 +104,9 @@ class LiveClient:
         datanames = get_datanames(self._strategy)
         options = [('', 'Strategy')]
         for d in datanames:
-            options.append(('D-' + d, f'Data: {d}'))
-        self._filter = 'D-' + datanames[0]
+            options.append(('D' + d, f'Data: {d}'))
+        options.append(('G', 'Plot Group'))
+        self._filter = 'D' + datanames[0]
         select_filter = Select(
             value=self._filter,
             options=options)
@@ -152,8 +151,9 @@ class LiveClient:
             sizing_mode='stretch_width')
         return model, partial(refresh, self)
 
-    def _updatemodel(self):
-        self._app.update_figurepage(**self._get_filter())
+    def updatemodel(self):
+        self.doc.hold()
+        self._app.update_figurepage(filter=self._get_filter())
         panels = self._app.generate_model_panels()
         for t in self._app.p.tabs:
             tab = t(self._app, self._figurepage, self)
@@ -174,11 +174,14 @@ class LiveClient:
 
         # refresh model
         self._refresh_fnc()
+        self.doc.unhold()
 
     def _get_filter(self):
         res = {}
-        if self._filter.startswith('D-'):
-            res['dataname'] = self._filter[2:]
+        if self._filter.startswith('D'):
+            res['dataname'] = self._filter[1:]
+        elif self._filter.startswith('G'):
+            res['group'] = self._app.p.scheme.plot_group
         return res
 
     def _pause(self):

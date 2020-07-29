@@ -2,10 +2,10 @@
 
 Library to add extended plotting capabilities to `backtrader` (<https://www.backtrader.com/>) using bokeh.
 
-btplotting is a fork based on the awesome `backtrader_plotting` (<https://github.com/verybadsoldier/backtrader_plotting>)
+btplotting is based on the awesome `backtrader_plotting` (<https://github.com/verybadsoldier/backtrader_plotting>)
 
-Since most of the inner workings are changed, this fork may not
-work correctly for you. Please use `backtrader_plotting` instead.
+`btplotting` is a complete rework of `backtrader_plotting` with the live client in focus. Besides this, a lot of
+issues are fixed and new functionality is added. See the list below for differences.
 
 **What is different:**
 
@@ -15,19 +15,25 @@ Basic:
 * Different naming / structure
 * Different data generation which allows to generate data for different data sources. This is
   useful when replaying or resampling data, for example to remove gaps.
+* Different filtering of plot objectss
 * Support for replay data
 * Every figure has its own ColumnDataSource, so the live client can patch without having issues
   with nan values, every figure is updated individually
 * Display of plots looks more like backtrader plotting (order, heights, etc.)
-* Allows to add custom columns (for example colors, fill columns, etc.)
+* Allows to generate custom columns, which don't have to be hardcoded. This is being used to generate
+  color for candles, varea values, etc.
 
 Plotting:
 
-* Datas, Indicators, Observer and Volume have own aspect ratios
+* Datas, Indicators, Observer and Volume have own aspect ratios, which can be configured in live client
+  or scheme
 * Only one axis for volume will be added when using multiple data sources on one figure
-* Volume axis position is configureable
+* Volume axis position is configureable in scheme, by default it is being plotted on the right side
 * Linked Crosshair across all figures
 * fill_gt, fill_lt, fill support
+* Plot objects can be filtered by one or more datanames or by plot group
+* Custom plot group, which can be configured in scheme or in live client by providing all
+  plotids in a comma-seperated list
 
 Tabs:
 
@@ -38,9 +44,9 @@ Tabs:
 Live plotting:
 
 * Navigation in live client (Pause, Backward, Forward)
-* Live plotting is done using an analyzer
+* Live plotting is done using an analyzer, so there is no need to use custom backtrader
 * Live plotting data update works in a single thread and is done by a DataHandler
-* Data update is being done every n seconds, this is configureable
+* Data update is being done every n seconds, which is configureable
 
 ## Features
 

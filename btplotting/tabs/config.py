@@ -1,10 +1,13 @@
-from bokeh.layouts import column, gridplot
+from collections import defaultdict
+from functools import partial
+
+from bokeh.layouts import column
 from bokeh.models import Slider, Button, Paragraph, \
-    CheckboxButtonGroup, Spacer
+    CheckboxButtonGroup, TextInput
 
 from ..figure import FigureType
 from ..tab import BacktraderPlottingTab
-from ..utils import get_plot_objs
+from ..utils import get_plotobjs
 from ..helper.label import obj2label
 
 import backtrader as bt
@@ -14,56 +17,161 @@ class ConfigTab(BacktraderPlottingTab):
 
     def __init__(self, app, figurepage, client=None):
         super(ConfigTab, self).__init__(app, figurepage, client)
-        self.sld_obs_ar = None
-        self.sld_data_ar = None
-        self.sld_vol_ar = None
-        self.sld_ind_ar = None
         self.scheme = app.p.scheme
 
     def _is_useable(self):
         return (self._client is not None)
 
     def _on_button_save_config(self):
-        self._apply_strategy_plot_config()
+        # apply config
+        self._apply_plotgroup_config()
         self._apply_aspectratio_config()
+        # update client
+        self._client.updatemodel()
 
-    def _create_strategy_plot_config(self):
+    def _create_plotgroup_config(self):
+        self.plotgroup = []
+        self.plotgroup_chk = defaultdict(list)
+        self.plotgroup_objs = defaultdict(list)
+        self.plotgroup_text = None
+
+        def active_obj(o, selected):
+            if not len(selected) or o.plotinfo.plotid in selected:
+                return True
+            return False
+
         title = Paragraph(
-            text='Strategy Plot Selection',
+            text='Plot Group',
             css_classes=['config-title'])
         options = []
 
-        objs = get_plot_objs(
+        # get scheme plot group selection
+        if self.scheme.plot_group:
+            selected_plot_objs = self.scheme.plot_group.split(',')
+        else:
+            selected_plot_objs = []
+
+        # get all plot objects
+        self.plotgroup_objs = get_plotobjs(
             self._figurepage.strategy,
             order_by_plotmaster=False)
 
-        for d in objs:
-            options.append(Paragraph(text=f'{obj2label(d)}:'))
+        # create plotgroup checkbox buttons
+        for d in self.plotgroup_objs:
+            # generate master chk
+            master_chk = None
             if not isinstance(d, bt.Strategy):
-                options.append(CheckboxButtonGroup(
-                    labels=[obj2label(d)], active=[0]))
-            objsd = objs[d]
-            # sort objs by type
+                active = []
+                if active_obj(d, selected_plot_objs):
+                    active.append(0)
+                    self.plotgroup.append(d)
+                master_chk = CheckboxButtonGroup(
+                    labels=[obj2label(d)], active=active)
+
+            # generate childs chk
+            childs_chk = []
+            objsd = self.plotgroup_objs[d]
+            # sort child objs by type
             objsd.sort(key=lambda x: (FigureType.get_type(x).value))
-            # split objs into chunks
+            # split objs into chunks and store chk
             objsd = [objsd[i:i + 3] for i in range(0, len(objsd), 3)]
             for x in objsd:
                 childs = []
                 active = []
                 for i, o in enumerate(x):
                     childs.append(obj2label(o))
-                    active.append(i)
+                    if active_obj(o, selected_plot_objs):
+                        active.append(i)
+                        self.plotgroup.append(o)
+                # create a chk for every chunk
                 if len(childs):
-                    options.append(CheckboxButtonGroup(
-                        labels=childs, active=active))
-            #options.append(Spacer(height=10))
+                    chk = CheckboxButtonGroup(
+                        labels=childs, active=active)
+                    chk.on_change(
+                        'active',
+                        partial(
+                            self._on_update_plotgroups,
+                            chk=chk,
+                            master=d,
+                            childs=x))
+                    # if master is not active, disable childs
+                    if master_chk and not len(master_chk.active):
+                        chk.disabled = True
+                    childs_chk.append(chk)
+                self.plotgroup_chk[d].append(x)
 
+            # append title for master (this will also include strategy)
+            options.append(Paragraph(text=f'{obj2label(d)}:'))
+            # append master_chk and childs_chk to layout
+            if master_chk:
+                master_chk.on_change(
+                    'active',
+                    partial(
+                        self._on_update_plotgroups,
+                        # provide all related chk to master
+                        chk=[master_chk] + childs_chk,
+                        master=d))
+                options.append(master_chk)
+            for c in childs_chk:
+                options.append(c)
+        self.plotgroup_text = TextInput(
+            value=','.join(self._get_plotgroup()),
+            disabled=True)
+        options.append(Paragraph(text=f'Plot Group Selection:'))
+        options.append(self.plotgroup_text)
         return column([title] + options)
 
-    def _apply_strategy_plot_config(self):
-        pass
+    def _on_update_plotgroups(self, attr, old, new, chk=None, master=None,
+                              childs=None):
+        '''
+        Callback for plot group selection
+        '''
+        if childs is None:
+            if not len(new):
+                if master in self.plotgroup:
+                    self.plotgroup.remove(master)
+                # disable all child chk, master has i=0
+                for i, c in enumerate(chk[1:]):
+                    c.disabled = True
+                    for o in self.plotgroup_chk[master][i]:
+                        if o in self.plotgroup:
+                            self.plotgroup.remove(o)
+            else:
+                if master not in self.plotgroup:
+                    self.plotgroup.append(master)
+                # enable all childs
+                for i, c in enumerate(chk[1:]):
+                    c.disabled = False
+                    for j in c.active:
+                        o = self.plotgroup_chk[master][i][j]
+                        if o not in self.plotgroup:
+                            self.plotgroup.append(o)
+        else:
+            added_diff = [i for i in old + new if i not in old and i in new]
+            removed_diff = [i for i in old + new if i in old and i not in new]
+            for i in added_diff:
+                o = childs[i]
+                if o not in self.plotgroup:
+                    self.plotgroup.append(o)
+            for i in removed_diff:
+                o = childs[i]
+                if o in self.plotgroup:
+                    self.plotgroup.remove(o)
+        self.plotgroup_text.value = ','.join(self._get_plotgroup())
+
+    def _get_plotgroup(self):
+        plotgroup = [x.plotinfo.plotid for x in self.plotgroup]
+        return plotgroup
+
+    def _apply_plotgroup_config(self):
+        # update scheme with new plot group
+        self.scheme.plot_group = ','.join(self._get_plotgroup())
 
     def _create_aspectratio_config(self):
+        self.sld_obs_ar = None
+        self.sld_data_ar = None
+        self.sld_vol_ar = None
+        self.sld_ind_ar = None
         title = Paragraph(
             text='Aspect Ratios',
             css_classes=['config-title'])
@@ -83,7 +191,6 @@ class ConfigTab(BacktraderPlottingTab):
             title='Indicator Aspect Ratio',
             value=self.scheme.ind_aspectratio,
             start=0.1, end=20.0, step=0.1)
-
         return column([title,
                        self.sld_obs_ar,
                        self.sld_data_ar,
@@ -96,21 +203,11 @@ class ConfigTab(BacktraderPlottingTab):
         self.scheme.data_aspectratio = self.sld_data_ar.value
         self.scheme.vol_aspectratio = self.sld_vol_ar.value
         self.scheme.ind_aspectratio = self.sld_ind_ar.value
-        # apply new aspect ratios
-        for f in self._figurepage.figures:
-            ftype = f.get_type()
-            if ftype == FigureType.OBS:
-                f.figure.aspect_ratio = self.sld_obs_ar.value
-            elif ftype == FigureType.DATA:
-                f.figure.aspect_ratio = self.sld_data_ar.value
-            elif ftype == FigureType.VOL:
-                f.figure.aspect_ratio = self.sld_vol_ar.value
-            elif ftype == FigureType.IND:
-                f.figure.aspect_ratio = self.sld_ind_ar.value
-            else:
-                raise Exception(f'Unknown type {ftype}')
 
     def _get_panel(self):
+        '''
+        Returns the panel for tab
+        '''
         title = Paragraph(
             text='Client Configuration',
             css_classes=['panel-title'])
@@ -121,7 +218,7 @@ class ConfigTab(BacktraderPlottingTab):
         button.on_click(self._on_button_save_config)
         # layout for config area
         config = column(
-            [self._create_strategy_plot_config(),
+            [self._create_plotgroup_config(),
              self._create_aspectratio_config()],
             sizing_mode='scale_width')
         # layout for config buttons

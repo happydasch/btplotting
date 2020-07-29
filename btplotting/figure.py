@@ -87,10 +87,10 @@ class HoverContainer(metaclass=bt.MetaParams):
             if src_obj is fig.master:
                 item = (label, tmpl)
                 tooltips_top.append(item)
-            for i in fig.slaves:
+            for i in fig.childs:
                 if src_obj is i:
                     prefix = ''
-                    prefix = obj2label(src_obj) + " - "
+                    prefix = obj2label(src_obj, True) + " - "
                     item = (prefix + label, tmpl)
                     tooltips_bottom.append(item)
                     break
@@ -228,7 +228,7 @@ class Figure(CDSObject):
 
     _bar_width = 0.5
 
-    def __init__(self, fp, scheme, master, slaves, type=None):
+    def __init__(self, fp, scheme, master, childs, type=None):
         super(Figure, self).__init__([])
         self._fp = fp
         self._scheme = scheme
@@ -237,7 +237,7 @@ class Figure(CDSObject):
         self._coloridx = collections.defaultdict(lambda: -1)
         self._type = type
         self.master = master
-        self.slaves = slaves
+        self.childs = childs
         self.figure = None
         # initialize figure with scheme settings
         self._init_figure()
@@ -600,6 +600,12 @@ class Figure(CDSObject):
         Returns the plotorder of this Figure
         '''
         return self.master.plotinfo.plotorder
+
+    def get_plotid(self):
+        '''
+        Returns the plotid of the figure
+        '''
+        return self.master.plotinfo.plotid
 
     def get_plottab(self):
         '''

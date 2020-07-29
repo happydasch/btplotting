@@ -9,6 +9,7 @@ import tempfile
 import backtrader as bt
 
 import pandas as pd
+import numpy as np
 
 from bokeh.models.widgets import Panel, Tabs
 from bokeh.layouts import gridplot
@@ -22,7 +23,7 @@ from jinja2 import Environment, PackageLoader
 from .schemes import Scheme, Blackly
 
 from .utils import get_dataname, get_datanames, get_source_id, \
-    filter_by_dataname, get_last_avail_idx, get_plot_objs
+    filter_obj, get_last_avail_idx, get_plotobjs
 from .figure import FigurePage, FigureType, Figure
 from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
@@ -103,7 +104,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Applies config from plotconfig param to objects
         '''
         fp = self.get_figurepage(figid)
-        objs = get_plot_objs(fp.strategy)
+        objs = get_plotobjs(fp.strategy)
 
         i = 0
         for d in objs:
@@ -156,20 +157,24 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 raise RuntimeError(
                     f'Unknown config type in plotting config: {k}')
 
-    def _get_plot_objects(self, figid=0, dataname=False):
+    def _get_plotobjects(self, figid=0, filter=None):
         '''
         Returns a filtered dict of objects to be plotted
         '''
         fp = self.get_figurepage(figid)
-        objs = get_plot_objs(fp.strategy, order_by_plotmaster=True)
+        objs = get_plotobjs(fp.strategy, order_by_plotmaster=True)
         filtered = {}
         for o in objs:
-            if not filter_by_dataname(o, dataname):
+            if filter_obj(o, filter):
                 continue
-            filtered[o] = objs[o]
+            childs = []
+            for c in objs[o]:
+                if not filter_obj(c, filter):
+                    childs.append(c)
+            filtered[o] = childs
         return filtered
 
-    def _blueprint_strategy(self, figid=0, dataname=False):
+    def _blueprint_strategy(self, figid=0, filter=None):
         '''
         Fills a FigurePage with Figures of all objects to be plotted
         '''
@@ -180,19 +185,19 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             a for _, a in fp.strategy.analyzers.getitems()]
 
         # get the objects to be plotted
-        objects = self._get_plot_objects(figid, dataname)
+        objects = self._get_plotobjects(figid, filter)
 
         # create figures
         figures = []
-        for master, slaves in objects.items():
+        for parent, childs in objects.items():
             figure = Figure(
                 fp=fp,
                 scheme=scheme,
-                master=master,
-                slaves=slaves)
-            figure.plot(master)
-            for s in slaves:
-                figure.plot(s)
+                master=parent,
+                childs=childs)
+            figure.plot(parent)
+            for c in childs:
+                figure.plot(c)
             figure.apply()
             figures.append(figure)
 
@@ -212,7 +217,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     fp=fp,
                     scheme=scheme,
                     master=f.master,
-                    slaves=[],
+                    childs=[],
                     type=FigureType.VOL)
                 figure.plot_volume(f.master)
                 figure.apply()
@@ -238,8 +243,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         '''
         return generate_stylesheet(self.p.scheme, template)
 
-    def _output_plot_file(self, model, figid=0, filename=None,
-                          template='basic.html.j2'):
+    def _output_plotfile(self, model, figid=0, filename=None,
+                         template='basic.html.j2'):
         '''
         Outputs the plot file
         '''
@@ -274,8 +279,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             dataname = get_dataname(f.master)
             if dataname not in datanames:
                 datanames.append(dataname)
-            for s in f.slaves:
-                dataname = get_dataname(s)
+            for c in f.childs:
+                dataname = get_dataname(c)
                 if dataname not in datanames:
                     datanames.append(dataname)
         return get_last_avail_idx(
@@ -283,7 +288,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             datanames[0] if len(datanames) > 0 else False)
 
     def create_figurepage(self, obj, figid=0, start=None, end=None,
-                          dataname=False, filldata=True):
+                          filter=None, filldata=True):
         '''
         Creates new FigurePage for given obj.
         The obj can be either an instance of bt.Strategy or bt.OptReturn
@@ -295,7 +300,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         if isinstance(obj, bt.Strategy):
             self._configure_plotting(figid)
-            self._blueprint_strategy(figid, dataname)
+            self._blueprint_strategy(figid, filter)
             if filldata:
                 df = self.generate_data(figid, start=start, end=end)
                 fp.set_cds_columns_from_df(df)
@@ -306,11 +311,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 f'Unsupported plot source object: {str(type(obj))}')
         return figid, fp
 
-    def update_figurepage(self, figid=0, dataname=False):
+    def update_figurepage(self, figid=0, filter=None):
         '''
         Updates the figurepage with the given figid
         '''
-        self._blueprint_strategy(figid, dataname)
+        self._blueprint_strategy(figid, filter)
 
     def get_figurepage(self, figid=0):
         '''
@@ -418,9 +423,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             objs[dataname].append(f.master)
             if dataname not in datanames:
                 datanames.append(dataname)
-            for s in f.slaves:
-                dataname = get_dataname(s)
-                objs[dataname].append(s)
+            for c in f.childs:
+                dataname = get_dataname(c)
+                objs[dataname].append(c)
                 if dataname not in datanames:
                     datanames.append(dataname)
 
@@ -498,7 +503,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # apply a proper index (should be identical to 'index' column)
         if df.shape[0] > 0:
             df.index = indices
-
+        else:
+            # ensure the dtype is correct on empty df
+            df['index'].dtype = np.int64
+            df['datetime'].dtype = np.datetime64
         return df
 
     def plot_optmodel(self, obj):
@@ -514,7 +522,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return self.generate_model(0)
 
     def plot(self, obj, figid=0, numfigs=1, iplot=True, start=None,
-             end=None, use=None, dataname=False, **kwargs):
+             end=None, use=None, filter=None, **kwargs):
         '''
         Plot either a strategy or an optimization result
         This method is called by backtrader
@@ -532,7 +540,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             figid=figid,
             start=start,
             end=end,
-            dataname=dataname)
+            filter=filter)
 
         # returns all figurepages
         return self._figurepages
@@ -551,7 +559,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     display(HTML(css))
                     show(model)
                 else:
-                    filename = self._output_plot_file(
+                    filename = self._output_plotfile(
                         model, figid, self.p.filename)
                     if self.p.output_mode == 'show':
                         view(filename)
