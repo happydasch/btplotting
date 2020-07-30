@@ -63,13 +63,14 @@ class CDSHandler(logging.Handler):
         messages = self.messages[self.idx[doc] + 1:last + 1]
         if not len(messages):
             return
-        self.idx[doc] = last
-        self.cds[doc].stream({'message': messages})
-        # move only to last if there is a selected row
-        # when no row is selected, then don't move to new
-        # row
-        if len(self.cds[doc].selected.indices) > 0:
-            self.cds[doc].selected.indices = [self.idx[doc]]
+        with self._lock:
+            self.idx[doc] = last
+            self.cds[doc].stream({'message': messages})
+            # move only to last if there is a selected row
+            # when no row is selected, then don't move to new
+            # row
+            if len(self.cds[doc].selected.indices) > 0:
+                self.cds[doc].selected.indices = [self.idx[doc]]
 
 
 class LogTab(BacktraderPlottingTab):
