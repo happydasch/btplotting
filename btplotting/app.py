@@ -30,7 +30,7 @@ from .clock import ClockGenerator, ClockHandler
 from .helper.label import obj2label
 from .helper.bokeh import generate_stylesheet
 from .tab import BacktraderPlottingTab
-from .tabs import AnalyzerTab, MetadataTab, LogTab
+from .tabs import AnalyzerTab, MetadataTab, LogTab, SourceTab
 
 _logger = logging.getLogger(__name__)
 
@@ -87,7 +87,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception(
                 'Param tabs needs to be a list containing tabs to display')
         if self.p.use_default_tabs:
-            self.p.tabs = [AnalyzerTab, MetadataTab, LogTab] + self.p.tabs
+            self.p.tabs = [
+                AnalyzerTab, MetadataTab, SourceTab, LogTab] + self.p.tabs
         for tab in self.p.tabs:
             if not issubclass(tab, BacktraderPlottingTab):
                 raise Exception(
@@ -269,6 +270,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             f.write(html)
 
         return filename
+
+    def is_iplot(self):
+        '''
+        Returns iplot value
+        '''
+        return self._iplot
 
     def get_last_idx(self, figid=0):
         '''
@@ -555,7 +562,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             model = self.generate_model(figid)
 
             if self.p.output_mode in ['show', 'save']:
-                if self._iplot:
+                if self.is_iplot():
                     css = self._output_stylesheet()
                     display(HTML(css))
                     show(model)
