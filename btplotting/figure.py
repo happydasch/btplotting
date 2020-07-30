@@ -16,7 +16,7 @@ from bokeh.models import CustomJS, FuncTickFormatter, \
     DatetimeTickFormatter
 
 from .cds import CDSObject
-from .utils import get_source_id
+from .utils import get_source_id, get_clock_obj
 from .helper.cds_ops import cds_op_gt, cds_op_lt, cds_op_non, \
     cds_op_color
 from .helper.bokeh import convert_color, sanitize_source_name
@@ -90,7 +90,7 @@ class HoverContainer(metaclass=bt.MetaParams):
             for i in fig.childs:
                 if src_obj is i:
                     prefix = ''
-                    prefix = obj2label(src_obj, True) + " - "
+                    prefix = obj2label(get_clock_obj(src_obj, True)) + " - "
                     item = (prefix + label, tmpl)
                     tooltips_bottom.append(item)
                     break
