@@ -117,28 +117,21 @@ def filter_obj(obj, filter):
 
     # filter by dataname
     if 'dataname' in filter:
-        if dataname is False:
-            return False
-        if isinstance(filter['dataname'], str):
-            if dataname == filter['dataname']:
-                return False
-        elif isinstance(filter['dataname', list]):
-            if dataname in filter['dataname']:
-                return False
-        else:
-            raise Exception(
-                f'Unknown type dataname "{filter["dataname"]}"')
+        if dataname is not False:
+            if isinstance(filter['dataname'], str):
+                if dataname != filter['dataname']:
+                    return True
+            elif isinstance(filter['dataname', list]):
+                if dataname not in filter['dataname']:
+                    return True
     if 'group' in filter:
         if isinstance(filter['group'], str):
-            if filter['group'] == '':
-                return False
-            plotids = filter['group'].split(',')
-            if plotid in plotids:
-                return False
-        else:
-            raise Exception(
-                f'Unknown type group "{filter["group"]}"')
-    return True
+            if filter['group'] != '':
+                plotids = filter['group'].split(',')
+                if plotid not in plotids:
+                    return True
+
+    return False
 
 
 def get_datanames(strategy, filter=True):
