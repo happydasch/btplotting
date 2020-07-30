@@ -196,7 +196,9 @@ class CDSObject:
                 try:
                     val = series[c]
                     cds_val = self._cds.data[c][idx]
-                    if val == val and val != cds_val:
+                    if cds_val != val:
+                        if val != val:
+                            val = 'NaN'
                         p_data[c].append((idx, val))
                 except Exception:
                     continue
@@ -205,6 +207,8 @@ class CDSObject:
                 cds_val = self._cds.data[c][idx]
                 val = self._create_cds_col_from_series(a, series)
                 if cds_val != val:
+                    if val != val:
+                        val = 'NaN'
                     p_data[c].append((idx, val))
         else:
             # add all columns to stream result. This may be needed if a value

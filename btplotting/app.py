@@ -407,7 +407,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return panels
 
     def generate_data(self, figid=0, start=None, end=None, back=None,
-                      preserveidx=False):
+                      preserveidx=False, fill_with_last=False):
         '''
         Generates data for current figurepage
         '''
@@ -486,12 +486,19 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 if isinstance(obj, bt.AbstractDataBase):
                     source_id = get_source_id(obj)
                     df_data = tmpclk.get_df_from_series(
-                        obj, clkidx, source_id, ['datetime'])
+                        obj,
+                        clkalign=clkidx,
+                        name_prefix=source_id,
+                        skip=['datetime'],
+                        fill_with_last=fill_with_last)
                     df = df.join(df_data)
                 else:
                     for lineidx, line in enumerate(obj.lines):
                         source_id = get_source_id(line)
-                        new_line = tmpclk.get_list_from_line(line, clkidx)
+                        new_line = tmpclk.get_list_from_line(
+                            line,
+                            clkalign=clkidx,
+                            fill_with_last=fill_with_last)
                         df[source_id] = new_line
 
         # apply a proper index (should be identical to 'index' column)

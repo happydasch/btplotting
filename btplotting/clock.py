@@ -109,7 +109,7 @@ class ClockHandler:
         self.start = start
         self.end = end
 
-    def _get_data_from_list(self, llist, clk):
+    def _get_data_from_list(self, llist, clk, fill_with_last=False):
         '''
         Generates data based on given clock
         '''
@@ -144,11 +144,13 @@ class ClockHandler:
                     # remember current value if not nan
                     sc_prev = sc
                     idx_prev = sc_idx
+            if v != v and sc and fill_with_last:
+                v = llist[sc_idx]
             data.append(v)
 
         return data
 
-    def get_list_from_line(self, line, clkalign=None):
+    def get_list_from_line(self, line, clkalign=None, fill_with_last=False):
         '''
         Returns a list with values from the given line values
         aligned to the given clock list
@@ -157,11 +159,11 @@ class ClockHandler:
 
         if clkalign is None:
             clkalign = self.clk
-        data = self._get_data_from_list(llist, clkalign)
+        data = self._get_data_from_list(llist, clkalign, fill_with_last)
         return data
 
     def get_df_from_series(self, series, clkalign=None, name_prefix='',
-                           skip=[]):
+                           skip=[], fill_with_last=False):
         '''
         Returns a DataFrame from the given LineSeries
         The column names will use the name_prefix and the line alias
@@ -172,5 +174,5 @@ class ClockHandler:
                 continue
             line = getattr(series, linealias)
             df[name_prefix + linealias] = self.get_list_from_line(
-                line, clkalign)
+                line, clkalign, fill_with_last)
         return df

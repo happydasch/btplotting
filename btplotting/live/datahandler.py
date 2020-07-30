@@ -54,7 +54,8 @@ class LiveDataHandler:
             self._datastore = self._app.generate_data(
                 figid=self._figid,
                 back=self._lookback,
-                preserveidx=True)
+                preserveidx=True,
+                fill_with_last=True)
             if self._datastore.shape[0] > 0:
                 self._last_idx = self._datastore['index'].iloc[-1]
             # init by calling set_cds_columns_from_df
@@ -182,13 +183,15 @@ class LiveDataHandler:
                     # don't load from last index but from end of data
                     data = self._app.generate_data(
                         back=self._lookback,
-                        preserveidx=True)
+                        preserveidx=True,
+                        fill_with_last=True)
                 else:
                     # if there is just some new data (less then lookback)
                     # load from last index, so no data is skipped
                     data = self._app.generate_data(
                         start=self._last_idx,
-                        preserveidx=True)
+                        preserveidx=True,
+                        fill_with_last=True)
                 self._new_data = False
                 self._process(data)
             time.sleep(self._timeout)

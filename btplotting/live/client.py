@@ -206,7 +206,8 @@ class LiveClient:
             figid=self._figid,
             end=idx,
             back=self._lookback,
-            preserveidx=True)
+            preserveidx=True,
+            fill_with_last=True)
         self._datahandler.set(df)
 
     def _get_tabs(self):
