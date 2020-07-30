@@ -352,9 +352,9 @@ class Figure(CDSObject):
             __name__,
             'templates/js/hover_tooltips.js').decode()
         h = HoverTool(
-            tooltips=[(
-                'Time',
-                f'@datetime{{{self._scheme.hovertool_timeformat}}}')],
+            tooltips=[
+                ('Time',
+                 f'@datetime{{{self._scheme.hovertool_timeformat}}}')],
             mode='vline',
             formatters={'@datetime': 'datetime'},)
         callback = CustomJS(
