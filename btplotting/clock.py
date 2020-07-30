@@ -115,6 +115,7 @@ class ClockHandler:
         '''
         data = []
         c_idx = 0
+        sc = None
         for c in clk:
             sc_prev = None
             idx_prev = None
