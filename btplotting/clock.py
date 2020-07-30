@@ -10,7 +10,10 @@ def get_slice_with_end(data, start, end):
     # end smaller than start will occur if arr is empty
     if end >= start:
         # get slice + value at end pos
-        slice = list(data)[start:end] + [data[end]]
+        try:
+            slice = list(data)[start:end] + [data[end]]
+        except IndexError:
+            slice = []
     else:
         slice = []
     return slice
@@ -68,13 +71,10 @@ class ClockGenerator:
         if end is None:
             end = len(arr) - 1
         elif type(end) == datetime:
-            # set pos of end to pos - 1 to match usage in other parts
             end = bisect.bisect_right(arr, end) - 1
         # if back is provided, move back from end, override start
         if back:
-            # prevent negative start int, add one
-            # since when collecting data, end will
-            # be included
+            # prevent negative start int
             start = max(0, end - back + 1)
         return start, end
 
@@ -119,7 +119,7 @@ class ClockHandler:
             sc_prev = None
             idx_prev = None
             v = float('nan')
-            for sc_idx in range(c_idx, min(len(self.clk), len(llist))):
+            for sc_idx in range(c_idx, len(llist)):
                 sc = self.clk[sc_idx]
                 # match source clock (sc) on target clock by direct hit
                 if sc == c:
@@ -153,9 +153,7 @@ class ClockHandler:
         Returns a list with values from the given line values
         aligned to the given clock list
         '''
-        end = min(len(line) - 1, self.end)
-        start = max(0, min(self.start, len(line) - 1))
-        llist = get_slice_with_end(line.array, start, end)
+        llist = get_slice_with_end(line.array, self.start, self.end)
 
         if clkalign is None:
             clkalign = self.clk

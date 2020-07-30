@@ -173,6 +173,24 @@ def get_dataname(obj):
             f'Unsupported data: {obj.__class__}')
 
 
+def get_smallest_dataname(strategy, datanames):
+    '''
+    Returns the smallest dataname from a list of
+    datanames
+    '''
+    data = False
+    for d in datanames:
+        if not d:
+            continue
+        tmp = strategy.getdatabyname(d)
+        if (data is False
+            or (tmp._timeframe < data._timeframe)
+            or (tmp._timeframe == data._timeframe
+                and tmp._compression < data._compression)):
+            data = tmp
+    return get_dataname(data)
+
+
 def get_clock_obj(obj, resolve_to_data=False):
     '''
     Returns a clock object to use for building data

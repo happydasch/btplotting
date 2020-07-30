@@ -196,7 +196,7 @@ class CDSObject:
                 try:
                     val = series[c]
                     cds_val = self._cds.data[c][idx]
-                    if (val == val and val != cds_val):
+                    if val == val and val != cds_val:
                         p_data[c].append((idx, val))
                 except Exception:
                     continue
