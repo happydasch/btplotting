@@ -1,4 +1,5 @@
 import logging
+from threading import Lock
 from functools import partial
 from tornado import gen
 
@@ -28,6 +29,7 @@ class CDSHandler(logging.Handler):
 
     def __init__(self, level=logging.NOTSET):
         super(CDSHandler, self).__init__(level=level)
+        self._lock = Lock()
         self.messages = []
         self.idx = {}
         self.cds = {}
@@ -36,21 +38,23 @@ class CDSHandler(logging.Handler):
     def emit(self, record):
         message = record.msg
         self.messages.append(message)
-        for doc in self.cds:
-            try:
-                doc.remove_next_tick_callback(self.cb[doc])
-            except ValueError:
-                pass
-            self.cb[doc] = doc.add_next_tick_callback(
-                partial(self._stream_to_cds, doc))
+        with self._lock:
+            for doc in self.cds:
+                try:
+                    doc.remove_next_tick_callback(self.cb[doc])
+                except ValueError:
+                    pass
+                self.cb[doc] = doc.add_next_tick_callback(
+                    partial(self._stream_to_cds, doc))
 
     def get_cds(self, doc):
         if doc not in self.cds:
-            self.cds[doc] = ColumnDataSource(
-                data=dict(message=self.messages.copy()))
-            self.cb[doc] = None
-            self.idx[doc] = len(self.messages) - 1
-            self.cds[doc].selected.indices = [self.idx[doc]]
+            with self._lock:
+                self.cds[doc] = ColumnDataSource(
+                    data=dict(message=self.messages.copy()))
+                self.cb[doc] = None
+                self.idx[doc] = len(self.messages) - 1
+                self.cds[doc].selected.indices = [self.idx[doc]]
         return self.cds[doc]
 
     @gen.coroutine
