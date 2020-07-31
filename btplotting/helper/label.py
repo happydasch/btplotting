@@ -23,6 +23,7 @@ def obj2label(obj, fullid=False):
         return obj.__class__.__name__
     elif isinstance(obj, (bt.LinesOperation,
                           bt.LineSingle,
+                          bt.LineIterator,
                           bt.LineSeriesStub)):
         return obj.__class__.__name__
     else:

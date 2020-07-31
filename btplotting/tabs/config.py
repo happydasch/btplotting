@@ -136,7 +136,8 @@ class ConfigTab(BacktraderPlottingTab):
                 self.plotgroup_chk[d].append(x)
 
             # append title for master (this will also include strategy)
-            options.append(Paragraph(text=f'{obj2label(d)}:'))
+            if len(self.plotgroup_objs[d]):
+                options.append(Paragraph(text=f'{obj2label(d)}:'))
             # append master_chk and childs_chk to layout
             if master_chk:
                 master_chk.on_change(

@@ -32,7 +32,7 @@ class FigureType(Enum):
         if cls.DATA.name == name:
             return bt.AbstractDataBase
         elif cls.IND.name == name:
-            return bt.IndicatorBase
+            return (bt.IndicatorBase, bt.LineIterator)
         elif cls.OBS.name == name:
             return bt.ObserverBase
         else:
@@ -42,7 +42,7 @@ class FigureType(Enum):
     def get_type(cls, obj):
         if isinstance(obj, bt.AbstractDataBase):
             return cls.DATA
-        elif isinstance(obj, bt.IndicatorBase):
+        elif isinstance(obj, (bt.IndicatorBase, bt.LineIterator)):
             return cls.IND
         elif isinstance(obj, bt.ObserverBase):
             return cls.OBS
@@ -632,11 +632,11 @@ class Figure(CDSObject):
         '''
         Common plot method
         '''
-        if isinstance(obj, bt.AbstractDataBase):
+        if FigureType.get_type(obj) == FigureType.DATA:
             self.plot_data(obj)
-        elif isinstance(obj, bt.IndicatorBase):
+        elif FigureType.get_type(obj) == FigureType.IND:
             self.plot_indicator(obj)
-        elif isinstance(obj, bt.ObserverBase):
+        elif FigureType.get_type(obj) == FigureType.OBS:
             self.plot_observer(obj)
         else:
             raise Exception(f'Unsupported plot object: "{type(obj)}"')

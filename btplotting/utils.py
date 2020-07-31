@@ -199,7 +199,7 @@ def get_clock_obj(obj, resolve_to_data=False):
     A clock object can be either a strategy, data source,
     indicator or a observer.
     '''
-    if isinstance(obj, bt.LinesOperation):
+    if isinstance(obj, (bt.LinesOperation, bt.LineIterator)):
         # indicators can be created to run on a line
         # (instead of e.g. a data object) in that case grab
         # the owner of that line to find the corresponding clock
