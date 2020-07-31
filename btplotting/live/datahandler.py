@@ -121,8 +121,14 @@ class LiveDataHandler:
 
             # patch all figures
             for f in fp.figures:
+                # only fill with nan if not filling gaps
+                if not self._fill_gaps:
+                    c_fill_nan = f.fill_nan()
+                else:
+                    c_fill_nan = []
+                # get patch data
                 p_data, s_data = f.get_cds_patchdata_from_series(
-                    patch, f.fill_nan())
+                    patch, c_fill_nan)
                 if len(p_data) > 0:
                     _logger.debug(f'Sending patch for figure: {p_data}')
                     f.cds.patch(p_data)

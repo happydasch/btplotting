@@ -122,7 +122,6 @@ class ClockHandler:
             v = float('nan')
             for sc_idx in range(c_idx, len(llist)):
                 sc = self.clk[sc_idx]
-                # match source clock (sc) on target clock by direct hit
                 if sc == c:
                     # store current value and remember source clock
                     # position for next iteration (c_idx)
@@ -132,21 +131,18 @@ class ClockHandler:
                         v = llist[sc_idx]
                     c_idx = sc_idx + 1
                     break
-                # match source clock (sc) on passing boundry of
-                # target clock (c)
-                elif (sc_prev and sc_prev < c and sc > c):
-                    # get last value, current value is already on new clock pos
-                    v = llist[idx_prev]
-                    c_idx = idx_prev + 1
-                    break
                 elif sc > c:
                     break
                 if llist[sc_idx] == llist[sc_idx]:
                     # remember current value if not nan
                     sc_prev = sc
                     idx_prev = sc_idx
-            if v != v and sc and fill_gaps:
-                v = llist[sc_idx]
+            if v != v and fill_gaps:
+                if sc and llist[sc_idx] == llist[sc_idx]:
+                    v = llist[sc_idx]
+                elif sc_prev and llist[idx_prev] == llist[idx_prev]:
+                    v = llist[idx_prev]
+
             data.append(v)
 
         return data
