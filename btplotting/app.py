@@ -553,7 +553,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # set filter from params if none provided
         if not filter:
-            filter = self.p.params
+            filter = self.p.filter
 
         # create figurepage for obj
         self.create_figurepage(

@@ -188,7 +188,7 @@ def get_smallest_dataname(strategy, datanames):
             or (tmp._timeframe == data._timeframe
                 and tmp._compression < data._compression)):
             data = tmp
-    if not data:
+    if data is False:
         return data
     return get_dataname(data)
 
