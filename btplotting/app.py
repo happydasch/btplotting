@@ -89,14 +89,14 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         self._iplot = None
         self._figurepages = {}
         # set tabs
-        if not isinstance(self.p.tabs, list):
+        if not isinstance(self.tabs, list):
             raise Exception(
                 'Param tabs needs to be a list containing tabs to display')
         self.tabs = []
         if self.p.use_default_tabs:
             self.tabs = ([
                 AnalyzerTab, MetadataTab, SourceTab, LogTab]
-                + copy(self.p.tabs))
+                + copy(self.tabs))
         for tab in self.tabs:
             if not issubclass(tab, BacktraderPlottingTab):
                 raise Exception(
@@ -350,7 +350,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         else:
             panels = []
 
-        for t in self.p.tabs:
+        for t in self.tabs:
             tab = t(self, fp, None)
             if tab.is_useable():
                 panels.append(tab.get_panel())
