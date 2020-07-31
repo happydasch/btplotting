@@ -45,9 +45,9 @@ class ConfigTab(BacktraderPlottingTab):
             css_classes=['config-title'])
         options = []
 
-        # get scheme plot group selection
-        if self.scheme.plot_group:
-            selected_plot_objs = self.scheme.plot_group.split(',')
+        # get client plot group selection
+        if self._client.plotgroup != '':
+            selected_plot_objs = self._client.plotgroup.split(',')
         else:
             selected_plot_objs = []
 
@@ -171,7 +171,7 @@ class ConfigTab(BacktraderPlottingTab):
 
     def _apply_plotgroup_config(self):
         # update scheme with new plot group
-        self.scheme.plot_group = ','.join(self.plotgroup)
+        self._client.plotgroup = ','.join(self.plotgroup)
 
     def _create_aspectratio_config(self):
         self.sld_obs_ar = None

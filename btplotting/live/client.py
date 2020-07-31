@@ -28,6 +28,8 @@ class LiveClient:
         self._figurepage = None
         self._paused = False
         self._filter = ''
+        # plotgroup
+        self.plotgroup = ''
         # bokeh document for client
         self.doc = doc
         # model is the root model for bokeh and will be set in baseapp
@@ -36,6 +38,9 @@ class LiveClient:
         # append config tab if default tabs should be added
         if self._app.p.use_default_tabs:
             self._app.p.tabs.append(ConfigTab)
+        # set plotgroup from app params if provided
+        if self._app.p.filter and self._app.p.filter['group']:
+            self.plotgroup = self._app.p.filter['group']
         # create figurepage
         self._figid, self._figurepage = self._app.create_figurepage(
             self._strategy, filldata=False)
@@ -181,7 +186,7 @@ class LiveClient:
         if self._filter.startswith('D'):
             res['dataname'] = self._filter[1:]
         elif self._filter.startswith('G'):
-            res['group'] = self._app.p.scheme.plot_group
+            res['group'] = self.plotgroup
         return res
 
     def _pause(self):

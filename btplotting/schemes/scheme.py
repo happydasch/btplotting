@@ -225,8 +225,6 @@ class Scheme(PlotScheme):
         self.vol_aspectratio = 5.0
         self.obs_aspectratio = 5.0
         self.ind_aspectratio = 5.0
-        # Plot group string used to filter objects to plot
-        self.plot_group = ''
 
         self.toolbar_location = 'right'
 

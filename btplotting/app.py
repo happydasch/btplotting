@@ -70,6 +70,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         ('tabs', []),
         # should default tabs be used
         ('use_default_tabs', True),
+        # default filter to apply on plots
+        ('filter', None),
     )
 
     def __init__(self, **kwargs):
@@ -471,7 +473,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             tclk, tstart, tend = clock_values[name]
             clocks[name] = ClockHandler(tclk, tstart, tend)
 
-        # for easier access get the smallest clock to use to align everything to
+        # for easier access get the smallest clock to use to
+        # align everything to
         clock = clocks[smallest]
         # get clock list for index
         clkidx = clock.clk
@@ -541,6 +544,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception('Different backends by "use" not supported')
 
         self._iplot = iplot and 'ipykernel' in sys.modules
+
+        # set filter from params if none provided
+        if not filter:
+            filter = self.p.params
 
         # create figurepage for obj
         self.create_figurepage(
