@@ -14,7 +14,7 @@ class AnalyzerTab(BacktraderPlottingTab):
         return len(self._figurepage.analyzers) > 0
 
     def _get_analyzer_info(self):
-        tablegen = AnalysisTableGenerator(self._app.p.scheme)
+        tablegen = AnalysisTableGenerator(self._app.scheme)
         acolumns = []
         for analyzer in self._figurepage.analyzers:
             table_header, elements = tablegen.get_tables(analyzer)
@@ -22,7 +22,7 @@ class AnalyzerTab(BacktraderPlottingTab):
                 acolumns.append(column([table_header] + elements))
         info = gridplot(
             acolumns,
-            ncols=self._app.p.scheme.analyzer_tab_num_cols,
+            ncols=self._app.scheme.analyzer_tab_num_cols,
             sizing_mode='stretch_width',
             toolbar_options={'logo': None})
         return info

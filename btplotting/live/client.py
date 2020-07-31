@@ -22,14 +22,17 @@ class LiveClient:
     def __init__(self, doc, app, strategy, lookback):
         self._app = app
         self._strategy = strategy
-        self._lookback = lookback
         self._refresh_fnc = None
         self._datahandler = None
         self._figurepage = None
         self._paused = False
         self._filter = ''
-        # plotgroup
+        # plotgroup for filter
         self.plotgroup = ''
+        # amount of candles to plot
+        self.lookback = lookback
+        # should gaps in data be filled
+        self.fill_gaps = False
         # bokeh document for client
         self.doc = doc
         # model is the root model for bokeh and will be set in baseapp
@@ -37,7 +40,7 @@ class LiveClient:
 
         # append config tab if default tabs should be added
         if self._app.p.use_default_tabs:
-            self._app.p.tabs.append(ConfigTab)
+            self._app.tabs.append(ConfigTab)
         # set plotgroup from app params if provided
         if self._app.p.filter and self._app.p.filter['group']:
             self.plotgroup = self._app.p.filter['group']
@@ -88,7 +91,7 @@ class LiveClient:
             last_idx = self._datahandler.get_last_idx()
             last_avail_idx = self._app.get_last_idx(self._figid)
 
-            if last_idx < self._lookback:
+            if last_idx < self.lookback:
                 btn_nav_prev.disabled = True
                 btn_nav_prev_big.disabled = True
             else:
@@ -141,7 +144,7 @@ class LiveClient:
         # tabs
         tabs = Tabs(
             id='tabs',
-            sizing_mode=self._app.p.scheme.plot_sizing_mode)
+            sizing_mode=self._app.scheme.plot_sizing_mode)
         # model
         model = layout(
             [
@@ -160,7 +163,7 @@ class LiveClient:
         self.doc.hold()
         self._app.update_figurepage(filter=self._get_filter())
         panels = self._app.generate_model_panels()
-        for t in self._app.p.tabs:
+        for t in self._app.tabs:
             tab = t(self._app, self._figurepage, self)
             if tab.is_useable():
                 panels.append(tab.get_panel())
@@ -172,10 +175,11 @@ class LiveClient:
         if self._datahandler is not None:
             self._datahandler.stop()
         self._datahandler = LiveDataHandler(
-            self.doc,
-            self._app,
-            self._figid,
-            self._lookback)
+            doc=self.doc,
+            app=self._app,
+            figid=self._figid,
+            lookback=self.lookback,
+            fill_gaps=self.fill_gaps)
 
         # refresh model
         self._refresh_fnc()
@@ -205,14 +209,14 @@ class LiveClient:
             last_avail_idx = self._app.get_last_idx(self._figid)
             idx = min(idx, last_avail_idx)
             # don't allow idx to be smaller than lookback - 1
-            idx = max(idx, self._lookback - 1)
+            idx = max(idx, self.lookback - 1)
         # create DataFrame based on last index with length of lookback
         df = self._app.generate_data(
             figid=self._figid,
             end=idx,
-            back=self._lookback,
+            back=self.lookback,
             preserveidx=True,
-            fill_with_last=True)
+            fill_gaps=self.fill_gaps)
         self._datahandler.set(df)
 
     def _get_tabs(self):

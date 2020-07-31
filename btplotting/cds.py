@@ -174,7 +174,7 @@ class CDSObject:
             c_df[a[0]] = col
         return ColumnDataSource.from_df(c_df)
 
-    def get_cds_patchdata_from_series(self, series):
+    def get_cds_patchdata_from_series(self, series, fill_nan=[]):
         '''
         Creates patch data from a pandas Series
         '''
@@ -196,7 +196,7 @@ class CDSObject:
                 try:
                     val = series[c]
                     cds_val = self._cds.data[c][idx]
-                    if cds_val != val:
+                    if (val == val or c in fill_nan) and cds_val != val:
                         if val != val:
                             val = 'NaN'
                         p_data[c].append((idx, val))

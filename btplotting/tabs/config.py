@@ -3,7 +3,7 @@ from functools import partial
 
 from bokeh.layouts import column
 from bokeh.models import Slider, Button, Paragraph, \
-    CheckboxButtonGroup, TextInput
+    CheckboxButtonGroup, CheckboxGroup, TextInput
 
 from ..figure import FigureType
 from ..tab import BacktraderPlottingTab
@@ -17,17 +17,52 @@ class ConfigTab(BacktraderPlottingTab):
 
     def __init__(self, app, figurepage, client=None):
         super(ConfigTab, self).__init__(app, figurepage, client)
-        self.scheme = app.p.scheme
+        self.scheme = app.scheme
 
     def _is_useable(self):
         return (self._client is not None)
 
     def _on_button_save_config(self):
         # apply config
+        self._apply_fill_gaps_config()
+        self._apply_lookback_config()
         self._apply_plotgroup_config()
         self._apply_aspectratio_config()
         # update client
         self._client.updatemodel()
+
+    def _create_fill_gaps_config(self):
+        title = Paragraph(
+            text='Fill Gaps',
+            css_classes=['config-title'])
+
+        if self._client.fill_gaps:
+            active = [0]
+        else:
+            active = []
+        self.chk_fill_gaps = CheckboxGroup(
+            labels=['Fill gaps with previous data'],
+            active=active)
+
+        return column([title, self.chk_fill_gaps], sizing_mode='stretch_width')
+
+    def _apply_fill_gaps_config(self):
+        self._client.fill_gaps = (True
+                                  if 0 in self.chk_fill_gaps.active
+                                  else False)
+
+    def _create_lookback_config(self):
+        title = Paragraph(
+            text='Lookback period',
+            css_classes=['config-title'])
+        self.sld_lookback = Slider(
+            title='Period for data to plot',
+            value=self._client.lookback,
+            start=1, end=200, step=1)
+        return column([title, self.sld_lookback], sizing_mode='stretch_width')
+
+    def _apply_lookback_config(self):
+        self._client.lookback = self.sld_lookback.value
 
     def _create_plotgroup_config(self):
         self.plotgroup = []
@@ -224,7 +259,9 @@ class ConfigTab(BacktraderPlottingTab):
         button.on_click(self._on_button_save_config)
         # layout for config area
         config = column(
-            [self._create_plotgroup_config(),
+            [self._create_fill_gaps_config(),
+             self._create_lookback_config(),
+             self._create_plotgroup_config(),
              self._create_aspectratio_config()],
             sizing_mode='scale_width')
         # layout for config buttons

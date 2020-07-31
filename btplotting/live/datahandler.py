@@ -18,7 +18,7 @@ class LiveDataHandler:
     Handler for live data
     '''
 
-    def __init__(self, doc, app, figid, lookback, timeout=1):
+    def __init__(self, doc, app, figid, lookback, fill_gaps=True, timeout=1):
         # doc of client
         self._doc = doc
         # app instance
@@ -27,6 +27,8 @@ class LiveDataHandler:
         self._figid = figid
         # lookback length
         self._lookback = lookback
+        # should gaps be filled
+        self._fill_gaps = fill_gaps
         # timeout for thread
         self._timeout = timeout
         # figurepage
@@ -55,7 +57,7 @@ class LiveDataHandler:
                 figid=self._figid,
                 back=self._lookback,
                 preserveidx=True,
-                fill_with_last=True)
+                fill_gaps=self._fill_gaps)
             if self._datastore.shape[0] > 0:
                 self._last_idx = self._datastore['index'].iloc[-1]
             # init by calling set_cds_columns_from_df
@@ -119,7 +121,8 @@ class LiveDataHandler:
 
             # patch all figures
             for f in fp.figures:
-                p_data, s_data = f.get_cds_patchdata_from_series(patch)
+                p_data, s_data = f.get_cds_patchdata_from_series(
+                    patch, f.fill_nan())
                 if len(p_data) > 0:
                     _logger.debug(f'Sending patch for figure: {p_data}')
                     f.cds.patch(p_data)
@@ -185,14 +188,14 @@ class LiveDataHandler:
                     data = self._app.generate_data(
                         back=self._lookback,
                         preserveidx=True,
-                        fill_with_last=True)
+                        fill_gaps=self._fill_gaps)
                 else:
                     # if there is just some new data (less then lookback)
                     # load from last index, so no data is skipped
                     data = self._app.generate_data(
                         start=self._last_idx,
                         preserveidx=True,
-                        fill_with_last=True)
+                        fill_gaps=self._fill_gaps)
                 self._new_data = False
                 self._process(data)
             time.sleep(self._timeout)

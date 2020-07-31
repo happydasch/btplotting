@@ -1,3 +1,4 @@
+from copy import copy
 from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
@@ -75,23 +76,28 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     )
 
     def __init__(self, **kwargs):
-        # apply additional parameters to override / set scheme settings
-        for pname, pvalue in kwargs.items():
-            setattr(self.p.scheme, pname, pvalue)
-
-        self._iplot = None
         if not isinstance(self.p.scheme, Scheme):
             raise Exception('Provided scheme has to be a subclass'
                             + ' of btplotting.schemes.scheme.Scheme')
+        # set new scheme instance for app, so source scheme
+        # remains untouched
+        self.scheme = copy(self.p.scheme)
+        # apply additional parameters to override / set scheme settings
+        for pname, pvalue in kwargs.items():
+            setattr(self.scheme, pname, pvalue)
+
+        self._iplot = None
         self._figurepages = {}
         # set tabs
         if not isinstance(self.p.tabs, list):
             raise Exception(
                 'Param tabs needs to be a list containing tabs to display')
+        self.tabs = []
         if self.p.use_default_tabs:
-            self.p.tabs = [
-                AnalyzerTab, MetadataTab, SourceTab, LogTab] + self.p.tabs
-        for tab in self.p.tabs:
+            self.tabs = ([
+                AnalyzerTab, MetadataTab, SourceTab, LogTab]
+                + copy(self.p.tabs))
+        for tab in self.tabs:
             if not issubclass(tab, BacktraderPlottingTab):
                 raise Exception(
                     'Tab needs to be a subclass of'
@@ -183,7 +189,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Fills a FigurePage with Figures of all objects to be plotted
         '''
         fp = self.get_figurepage(figid)
-        scheme = self.p.scheme
+        scheme = self.scheme
         fp.reset()
         fp.analyzers += [
             a for _, a in fp.strategy.analyzers.getitems()]
@@ -213,7 +219,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         fp.figures += figures
 
         # volume figures
-        if self.p.scheme.volume and self.p.scheme.voloverlay is False:
+        if self.scheme.volume and self.scheme.voloverlay is False:
             for f in figures:
                 if not f.get_type() == FigureType.DATA:
                     continue
@@ -245,7 +251,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         '''
         Renders and returns the stylesheet
         '''
-        return generate_stylesheet(self.p.scheme, template)
+        return generate_stylesheet(self.scheme, template)
 
     def _output_plotfile(self, model, figid=0, filename=None,
                          template='basic.html.j2'):
@@ -266,7 +272,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                          resources=CDN,
                          template_variables=dict(
                              stylesheet=self._output_stylesheet(),
-                             show_headline=self.p.scheme.show_headline))
+                             show_headline=self.scheme.show_headline))
 
         with open(filename, 'w') as f:
             f.write(html)
@@ -302,7 +308,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Creates new FigurePage for given obj.
         The obj can be either an instance of bt.Strategy or bt.OptReturn
         '''
-        fp = FigurePage(obj, self.p.scheme)
+        fp = FigurePage(obj, self.scheme)
         if figid in self._figurepages:
             raise Exception(f'FigurePage with figid "{figid}" already exists')
         self._figurepages[figid] = fp
@@ -374,7 +380,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             x.get_type().value))
 
         # fill tabs
-        multiple_tabs = self.p.scheme.multiple_tabs
+        multiple_tabs = self.scheme.multiple_tabs
         tabs = defaultdict(list)
         for f in sorted_figs:
             tab = f.get_plottab()
@@ -399,7 +405,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             if len(tabs[tab]) == 0:
                 continue
             # configure xaxis visibility
-            if self.p.scheme.xaxis_pos == 'bottom':
+            if self.scheme.xaxis_pos == 'bottom':
                 for i, x in enumerate(tabs[tab]):
                     x.figure.xaxis.visible = (
                         False if i < len(tabs[tab]) - 1
@@ -407,8 +413,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             # create gridplot for panel
             g = gridplot([[x.figure] for x in tabs[tab]],
                          toolbar_options={'logo': None},
-                         toolbar_location=self.p.scheme.toolbar_location,
-                         sizing_mode=self.p.scheme.plot_sizing_mode,
+                         toolbar_location=self.scheme.toolbar_location,
+                         sizing_mode=self.scheme.plot_sizing_mode,
                          )
             # append created panel
             panels.append(Panel(title=tab, child=g))
@@ -416,7 +422,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return panels
 
     def generate_data(self, figid=0, start=None, end=None, back=None,
-                      preserveidx=False, fill_with_last=False):
+                      preserveidx=False, fill_gaps=False):
         '''
         Generates data for current figurepage
         '''
@@ -500,7 +506,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                         clkalign=clkidx,
                         name_prefix=source_id,
                         skip=['datetime'],
-                        fill_with_last=fill_with_last)
+                        fill_gaps=fill_gaps)
                     df = df.join(df_data)
                 else:
                     for lineidx, line in enumerate(obj.lines):
@@ -508,7 +514,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                         new_line = tmpclk.get_list_from_line(
                             line,
                             clkalign=clkidx,
-                            fill_with_last=fill_with_last)
+                            fill_gaps=fill_gaps)
                         df[source_id] = new_line
 
         # apply a proper index (should be identical to 'index' column)

@@ -103,7 +103,7 @@ class MetadataTab(BacktraderPlottingTab):
         acolumns = self._get_metadata_columns(self._figurepage.strategy)
         info = gridplot(
             acolumns,
-            ncols=self._app.p.scheme.metadata_tab_num_cols,
+            ncols=self._app.scheme.metadata_tab_num_cols,
             sizing_mode='stretch_width',
             toolbar_options={'logo': None})
         return info

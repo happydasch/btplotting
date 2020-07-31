@@ -236,6 +236,7 @@ class Figure(CDSObject):
         self._hover = None
         self._coloridx = collections.defaultdict(lambda: -1)
         self._type = type
+        self._data_cols = []
         self.master = master
         self.childs = childs
         self.figure = None
@@ -587,6 +588,20 @@ class Figure(CDSObject):
                         level='underlay')
             self.figure.renderers.append(span)
 
+    def fill_nan(self):
+        '''
+        Workaround for bokeh issue with nan
+
+        In most cases nan should not be filled, only if style is not line
+        for data. Since with nan values in data there will be gaps, this
+        will happen when patching data.
+
+        See: DataHandler for usage of fill_nan()
+        '''
+        if self.get_type() == FigureType.DATA and self._scheme.style != 'line':
+            return self._data_cols
+        return []
+
     def get_type(self):
         '''
         Returns the FigureType of this Figure
@@ -631,8 +646,9 @@ class Figure(CDSObject):
         Plot method for data
         '''
         source_id = get_source_id(data)
-        self.set_cds_col(
-            [source_id + x for x in ['open', 'high', 'low', 'close']])
+        self._data_cols = [
+            source_id + x for x in ['open', 'high', 'low', 'close']]
+        self.set_cds_col(self._data_cols)
         # create color columns
         colorup = convert_color(self._scheme.barup)
         colordown = convert_color(self._scheme.bardown)
