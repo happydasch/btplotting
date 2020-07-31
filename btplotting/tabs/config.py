@@ -41,7 +41,7 @@ class ConfigTab(BacktraderPlottingTab):
         else:
             active = []
         self.chk_fill_gaps = CheckboxGroup(
-            labels=['Fill gaps with previous data'],
+            labels=['Fill gaps with data'],
             active=active)
 
         return column([title, self.chk_fill_gaps], sizing_mode='stretch_width')

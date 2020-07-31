@@ -13,15 +13,16 @@ Basic:
 
 * No need for custom backtrader
 * Different naming / structure
-* Different data generation which allows to generate data for different data sources. This is
-  useful when replaying or resampling data, for example to remove gaps.
-* Different filtering of plot objectss
+* Different data generation which allows to generate data for different data sources.
+  This is useful when replaying or resampling data, for example to remove gaps.
+* Different filtering of plot objects
 * Support for replay data
-* Every figure has its own ColumnDataSource, so the live client can patch without having issues
-  with nan values, every figure is updated individually
+* Every figure has its own ColumnDataSource, so the live client can patch without
+  having issues with nan values, every figure is updated individually
 * Display of plots looks more like backtrader plotting (order, heights, etc.)
 * Allows to generate custom columns, which don't have to be hardcoded. This is being used to generate
   color for candles, varea values, etc.
+* Possibility to fill gaps of higher timeframes with data
 
 Plotting:
 
@@ -32,8 +33,8 @@ Plotting:
 * Linked Crosshair across all figures
 * fill_gt, fill_lt, fill support
 * Plot objects can be filtered by one or more datanames or by plot group
-* Custom plot group, which can be configured in scheme or in live client by providing all
-  plotids in a comma-seperated list
+* Custom plot group, which can be configured in app or in live client by providing all
+  plotids in a comma-seperated list or by selecting the parts of the plot to display
 
 Tabs:
 
