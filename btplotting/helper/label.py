@@ -21,9 +21,10 @@ def obj2label(obj, fullid=False):
         return observer2label(obj)
     elif isinstance(obj, bt.Analyzer):
         return obj.__class__.__name__
+    elif isinstance(obj, bt.MultiCoupler):
+        return obj2label(obj.datas[0], fullid)
     elif isinstance(obj, (bt.LinesOperation,
                           bt.LineSingle,
-                          bt.LineIterator,
                           bt.LineSeriesStub)):
         return obj.__class__.__name__
     else:

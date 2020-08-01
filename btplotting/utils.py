@@ -27,6 +27,12 @@ def get_plotobjs(strategy, include_non_plotable=False,
     # next loop through all ind and obs and set them to
     # the corresponding data clock
     for obj in itertools.chain(inds, obs):
+        # check for base classes
+        if not isinstance(obj, (bt.IndicatorBase,
+                                bt.MultiCoupler,
+                                bt.ObserverBase)):
+            continue
+        # check for plotinfos
         if not hasattr(obj, 'plotinfo'):
             # no plotting support cause no plotinfo attribute
             # available - so far LineSingle derived classes
@@ -199,20 +205,20 @@ def get_clock_obj(obj, resolve_to_data=False):
     A clock object can be either a strategy, data source,
     indicator or a observer.
     '''
-    if isinstance(obj, (bt.LinesOperation, bt.LineIterator)):
+    if isinstance(obj, bt.LinesOperation):
         # indicators can be created to run on a line
         # (instead of e.g. a data object) in that case grab
         # the owner of that line to find the corresponding clock
         # also check for line actions like "macd > data[0]"
         return get_clock_obj(obj._clock, resolve_to_data)
-    elif isinstance(obj, bt.LineSingle):
+    elif isinstance(obj, (bt.LineSingle)):
         # if we have a line, return its owners clock
         return get_clock_obj(obj._owner, resolve_to_data)
     elif isinstance(obj, bt.LineSeriesStub):
         # if its a LineSeriesStub object, take the first line
         # and get the clock from it
         return get_clock_obj(obj.lines[0], resolve_to_data)
-    elif isinstance(obj, (bt.IndicatorBase, bt.ObserverBase)):
+    elif isinstance(obj, (bt.IndicatorBase, bt.MultiCoupler, bt.ObserverBase)):
         # a indicator and observer can be a clock, internally
         # it is obj._clock
         if resolve_to_data:

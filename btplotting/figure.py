@@ -32,7 +32,7 @@ class FigureType(Enum):
         if cls.DATA.name == name:
             return bt.AbstractDataBase
         elif cls.IND.name == name:
-            return (bt.IndicatorBase, bt.LineIterator)
+            return (bt.IndicatorBase, bt.MultiCoupler)
         elif cls.OBS.name == name:
             return bt.ObserverBase
         else:
@@ -42,7 +42,7 @@ class FigureType(Enum):
     def get_type(cls, obj):
         if isinstance(obj, bt.AbstractDataBase):
             return cls.DATA
-        elif isinstance(obj, (bt.IndicatorBase, bt.LineIterator)):
+        elif isinstance(obj, (bt.IndicatorBase, bt.MultiCoupler)):
             return cls.IND
         elif isinstance(obj, bt.ObserverBase):
             return cls.OBS
@@ -90,7 +90,12 @@ class HoverContainer(metaclass=bt.MetaParams):
             for i in fig.childs:
                 if src_obj is i:
                     prefix = ''
-                    prefix = obj2label(get_clock_obj(src_obj, True)) + " - "
+                    if isinstance(src_obj, bt.MultiCoupler):
+                        prefix = obj2label(
+                            get_clock_obj(src_obj.datas[0], True)) + " - "
+                    else:
+                        prefix = obj2label(
+                            get_clock_obj(src_obj, True)) + " - "
                     item = (prefix + label, tmpl)
                     tooltips_bottom.append(item)
                     break
