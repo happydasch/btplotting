@@ -206,7 +206,7 @@ class CDSObject:
                 c = a[0]
                 cds_val = self._cds.data[c][idx]
                 val = self._create_cds_col_from_series(a, series)
-                if cds_val != val:
+                if (val == val or c in fill_nan) and cds_val != val:
                     if val != val:
                         val = 'NaN'
                     p_data[c].append((idx, val))

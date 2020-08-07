@@ -188,7 +188,7 @@ class LiveDataHandler:
         while self._running:
             if self._new_data:
                 last_avail_idx = self._app.get_last_idx(self._figid)
-                if last_avail_idx - self._last_idx > self._lookback:
+                if last_avail_idx - self._last_idx > (2 * self._lookback):
                     # if there is more new data then lookback length
                     # don't load from last index but from end of data
                     data = self._app.generate_data(
