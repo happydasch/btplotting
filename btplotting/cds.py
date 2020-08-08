@@ -75,7 +75,7 @@ class CDSObject:
         if isinstance(op[2], str):
             b = np.array(df[op[2]])
         else:
-            b = np.full(df.shape[0], df[op[2]])
+            b = np.full(df.shape[0], op[2])
         arr = op[3](a, b)
         return arr
 
@@ -130,25 +130,23 @@ class CDSObject:
                 # cases. they will be added later with the correct
                 # dtype
                 continue
-            if c in self._cds.column_names:
-                self._cds.remove(c)
-            self._cds.add(np.array(c_df.loc[:, c]), c)
-        # ensure cds contains index
-        if 'index' in self._cds.column_names:
-            self._cds.remove('index')
-        self._cds.add(
-            np.array(df.loc[c_df.index, 'index'], dtype=np.int64),
-            'index')
-        # ensure cds contains corresponding datetime entries
+            c_df[c] = np.array(c_df.loc[:, c])
+        # ensure df contains index
+        c_df['index'] = np.array(df.loc[c_df.index, 'index'], dtype=np.int64)
+        # ensure df contains corresponding datetime entries
         if 'datetime' in self._cds.column_names:
             self._cds.remove('datetime')
-        self._cds.add(
-            np.array(df.loc[c_df.index, 'datetime'], dtype=np.datetime64),
-            'datetime')
+        c_df['datetime'] = np.array(
+            df.loc[c_df.index, 'datetime'], dtype=np.datetime64)
         # add additional columns
         for a in additional:
             col = self._create_cds_col_from_df(a, c_df)
-            self._cds.add(col, a[0])
+            c_df[a[0]] = col
+        # set cds
+        for c in c_df.columns:
+            if c in self._cds.column_names:
+                self._cds.remove(c)
+            self._cds.add(c_df[c], c)
 
     def get_cds_streamdata_from_df(self, df):
         '''

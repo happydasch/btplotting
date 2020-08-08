@@ -129,7 +129,7 @@ class ClockHandler:
                         v = llist[idx_prev]
                     else:
                         v = llist[sc_idx]
-                    c_idx = sc_idx + 1
+                    c_idx = sc_idx
                     break
                 elif sc > c:
                     break
