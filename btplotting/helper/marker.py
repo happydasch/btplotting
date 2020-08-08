@@ -4,11 +4,11 @@ Marker definition used to generate markers in bokeh using matplotlib notation
 
 _mrk_fncs = {
     # '.'	m00	point
-    '.': ('dot', ['color'], {'size': 1}, {}),
+    '.': ('dot', ['color'], {'size': 2}, {}),
     # ','	m01	pixel
-    ',': ('dot', ['color'], {'size': 2}, {}),
+    ',': ('dot', ['color'], {'size': 3}, {}),
     # 'o'	m02	circle
-    'o': ('circle', ['color', 'size'], {}, {}),
+    'o': ('circle', ['color', 'size'], {}, {'size': -2}),
     # 'v'	m03	triangle_down
     'v': ('triangle', ['color', 'size'],
           {'angle': 180, 'angle_units': 'deg'}, {}),
@@ -110,7 +110,11 @@ def get_marker_info(marker):
     if isinstance(marker, (int, float)):
         fnc_name, attrs, vals, updates = _mrk_fncs[int(marker)]
     elif isinstance(marker, str):
-        fnc_name, attrs, vals, updates = _mrk_fncs[str(marker)[0]]
+        if not len(marker):
+            # empty string
+            fnc_name, attrs, vals, updates = _mrk_fncs[str(marker)]
+        else:
+            fnc_name, attrs, vals, updates = _mrk_fncs[str(marker)[0]]
     else:
         raise Exception(
             f'unsupported marker type {type(marker)} for {marker}')

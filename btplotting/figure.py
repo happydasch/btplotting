@@ -456,6 +456,10 @@ class Figure(CDSObject):
 
             if marker is not None:
                 fnc_name, attrs, vals, updates = get_marker_info(marker)
+                markersize = (7
+                              if not hasattr(lineplotinfo, 'markersize')
+                              else lineplotinfo.markersize)
+
                 if not fnc_name or not hasattr(self.figure, fnc_name):
                     # provide alternative methods for not available methods
                     if fnc_name == 'y':
@@ -474,9 +478,9 @@ class Figure(CDSObject):
                     if v in ['color', 'fill_color', 'text_color']:
                         val = {'value': color}
                     elif v in ['size']:
-                        val = lineplotinfo.markersize
+                        val = markersize
                     elif v in ['text_font_size']:
-                        val = {'value': '%spx' % lineplotinfo.markersize}
+                        val = {'value': '%spx' % markersize}
                     elif v in ['text']:
                         val = {'value': marker[1:-1]}
                     if val is not None:
@@ -513,48 +517,50 @@ class Figure(CDSObject):
                 if linewidth is not None:
                     kwglyph['line_width'] = linewidth
                 glyph_fnc = self.figure.line
-
-                # check for fill_between
-                for ftype, fop in [
-                        ('_gt', cds_op_gt),
-                        ('_lt', cds_op_lt),
-                        ('', cds_op_non)]:
-                    fattr = '_fill' + ftype
-                    fref, fcolor = lineplotinfo._get(fattr, (None, None))
-                    if fref is not None:
-                        # set name for new column
-                        col_name = source_id + ftype
-                        # check if ref is a number or a column
-                        if isinstance(fref, str):
-                            source_id_other = get_source_id(
-                                getattr(obj, fref))
-                        else:
-                            source_id_other = fref
-                        # create new cds column
-                        col = (col_name, source_id, source_id_other, fop)
-                        self.set_cds_col(col)
-                        # set alpha and check color
-                        falpha = self._scheme.fillalpha
-                        if isinstance(fcolor, tuple):
-                            fcolor, falpha = fcolor
-                        fcolor = convert_color(fcolor)
-                        # create varea
-                        kwargs = {
-                            'x': 'index',
-                            'y1': source_id,
-                            'y2': col_name,
-                            'fill_alpha': falpha,
-                            'color': fcolor,
-                            'legend_label': label,
-                            'level': 'underlay'}
-                        self._figure_append_renderer(
-                            self.figure.varea, **kwargs)
             else:
                 raise Exception(f'Unknown plotting method "{method}"')
+
+            # chek for fill_between
+            for ftype, fop in [
+                    ('_gt', cds_op_gt),
+                    ('_lt', cds_op_lt),
+                    ('', cds_op_non)]:
+                fattr = '_fill' + ftype
+                fref, fcolor = lineplotinfo._get(fattr, (None, None))
+                if fref is not None:
+                    # set name for new column
+                    col_name = source_id + ftype
+                    # check if ref is a number or a column
+                    if isinstance(fref, str):
+                        source_id_other = get_source_id(
+                            getattr(obj, fref))
+                    else:
+                        source_id_other = fref
+                    # create new cds column
+                    col = (col_name, source_id, source_id_other, fop)
+                    self.set_cds_col(col)
+                    # set alpha and check color
+                    falpha = self._scheme.fillalpha
+                    if isinstance(fcolor, tuple):
+                        fcolor, falpha = fcolor
+                    fcolor = convert_color(fcolor)
+                    # create varea
+                    kwargs = {
+                        'x': 'index',
+
+                        'y1': source_id,
+                        'y2': col_name,
+                        'fill_alpha': falpha,
+                        'color': fcolor,
+                        'legend_label': label,
+                        'level': 'underlay'}
+                    self._figure_append_renderer(
+                        self.figure.varea, **kwargs)
 
             # append renderer
             self._figure_append_renderer(
                 glyph_fnc, marker=(marker is not None), **kwglyph)
+
             # set hover label
             hover_label_suffix = f' - {linealias}' if obj.size() > 1 else ''
             hover_label = indlabel + hover_label_suffix
