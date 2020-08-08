@@ -547,7 +547,6 @@ class Figure(CDSObject):
                     # create varea
                     kwargs = {
                         'x': 'index',
-
                         'y1': source_id,
                         'y2': col_name,
                         'fill_alpha': falpha,
