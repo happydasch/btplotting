@@ -125,24 +125,23 @@ class ClockHandler:
                 if sc == c:
                     # store current value and remember source clock
                     # position for next iteration (c_idx)
-                    if llist[sc_idx] != llist[sc_idx] and sc_prev:
-                        v = llist[idx_prev]
-                    else:
-                        v = llist[sc_idx]
+                    v = llist[sc_idx]
                     c_idx = sc_idx
                     break
                 elif sc > c:
+                    if fill_gaps:
+                        v = llist[sc_idx]
                     break
                 if llist[sc_idx] == llist[sc_idx]:
                     # remember current value if not nan
                     sc_prev = sc
                     idx_prev = sc_idx
-            if v != v and fill_gaps:
-                if sc and llist[sc_idx] == llist[sc_idx]:
-                    v = llist[sc_idx]
-                elif sc_prev and llist[idx_prev] == llist[idx_prev]:
-                    v = llist[idx_prev]
-
+            if v != v:
+                if fill_gaps or len(data) == 0 or len(data) == len(clk) - 1:
+                    if sc and llist[sc_idx] == llist[sc_idx]:
+                        v = llist[sc_idx]
+                    elif sc_prev and llist[idx_prev] == llist[idx_prev]:
+                        v = llist[idx_prev]
             data.append(v)
 
         return data

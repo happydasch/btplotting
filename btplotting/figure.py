@@ -434,7 +434,14 @@ class Figure(CDSObject):
 
             # check if marker and get method to plot line
             marker = lineplotinfo._get('marker', None)
-            method = lineplotinfo._get('_method', 'line')
+            method = lineplotinfo._get('_method', None)
+            if not marker and not method:
+                method = 'line'
+            elif not method:
+                if (getattr(lineplotinfo, 'ls', None)
+                        or getattr(lineplotinfo, 'lw', None)
+                        or getattr(lineplotinfo, 'drawstyle', None)):
+                    method = 'line'
 
             # get a color
             color = getattr(lineplotinfo, 'color', None)
@@ -444,17 +451,16 @@ class Figure(CDSObject):
                 color = self._color()
             color = convert_color(color)
 
-            # prepare glyph args
-            kwglyph = {'x': 'index', 'name': linealias}
             # either all individual lines of are displayed in the legend
             # or only the ind/obs as a whole
             label = indlabel
             if obj.size() > 1 and plotinfo.plotlinelabels:
                 label += ' ' + (lineplotinfo._get('_name', None)
                                 or linealias)
-            kwglyph['legend_label'] = label
 
             if marker is not None:
+                kwglyph = {'x': 'index', 'name': linealias + 'marker',
+                           'legend_label': label}
                 fnc_name, attrs, vals, updates = get_marker_info(marker)
                 markersize = (7
                               if not hasattr(lineplotinfo, 'markersize')
@@ -497,7 +503,13 @@ class Figure(CDSObject):
                         raise Exception(
                             f'{u} for {marker} is not set but needs to be set')
                 glyph_fnc = getattr(self.figure, fnc_name)
-            elif method == 'bar':
+                # append renderer
+                self._figure_append_renderer(
+                    glyph_fnc, marker=marker, **kwglyph)
+
+            if method == 'bar':
+                kwglyph = {'x': 'index', 'name': linealias + 'bar',
+                           'legend_label': label}
                 kwglyph['level'] = 'underlay'
                 kwglyph['top'] = source_id
                 kwglyph['bottom'] = 0
@@ -505,20 +517,36 @@ class Figure(CDSObject):
                 kwglyph['fill_color'] = color
                 kwglyph['width'] = self._bar_width
                 glyph_fnc = self.figure.vbar
+                # append renderer
+                self._figure_append_renderer(
+                    glyph_fnc, marker=None, **kwglyph)
             elif method == 'line':
+                kwglyph = {'x': 'index', 'name': linealias + 'line',
+                           'legend_label': label}
                 kwglyph['level'] = 'underlay'
                 kwglyph['line_width'] = 1
                 kwglyph['color'] = color
                 kwglyph['y'] = source_id
                 linestyle = getattr(lineplotinfo, 'ls', None)
-                if linestyle is not None:
+                if linestyle:
                     kwglyph['line_dash'] = self._style_mpl2bokeh[linestyle]
                 linewidth = getattr(lineplotinfo, 'lw', None)
-                if linewidth is not None:
+                if linewidth:
                     kwglyph['line_width'] = linewidth
-                glyph_fnc = self.figure.line
-            else:
-                raise Exception(f'Unknown plotting method "{method}"')
+                drawstyle = getattr(lineplotinfo, 'drawstyle', None)
+                if drawstyle:
+                    if drawstyle == 'steps-mid':
+                        kwglyph['mode'] = 'center'
+                    elif drawstyle == 'steps-right':
+                        kwglyph['mode'] = 'after'
+                    else:
+                        kwglyph['mode'] = 'before'
+                    glyph_fnc = self.figure.step
+                else:
+                    glyph_fnc = self.figure.line
+                # append renderer
+                self._figure_append_renderer(
+                    glyph_fnc, marker=None, **kwglyph)
 
             # chek for fill_between
             for ftype, fop in [
@@ -556,15 +584,12 @@ class Figure(CDSObject):
                     self._figure_append_renderer(
                         self.figure.varea, **kwargs)
 
-            # append renderer
-            self._figure_append_renderer(
-                glyph_fnc, marker=(marker is not None), **kwglyph)
-
             # set hover label
             hover_label_suffix = f' - {linealias}' if obj.size() > 1 else ''
             hover_label = indlabel + hover_label_suffix
             hover_data = f'@{source_id}{{{self._scheme.number_format}}}'
-            self._fp.hover.add_hovertip(hover_label, hover_data, obj)
+            if hover_label:
+                self._fp.hover.add_hovertip(hover_label, hover_data, obj)
 
         self._set_yticks(obj)
         self._plot_hlines(obj)

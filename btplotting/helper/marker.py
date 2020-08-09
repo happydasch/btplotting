@@ -8,7 +8,7 @@ _mrk_fncs = {
     # ','	m01	pixel
     ',': ('dot', ['color'], {'size': 3}, {}),
     # 'o'	m02	circle
-    'o': ('circle', ['color', 'size'], {}, {'size': -2}),
+    'o': ('circle', ['color', 'size'], {}, {'size': -3}),
     # 'v'	m03	triangle_down
     'v': ('triangle', ['color', 'size'],
           {'angle': 180, 'angle_units': 'deg'}, {}),
@@ -38,7 +38,7 @@ _mrk_fncs = {
     # 'p'	m13	pentagon
     'p': ('pentagon', ['color', 'size'], {}, {}),
     # 'P'	m23	plus(filled)
-    'P': ('plus', ['color', 'size'], {}, {'size': -2}),
+    'P': ('plus', ['color', 'size'], {}, {'size': -3}),
     # '*'	m14	star
     '*': ('asterisk', ['color', 'size'], {}, {}),
     # 'h'	m15	hexagon1
@@ -51,7 +51,7 @@ _mrk_fncs = {
     # 'x'	m18	x
     'x': ('x', ['color', 'size'], {}, {}),
     # 'X'	m24	x(filled)
-    'X': ('x', ['color', 'size'], {}, {'size': -2}),
+    'X': ('x', ['color', 'size'], {}, {'size': -3}),
     # 'D'	m19	diamond
     'D': ('diamond_cross', ['color', 'size'], {}, {}),
     # 'd'	m20	thin_diamond
@@ -62,15 +62,15 @@ _mrk_fncs = {
     '_': ('hbar', ['color'], {}, {}),
     # 0 (TICKLEFT)	m25	tickleft
     0: ('triangle', ['color', 'size'],
-        {'angle': -90, 'angle_units': 'deg'}, {'size': -2}),
+        {'angle': -90, 'angle_units': 'deg'}, {'size': -3}),
     # 1 (TICKRIGHT)	m26	tickright
     1: ('triangle', ['color', 'size'],
-        {'angle': 90, 'angle_units': 'deg'}, {'size': -2}),
+        {'angle': 90, 'angle_units': 'deg'}, {'size': -3}),
     # 2 (TICKUP)	m27	tickup
-    2: ('triangle', ['color', 'size'], {}, {'size': -2}),
+    2: ('triangle', ['color', 'size'], {}, {'size': -3}),
     # 3 (TICKDOWN)	m28	tickdown
     3: ('triangle', ['color', 'size'],
-        {'angle': 180, 'angle_units': 'deg'}, {'size': -2}),
+        {'angle': 180, 'angle_units': 'deg'}, {'size': -3}),
     # 4 (CARETLEFT)	m29	caretleft
     4: ('triangle', ['fill_color', 'color', 'size'],
         {'angle': -90, 'angle_units': 'deg'}, {}),
