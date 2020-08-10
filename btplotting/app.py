@@ -272,7 +272,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                          resources=CDN,
                          template_variables=dict(
                              stylesheet=self._output_stylesheet(),
-                             show_headline=self.scheme.show_headline))
+                             show_headline=self.scheme.show_headline),
+                         _always_new=True)
 
         with open(filename, 'w') as f:
             f.write(html)
