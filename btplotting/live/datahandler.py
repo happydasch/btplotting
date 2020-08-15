@@ -4,6 +4,8 @@ from enum import Enum
 from threading import Thread, Lock
 from tornado import gen
 
+import pandas as pd
+
 _logger = logging.getLogger(__name__)
 
 
@@ -38,7 +40,6 @@ class LiveDataHandler:
         self._lock = Lock()
         self._running = True
         self._new_data = False
-        self._last_idx = -1
         self._datastore = None
         self._patches = []
         self._cb_patch = None
@@ -52,34 +53,45 @@ class LiveDataHandler:
         '''
         Fills datastore with latest values
         '''
+        df = self._app.generate_data(
+            figid=self._figid,
+            back=self._lookback,
+            preserveidx=True,
+            fill_gaps=self._fill_gaps)
+        self._set_data(df)
+        # init by calling set_cds_columns_from_df
+        # after this, all cds will already contain data
+        self._figurepage.set_cds_columns_from_df(self._datastore)
+
+    def _set_data(self, data, idx=None):
+        '''
+        Replaces or appends data to datastore
+        '''
         with self._lock:
-            self._datastore = self._app.generate_data(
-                figid=self._figid,
-                back=self._lookback,
-                preserveidx=True,
-                fill_gaps=self._fill_gaps)
-            if self._datastore.shape[0] > 0:
-                self._last_idx = self._datastore['index'].iloc[-1]
-            # init by calling set_cds_columns_from_df
-            # after this, all cds will already contain data
-            self._figurepage.set_cds_columns_from_df(self._datastore)
+            if isinstance(data, pd.DataFrame):
+                self._datastore = data
+            elif isinstance(data, pd.Series):
+                if idx is None:
+                    self._datastore = self._datastore.append(data)
+                else:
+                    self._datastore.at[idx] = data
+            else:
+                raise Exception('Unsupported data provided')
+            self._datastore = self._datastore.tail(
+                self._get_data_stream_length())
 
     @gen.coroutine
     def _cb_push_adds(self):
         '''
         Streams new data to all ColumnDataSources
         '''
-        # take all rows from datastore that were not yet streamed
-        update_df = self._datastore[self._datastore['index'] > self._last_idx]
         # skip if we don't have new data
-        if update_df.shape[0] == 0:
+        if self._datastore.shape[0] == 0:
             return
-        # store last index of streamed data
-        self._last_idx = update_df['index'].iloc[-1]
 
         fp = self._figurepage
         # create stream data for figurepage
-        data = fp.get_cds_streamdata_from_df(update_df)
+        data = fp.get_cds_streamdata_from_df(self._datastore)
         if data:
             _logger.debug(f'Sending stream for figurepage: {data}')
             fp.cds.stream(
@@ -87,7 +99,7 @@ class LiveDataHandler:
 
         # create stream df for every figure
         for f in fp.figures:
-            data = f.get_cds_streamdata_from_df(update_df)
+            data = f.get_cds_streamdata_from_df(self._datastore)
             if data:
                 _logger.debug(f'Sending stream for figure: {data}')
                 f.cds.stream(
@@ -169,16 +181,12 @@ class LiveDataHandler:
             if update_type == UpdateType.UPDATE:
                 ds_idx = self._datastore.loc[
                     self._datastore['index'] == idx].index[0]
-                with self._lock:
-                    self._datastore.at[ds_idx] = row
+                self._set_data(row, ds_idx)
                 self._patches.append(row)
                 self._push_patches()
             else:
                 # append data and remove old data
-                with self._lock:
-                    self._datastore = self._datastore.append(row)
-                    self._datastore = self._datastore.tail(
-                        self._get_data_stream_length())
+                self._set_data(row)
                 self._push_adds()
 
     def _t_thread(self):
@@ -187,8 +195,9 @@ class LiveDataHandler:
         '''
         while self._running:
             if self._new_data:
+                last_idx = self.get_last_idx()
                 last_avail_idx = self._app.get_last_idx(self._figid)
-                if last_avail_idx - self._last_idx > (2 * self._lookback):
+                if last_avail_idx - last_idx > (2 * self._lookback):
                     # if there is more new data then lookback length
                     # don't load from last index but from end of data
                     data = self._app.generate_data(
@@ -199,7 +208,7 @@ class LiveDataHandler:
                     # if there is just some new data (less then lookback)
                     # load from last index, so no data is skipped
                     data = self._app.generate_data(
-                        start=self._last_idx,
+                        start=last_idx,
                         preserveidx=True,
                         fill_gaps=self._fill_gaps)
                 self._new_data = False
@@ -224,9 +233,7 @@ class LiveDataHandler:
         '''
         Sets a new df and streams data
         '''
-        with self._lock:
-            self._datastore = df
-            self._last_idx = -1
+        self._set_data(df)
         self._push_adds()
 
     def update(self):
