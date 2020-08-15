@@ -486,15 +486,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # get clock list for index
         clkidx = clock.clk
 
-        # create index
-        if preserveidx:
-            idxstart = clock.start
-            indices = list(range(idxstart, idxstart + len(clkidx)))
-        else:
-            indices = list(range(len(clkidx)))
+        # create DataFrame
         df = pd.DataFrame()
-        df['datetime'] = clkidx
-        df['index'] = indices
 
         # generate data for all figurepage objects
         for d in objs:
@@ -518,11 +511,19 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                             fill_gaps=fill_gaps)
                         df[source_id] = new_line
 
-        # apply a proper index (should be identical to 'index' column)
+        # set required values and apply index
         if df.shape[0] > 0:
+            if preserveidx:
+                idxstart = clock.start
+                indices = list(range(idxstart, idxstart + len(clkidx)))
+            else:
+                indices = list(range(len(clkidx)))
             df.index = indices
+            df['index'] = indices
+            df['datetime'] = clkidx
         else:
-            # ensure the dtype is correct on empty df
+            # if there is no data ensure the dtype is correct for
+            # required values
             df['index'] = df['index'].astype('int64')
             df['datetime'] = df['datetime'].astype('datetime64[ns]')
         return df

@@ -296,9 +296,12 @@ class Figure(CDSObject):
             width=1000,
             tools=Figure._tools,
             x_axis_type='linear',
+            # backend webgl removed due to this bug:
+            # https://github.com/bokeh/bokeh/issues/7568
+            # also line styles do not work with webgl
+            # output_backend='webgl',
             aspect_ratio=aspectratio)
-        # TODO: backend webgl (output_backend="webgl") removed due to this bug:
-        # https://github.com/bokeh/bokeh/issues/7568
+        
         f.y_range.range_padding = self._scheme.y_range_padding
         # remove any spacing if there is no title, so there is no spacing
         # between plots

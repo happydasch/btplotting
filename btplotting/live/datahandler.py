@@ -80,16 +80,16 @@ class LiveDataHandler:
         fp = self._figurepage
         # create stream data for figurepage
         data = fp.get_cds_streamdata_from_df(update_df)
-        _logger.debug(f'Sending stream for figurepage: {data}')
         if data:
+            _logger.debug(f'Sending stream for figurepage: {data}')
             fp.cds.stream(
                 data, self._get_data_stream_length())
 
         # create stream df for every figure
         for f in fp.figures:
             data = f.get_cds_streamdata_from_df(update_df)
-            _logger.debug(f'Sending stream for figure: {data}')
             if data:
+                _logger.debug(f'Sending stream for figure: {data}')
                 f.cds.stream(
                     data, self._get_data_stream_length())
 
