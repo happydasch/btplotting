@@ -41,6 +41,7 @@ class LiveDataHandler:
         self._running = True
         self._new_data = False
         self._datastore = None
+        self._last_idx = -1
         self._patches = []
         self._cb_patch = None
         self._cb_add = None
@@ -70,6 +71,7 @@ class LiveDataHandler:
         with self._lock:
             if isinstance(data, pd.DataFrame):
                 self._datastore = data
+                self._last_idx = -1
             elif isinstance(data, pd.Series):
                 if idx is None:
                     self._datastore = self._datastore.append(data)
@@ -85,13 +87,19 @@ class LiveDataHandler:
         '''
         Streams new data to all ColumnDataSources
         '''
+
+        # take all rows from datastore that were not yet streamed
+        update_df = self._datastore[self._datastore['index'] > self._last_idx]
         # skip if we don't have new data
-        if self._datastore.shape[0] == 0:
+        if update_df.shape[0] == 0:
             return
+
+        # store last index of streamed data
+        self._last_idx = update_df['index'].iloc[-1]
 
         fp = self._figurepage
         # create stream data for figurepage
-        data = fp.get_cds_streamdata_from_df(self._datastore)
+        data = fp.get_cds_streamdata_from_df(update_df)
         if data:
             _logger.debug(f'Sending stream for figurepage: {data}')
             fp.cds.stream(
@@ -99,7 +107,7 @@ class LiveDataHandler:
 
         # create stream df for every figure
         for f in fp.figures:
-            data = f.get_cds_streamdata_from_df(self._datastore)
+            data = f.get_cds_streamdata_from_df(update_df)
             if data:
                 _logger.debug(f'Sending stream for figure: {data}')
                 f.cds.stream(
