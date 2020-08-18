@@ -55,23 +55,28 @@ def indicator2label(ind, fullid=False):
         return ind.plotinfo.plotname or ind.__class__.__name__
 
 
-def obj2data(ind):
+def obj2data(obj):
     '''
     Returns a string listing all involved data feeds. Empty string if
     there is only a single feed in the mix
     '''
-    if isinstance(ind, bt.LineActions):
+    if isinstance(obj, bt.LineActions):
         return 'Line Action'
-    names = []
-    for x in ind.datas:
-        if isinstance(x, bt.AbstractDataBase):
-            return obj2label(x)
-        elif isinstance(x, bt.IndicatorBase):
-            names.append(indicator2label(x, False))
-        elif isinstance(x, bt.LineSeriesStub):
-            # indicator target is one specific line of a datafeed
-            # add [L] at the end
-            return obj2label(get_clock_obj(x)) + ' [L]'
-    if len(names) > 0:
-        return ",".join(names)
+    elif isinstance(obj, bt.AbstractDataBase):
+        return obj2label(obj)
+    elif isinstance(obj, bt.IndicatorBase):
+        names = []
+        for x in obj.datas:
+            if isinstance(x, bt.AbstractDataBase):
+                return obj2label(x)
+            elif isinstance(x, bt.IndicatorBase):
+                names.append(indicator2label(x, False))
+            elif isinstance(x, bt.LineSeriesStub):
+                # indicator target is one specific line of a datafeed
+                # add [L] at the end
+                return obj2label(get_clock_obj(x)) + ' [L]'
+        if len(names) > 0:
+            return ",".join(names)
+    else:
+        raise RuntimeError(f'Unsupported type: {obj.__class__}')
     return ''

@@ -90,12 +90,8 @@ class HoverContainer(metaclass=bt.MetaParams):
             for i in fig.childs:
                 if src_obj is i:
                     prefix = ''
-                    if isinstance(src_obj, bt.MultiCoupler):
-                        prefix = obj2data(
-                            get_clock_obj(src_obj.datas[0])) + " - "
-                    else:
-                        prefix = obj2data(
-                            get_clock_obj(src_obj)) + " - "
+                    if isinstance(src_obj, bt.AbstractDataBase):
+                        prefix = obj2data(get_clock_obj(src_obj)) + " - "
                     item = (prefix + label, tmpl)
                     tooltips_bottom.append(item)
                     break
@@ -420,7 +416,6 @@ class Figure(CDSObject):
         '''
         if self._scheme.plot_title:
             self._figure_append_title(obj2label(obj, True))
-        indlabel = obj2label(obj, True)
         plotinfo = obj.plotinfo
 
         for lineidx, line in enumerate(obj.lines):
@@ -456,7 +451,8 @@ class Figure(CDSObject):
 
             # either all individual lines of are displayed in the legend
             # or only the ind/obs as a whole
-            label = indlabel
+            label = obj2label(obj, True)
+
             if obj.size() > 1 and plotinfo.plotlinelabels:
                 label += ' ' + (lineplotinfo._get('_name', None)
                                 or linealias)
@@ -588,8 +584,7 @@ class Figure(CDSObject):
                         self.figure.varea, **kwargs)
 
             # set hover label
-            hover_label_suffix = f' - {linealias}' if obj.size() > 1 else ''
-            hover_label = indlabel = indlabel + hover_label_suffix
+            hover_label = f'{obj2label(obj)} - {linealias}'
             hover_data = f'@{source_id}{{{self._scheme.number_format}}}'
             if hover_label:
                 self._fp.hover.add_hovertip(hover_label, hover_data, obj)

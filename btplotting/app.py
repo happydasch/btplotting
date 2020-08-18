@@ -114,7 +114,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Applies config from plotconfig param to objects
         '''
         fp = self.get_figurepage(figid)
-        objs = get_plotobjs(fp.strategy)
+        objs = get_plotobjs(fp.strategy, include_non_plotable=True)
 
         i = 0
         for d in objs:
@@ -372,7 +372,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         # sort figures
         data_sort = {False: 0}
-        for i, d in enumerate(get_datanames(fp.strategy), start=1):
+        for i, d in enumerate(
+                get_datanames(fp.strategy, filter=False),
+                start=1):
             data_sort[d] = i
         sorted_figs = list(fp.figures)
         sorted_figs.sort(key=lambda x: (
