@@ -64,6 +64,8 @@ def get_plotobjs(strategy, include_non_plotable=False,
             subplot = o.plotinfo.subplot
             if subplot and pmaster is None:
                 pobjs[o] = []
+            elif pmaster is not None:
+                pobjs[pmaster].append(o)
             else:
                 pmaster = get_plotmaster(get_clock_obj(o, True))
                 if pmaster is not None and pmaster in pobjs:

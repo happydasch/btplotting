@@ -121,7 +121,7 @@ class CDSObject:
         # remove empty rows
         if dropna:
             c_df = c_df.dropna(how='all')
-        # use text nan for nan values
+        # use text NaN for nan values
         c_df.fillna('NaN')
         # ensure df contains corresponding datetime entries
         c_df['datetime'] = df.loc[c_df.index,

@@ -20,7 +20,7 @@ from .utils import get_source_id, get_clock_obj
 from .helper.cds_ops import cds_op_gt, cds_op_lt, cds_op_non, \
     cds_op_color
 from .helper.bokeh import convert_color, sanitize_source_name
-from .helper.label import obj2label
+from .helper.label import obj2label, obj2data
 from .helper.marker import get_marker_info
 
 
@@ -91,11 +91,11 @@ class HoverContainer(metaclass=bt.MetaParams):
                 if src_obj is i:
                     prefix = ''
                     if isinstance(src_obj, bt.MultiCoupler):
-                        prefix = obj2label(
-                            get_clock_obj(src_obj.datas[0], True)) + " - "
+                        prefix = obj2data(
+                            get_clock_obj(src_obj.datas[0])) + " - "
                     else:
-                        prefix = obj2label(
-                            get_clock_obj(src_obj, True)) + " - "
+                        prefix = obj2data(
+                            get_clock_obj(src_obj)) + " - "
                     item = (prefix + label, tmpl)
                     tooltips_bottom.append(item)
                     break
@@ -301,7 +301,7 @@ class Figure(CDSObject):
             # also line styles do not work with webgl
             # output_backend='webgl',
             aspect_ratio=aspectratio)
-        
+
         f.y_range.range_padding = self._scheme.y_range_padding
         # remove any spacing if there is no title, so there is no spacing
         # between plots
@@ -420,7 +420,7 @@ class Figure(CDSObject):
         '''
         if self._scheme.plot_title:
             self._figure_append_title(obj2label(obj, True))
-        indlabel = obj2label(obj)
+        indlabel = obj2label(obj, True)
         plotinfo = obj.plotinfo
 
         for lineidx, line in enumerate(obj.lines):
@@ -589,7 +589,7 @@ class Figure(CDSObject):
 
             # set hover label
             hover_label_suffix = f' - {linealias}' if obj.size() > 1 else ''
-            hover_label = indlabel + hover_label_suffix
+            hover_label = indlabel = indlabel + hover_label_suffix
             hover_data = f'@{source_id}{{{self._scheme.number_format}}}'
             if hover_label:
                 self._fp.hover.add_hovertip(hover_label, hover_data, obj)

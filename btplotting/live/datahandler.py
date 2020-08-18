@@ -110,8 +110,7 @@ class LiveDataHandler:
             data = f.get_cds_streamdata_from_df(update_df)
             if data:
                 _logger.debug(f'Sending stream for figure: {data}')
-                f.cds.stream(
-                    data, self._get_data_stream_length())
+                f.cds.stream(data, self._get_data_stream_length())
 
     @gen.coroutine
     def _cb_push_patches(self):
