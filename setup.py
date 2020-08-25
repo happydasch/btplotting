@@ -33,6 +33,7 @@ setuptools.setup(
     keywords=['trading', 'development', 'plotting', 'backtrader'],
 
     packages=setuptools.find_packages(),
+    package_data={'btplotting': ['templates/*.j2', 'templates/js/*.js']},
 
     install_requires=[
         'backtrader',
