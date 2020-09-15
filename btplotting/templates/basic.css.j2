@@ -5,9 +5,17 @@
         font-family: Arial;
     }
 
-    pre {
+    .source-pre {
+        font-family: Courier, monospace;
+        white-space: -moz-pre-wrap; /* Mozilla, supported since 1999 */
+        white-space: -pre-wrap; /* Opera */
+        white-space: -o-pre-wrap; /* Opera */
+        white-space: pre-wrap; /* CSS3 - Text module (Candidate Recommendation) http://www.w3.org/TR/css3-text/#white-space */
+        word-wrap: break-word; /* IE 5.5+ */
         background-color: {{tag_pre_background_color}};
         color: {{tag_pre_text_color}};
+        padding: 1.2em !important;
+        font-size: 1.2em;
     }
 
     #headline {
