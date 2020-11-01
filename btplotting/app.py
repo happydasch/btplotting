@@ -502,7 +502,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                         name_prefix=source_id,
                         skip=['datetime'],
                         fill_gaps=fill_gaps)
-                    df = df.join(df_data)
+                    df = df_data.join(df)
                 else:
                     for lineidx, line in enumerate(obj.lines):
                         source_id = get_source_id(line)

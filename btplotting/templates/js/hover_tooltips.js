@@ -1,6 +1,6 @@
 // args: source, hover
 // Hide NaN values from tooltips
-var tmpl = Bokeh.require("core/util/templating");
+var tmpl = Bokeh.require('core/util/templating');
 if (hover.defaults == undefined || hover.defaults == false) {
     hover.defaults = hover.tooltips;
 }
@@ -23,7 +23,7 @@ if (index >= 0) {
     for (var i = 0; i < hover.defaults.length; i++) {
         var val = tmpl.replace_placeholders(
             hover.defaults[i][1], source, index);
-        if (val != "NaN") {
+        if (val != 'NaN') {
             ttips.push(hover.defaults[i]);
         }
     }
