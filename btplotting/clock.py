@@ -118,41 +118,38 @@ class ClockHandler:
         sc = None
         # go through all clock values and align given data to clock
         for c in clk:
+            v = float('nan')
             sc_prev = None
             idx_prev = None
-            v = float('nan')
             # go through all values to align starting from last index
             for sc_idx in range(c_idx, len(llist)):
                 sc = self.clk[sc_idx]
-                if sc == c:
-                    # exact match
-                    v = llist[sc_idx]
-                    c_idx = sc_idx
+                if sc < c:
+                    # src clck is smaller: strat -> data_n
+                    if llist[sc_idx] == llist[sc_idx]:
+                        v = llist[sc_idx]
+                elif sc == c:
+                    # src clk equals: data_n -> data_n
+                    if v != v or llist[sc_idx] == llist[sc_idx]:
+                        v = llist[sc_idx]
+                    c_idx = sc_idx + 1
                     break
                 elif sc > c:
-                    # index is higher than needed index
-                    if fill_gaps:
+                    # scr clk bigger: data_m -> data_n
+                    if fill_gaps or (sc_prev and sc_prev < c):
+                        # fill only when clk value switched
                         if sc_prev:
                             v = llist[idx_prev]
-                            c_idx = idx_prev
+                            c_idx = idx_prev + 1
                         else:
                             v = llist[sc_idx]
                             c_idx = sc_idx
-                        v = llist[sc_idx]
                     break
                 # remember current value if not nan
                 if llist[sc_idx] == llist[sc_idx]:
                     sc_prev = sc
                     idx_prev = sc_idx
-            # check for nan values and fill_gaps or first and last values
-            if ((v != v and fill_gaps)
-                    or len(data) == 0
-                    or len(data) == len(clk) - 1):
-                if sc and llist[sc_idx] == llist[sc_idx]:
-                    v = llist[sc_idx]
-                elif sc_prev and llist[idx_prev] == llist[idx_prev]:
-                    v = llist[idx_prev]
-            # add value for clock index
+            # put value for c - clk pos from src clock
             data.append(v)
 
         return data
