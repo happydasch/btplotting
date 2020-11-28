@@ -42,8 +42,11 @@ def get_plotobjs(strategy, include_non_plotable=False,
                 and (not obj.plotinfo.plot or obj.plotinfo.plotskip)):
             continue
         # append object to the data object
+        pltmaster = get_plotmaster(obj)
         data = get_clock_obj(obj, True)
-        if data in objs:
+        if pltmaster in objs:
+            objs[pltmaster].append(obj)
+        elif data in objs:
             objs[data].append(obj)
 
     if not order_by_plotmaster:
