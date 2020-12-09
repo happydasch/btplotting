@@ -4,6 +4,8 @@ from bokeh.application.handlers.function import FunctionHandler
 from bokeh.application import Application
 from bokeh.document import Document
 from bokeh.server.server import Server
+from bokeh.io import show
+from bokeh.util.browser import view
 
 from jinja2 import Environment, PackageLoader
 
@@ -62,8 +64,8 @@ class Webapp:
             show(app, notebook_url=notebook_url)  # noqa
         else:
             apps = {'/': app}
-
-            print(f'Open your browser here: http://localhost:{port}')
+            print(f"Browser is launching at: http://localhost:{port}")
+            view(f'http://localhost:{port}')
             server = Server(apps, port=port, io_loop=ioloop)
             if ioloop is None:
                 server.run_until_shutdown()

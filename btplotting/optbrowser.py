@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import partial
 
 from pandas import DataFrame
 
@@ -51,6 +52,7 @@ class OptBrowser:
 
         # 4. build column info for Bokeh table
         tab_columns = []
+
         for colname in data_dict.keys():
             formatter = NumberFormatter(format='0.000')
 
@@ -81,6 +83,12 @@ class OptBrowser:
         or an OrderedOptResult
         '''
 
+        def _get_model(selector_cds, idx: int):
+            selector_cds.selected.indices = [idx]
+            selected = selector_cds.data['index'][idx]
+            return self._app.plot_optmodel(
+                self._optresults[selected][0])
+
         # we have list of results, each result contains the result for
         # one strategy. we don't support having more than one strategy!
         if len(self._optresults) > 0 and len(self._optresults[0]) > 1:
@@ -91,22 +99,20 @@ class OptBrowser:
         selector, selector_cds = self._build_optresult_selector(
             self._optresults)
 
-        def _get_model(idx: int):
-            return self._app.plot_optmodel(
-                self._optresults[idx][0])
-
-        # first zero is because we show the first opt result by default
-        # and second zero cause we support only 1 strategy
-        model = column([selector, _get_model(0)], sizing_mode='stretch_width',)
+        # show the first result in list as default
+        model = column(
+            [selector, _get_model(selector_cds, 0)],
+            sizing_mode='stretch_width')
         model.background = self._app.params.scheme.background_fill
 
-        def update(_name, _old, new):
+        def update(selector_cds, name, old, new):
             if len(new) == 0:
                 return
-
             stratidx = new[0]
-            model.children[-1] = _get_model(stratidx)
+            model.children[-1] = _get_model(
+                selector_cds, stratidx)
 
-        selector_cds.selected.on_change('indices', update)
+        selector_cds.selected.on_change(
+            'indices', partial(update, selector_cds))
 
         return model
