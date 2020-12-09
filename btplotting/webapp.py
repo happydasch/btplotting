@@ -64,7 +64,7 @@ class Webapp:
             show(app, notebook_url=notebook_url)  # noqa
         else:
             apps = {'/': app}
-            print(f"Browser is launching at: http://localhost:{port}")
+            print(f'Browser is launching at: http://localhost:{port}')
             view(f'http://localhost:{port}')
             server = Server(apps, port=port, io_loop=ioloop)
             if ioloop is None:
