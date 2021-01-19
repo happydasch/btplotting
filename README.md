@@ -67,14 +67,12 @@ Python >= 3.6 is required.
 
 `pip install git+https://github.com/happydasch/btplotting`
 
-## Live plotting
+## Sponsoring
 
-TODO
+## Sponsoring
 
-## Backtest plotting
+If you want to support the development of btplotting, consider to support this project.
 
-TODO
-
-## Plotting Optimization Results
-
-TODO
+* BTC: 39BJtPgUv6UMjQvjguphN7kkjQF65rgMMF
+* ETH: 0x06d6f3134CD679d05AAfeA6e426f55805f9B395D
+* https://liberapay.com/happydasch
