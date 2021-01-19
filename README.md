@@ -69,8 +69,6 @@ Python >= 3.6 is required.
 
 ## Sponsoring
 
-## Sponsoring
-
 If you want to support the development of btplotting, consider to support this project.
 
 * BTC: 39BJtPgUv6UMjQvjguphN7kkjQF65rgMMF
