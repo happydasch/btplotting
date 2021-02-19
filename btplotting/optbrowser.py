@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
 from collections import defaultdict
 from functools import partial
 
@@ -21,12 +25,13 @@ class OptBrowser:
         self._sortasc = sortasc
         self._optresults = optresults
 
-    def start(self, ioloop=None):
+    def start(self, ioloop=None, port=8080):
         webapp = Webapp(
             'Backtrader Optimization Result',
             'basic.html.j2',
             self._app.params.scheme,
-            self.build_optresult_model)
+            self.build_optresult_model,
+            port=port)
         webapp.start(ioloop)
 
     def _build_optresult_selector(self, optresults):
