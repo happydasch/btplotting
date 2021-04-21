@@ -80,6 +80,8 @@ class MetadataTab(BacktraderPlottingTab):
                 'Live:': f'{"Yes" if data.islive() else "No"}',
                 'Length:': len(data),
                 'Granularity:': f'{data._compression} {bt.TimeFrame.getname(data._timeframe, data._compression)}',
+                'Resample:': f'{"Yes" if data.resampling else "No"}',
+                'Replay:': f'{"Yes" if data.replaying else "No"}'
             }
             # live trading does not have valid data parameters (other datas
             # might also not have)
