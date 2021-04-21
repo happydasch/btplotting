@@ -6,5 +6,8 @@ def datatable(self):
     cols[0].append('Sharpe-Ratio')
 
     a = self.get_analysis()
-    cols[1].append(a['sharperatio'])
+    if len(a):
+        cols[1].append(a['sharperatio'])
+    else:
+        cols[1].append('')
     return 'Sharpe-Ratio', [cols]
