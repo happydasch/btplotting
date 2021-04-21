@@ -17,21 +17,25 @@ from .webapp import Webapp
 
 class OptBrowser:
     def __init__(self, app, optresults, usercolumns=None,
-                 num_result_limit=None, sortcolumn=None, sortasc=True):
+                 num_result_limit=None, sortcolumn=None,
+                 sortasc=True, port=80, autostart=False):
         self._usercolumns = {} if usercolumns is None else usercolumns
         self._num_result_limit = num_result_limit
         self._app = app
         self._sortcolumn = sortcolumn
         self._sortasc = sortasc
         self._optresults = optresults
+        self._port = port
+        self._autostart = autostart
 
-    def start(self, ioloop=None, port=8080):
+    def start(self, ioloop=None):
         webapp = Webapp(
             'Backtrader Optimization Result',
             'basic.html.j2',
             self._app.params.scheme,
             self.build_optresult_model,
-            port=port)
+            port=self._port,
+            autostart=self._autostart)
         webapp.start(ioloop)
 
     def _build_optresult_selector(self, optresults):

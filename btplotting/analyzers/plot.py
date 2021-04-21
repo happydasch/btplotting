@@ -21,7 +21,7 @@ class LivePlotAnalyzer(bt.Analyzer):
         ('scheme', Blackly()),
         ('style', 'bar'),
         ('lookback', 23),
-        ('http_port', 80),
+        ('port', 80),
         ('title', None),
     )
 
@@ -35,7 +35,7 @@ class LivePlotAnalyzer(bt.Analyzer):
             self.p.scheme,
             self._app_cb_build_root_model,
             on_session_destroyed=self._on_session_destroyed,
-            port=self.p.http_port)
+            port=self.p.port)
         self._lock = Lock()
         self._clients = {}
         self._app_kwargs = kwargs

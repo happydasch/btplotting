@@ -19,8 +19,8 @@ class Webapp:
         self._html_template = html_template
         self._scheme = scheme
         self._model_factory_fnc = model_factory_fnc
-        self._port = port
         self._on_session_destroyed = on_session_destroyed
+        self._port = port
         self._autostart = autostart
 
     def start(self, ioloop=None):
