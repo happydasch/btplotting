@@ -593,5 +593,3 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 raise RuntimeError(
                     'Invalid parameter "output_mode"'
                     + f' with value: {self.p.output_mode}')
-
-        self._reset()
