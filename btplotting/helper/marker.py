@@ -4,11 +4,11 @@ Marker definition used to generate markers in bokeh using matplotlib notation
 
 _mrk_fncs = {
     # '.'	m00	point
-    '.': ('dot', ['color'], {'size': 2}, {}),
+    '.': ('dot', ['color'], {'size': 8}, {}),
     # ','	m01	pixel
-    ',': ('dot', ['color'], {'size': 3}, {}),
+    ',': ('dot', ['color'], {'size': 8}, {}),
     # 'o'	m02	circle
-    'o': ('circle', ['color', 'size'], {}, {'size': -3}),
+    'o': ('circle', ['color', 'size'], {}, {}),
     # 'v'	m03	triangle_down
     'v': ('triangle', ['color', 'size'],
           {'angle': 180, 'angle_units': 'deg'}, {}),
