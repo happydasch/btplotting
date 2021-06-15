@@ -149,28 +149,9 @@ class FigurePage(CDSObject):
         src:
         https://stackoverflow.com/questions/37965669/how-do-i-link-the-crosshairtool-in-bokeh-over-several-plots
         '''
-        js_leave = ''
-        js_move = 'if(cross.spans.height.location){\n'
-        for i in range(len(figures) - 1):
-            js_move += '\t\t\tother%d.spans.height.location = cb_obj.sx\n' % i
-        js_move += '}else{\n'
-        for i in range(len(figures) - 1):
-            js_move += '\t\t\tother%d.spans.height.location = null\n' % i
-            js_leave += '\t\t\tother%d.spans.height.location = null\n' % i
-        js_move += '}'
-        crosses = [CrosshairTool() for fig in figures]
-        for i, fig in enumerate(figures):
-            fig.figure.add_tools(crosses[i])
-            args = {'fig': fig.figure, 'cross': crosses[i]}
-            k = 0
-            for j in range(len(figures)):
-                if i != j:
-                    args['other%d' % k] = crosses[j]
-                    k += 1
-            fig.figure.js_on_event(
-                'mousemove', CustomJS(args=args, code=js_move))
-            fig.figure.js_on_event(
-                'mouseleave', CustomJS(args=args, code=js_leave))
+        crosshair = CrosshairTool(dimensions="both")
+        for f in figures:
+            f.figure.add_tools(crosshair)
 
     def set_cds_columns_from_df(self, df):
         '''
@@ -292,7 +273,10 @@ class Figure(CDSObject):
             width=1000,
             tools=Figure._tools,
             x_axis_type='linear',
-            output_backend='webgl',
+            # backend webgl removed due to this bug:
+            # https://github.com/bokeh/bokeh/issues/7568
+            # also line styles do not work with webgl
+            # FIXME output_backend='webgl',
             aspect_ratio=aspectratio)
 
         f.y_range.range_padding = self._scheme.y_range_padding
