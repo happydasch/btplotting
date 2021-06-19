@@ -149,9 +149,10 @@ class FigurePage(CDSObject):
         src:
         https://stackoverflow.com/questions/37965669/how-do-i-link-the-crosshairtool-in-bokeh-over-several-plots
         '''
-        crosshair = CrosshairTool(dimensions="both")
+        crosshair_shared = CrosshairTool(dimensions='height')
         for f in figures:
-            f.figure.add_tools(crosshair)
+            crosshair = CrosshairTool(dimensions='width')
+            f.figure.add_tools(crosshair, crosshair_shared)
 
     def set_cds_columns_from_df(self, df):
         '''
@@ -273,10 +274,7 @@ class Figure(CDSObject):
             width=1000,
             tools=Figure._tools,
             x_axis_type='linear',
-            # backend webgl removed due to this bug:
-            # https://github.com/bokeh/bokeh/issues/7568
-            # also line styles do not work with webgl
-            # FIXME output_backend='webgl',
+            output_backend=self._scheme.output_backend,
             aspect_ratio=aspectratio)
 
         f.y_range.range_padding = self._scheme.y_range_padding
