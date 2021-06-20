@@ -488,7 +488,6 @@ class Figure(CDSObject):
             if method == 'bar':
                 kwglyph = {'x': 'index', 'name': linealias + 'bar',
                            'legend_label': label}
-                kwglyph['level'] = 'underlay'
                 kwglyph['top'] = source_id
                 kwglyph['bottom'] = 0
                 kwglyph['line_color'] = color
@@ -501,7 +500,6 @@ class Figure(CDSObject):
             elif method == 'line':
                 kwglyph = {'x': 'index', 'name': linealias + 'line',
                            'legend_label': label}
-                kwglyph['level'] = 'underlay'
                 kwglyph['line_width'] = 1
                 kwglyph['color'] = color
                 kwglyph['y'] = source_id
@@ -557,8 +555,8 @@ class Figure(CDSObject):
                         'y2': col_name,
                         'fill_alpha': falpha,
                         'color': fcolor,
-                        'legend_label': label,
-                        'level': 'underlay'}
+                        'legend_label': label
+                    }
                     self._figure_append_renderer(
                         self.figure.varea, **kwargs)
 
@@ -596,8 +594,7 @@ class Figure(CDSObject):
                         line_color=hline_color,
                         line_dash=self._style_mpl2bokeh[
                             self._scheme.hlinesstyle],
-                        line_width=self._scheme.hlineswidth,
-                        level='underlay')
+                        line_width=self._scheme.hlineswidth)
             self.figure.renderers.append(span)
 
     def fill_nan(self):
