@@ -706,7 +706,10 @@ class Figure(CDSObject):
             # append renderer
             self._figure_append_renderer(self.figure.line, **kwargs)
             # set hover label
-            self._fp.hover.add_hovertip('Close', f'@{source_id}close', data)
+            self._fp.hover.add_hovertip(
+                'Close',
+                f'@{source_id}close{{{self._scheme.number_format}}}',
+                data)
         elif self._scheme.style in ['bar', 'candle']:
             kwargs_seg = {
                 'x0': 'index',

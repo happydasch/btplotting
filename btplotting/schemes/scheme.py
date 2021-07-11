@@ -242,7 +242,7 @@ class Scheme(PlotScheme):
         # https://docs.bokeh.org/en/latest/docs/reference/models/formatters.html#bokeh.models.formatters.DatetimeTickFormatter
         self.hovertool_timeformat = '%F %R'
 
-        self.number_format = '0,0.000'
+        self.number_format = '0[.]00[000000]'
         self.number_format_volume = '0.00 a'
 
         # https://docs.bokeh.org/en/latest/docs/reference/models/formatters.html
