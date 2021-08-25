@@ -60,7 +60,14 @@ class Webapp:
         handler = FunctionHandler(fnc_make_document)
         app = Application(handler)
 
-        if iplot and 'ipykernel' in sys.modules:
+        ipython = False
+        try:
+            get_ipython
+            ipython = True
+        except:
+            pass
+
+        if ipython and iplot and 'ipykernel' in sys.modules:
             show(app, notebook_url=notebook_url)  # noqa
         else:
             apps = {'/': app}
