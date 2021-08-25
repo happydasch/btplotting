@@ -553,6 +553,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception('Different backends by "use" not supported')
 
         self._iplot = iplot and 'ipykernel' in sys.modules
+        if self._iplot:
+            try:
+                get_ipython
+            except:
+                self._iplot = False
 
         # set filter from params if none provided
         if not filter:
