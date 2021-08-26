@@ -371,16 +371,9 @@ class Figure(CDSObject):
         # add renderer to y_range
         if 'y_range_name' in kwargs:
             range = self.figure.extra_y_ranges[kwargs['y_range_name']]
-            if isinstance(range.renderers, list):
-                range.renderers = [renderer]
-            else:
-                range.renderers.append(renderer)
+            range.renderers = range.renderers + [renderer]
         else:
-            # if no y_range id provided, use default y_range
-            if not isinstance(self.figure.y_range.renderers, list):
-                self.figure.y_range.renderers = [renderer]
-            else:
-                self.figure.y_range.renderers.append(renderer)
+            self.figure.y_range.renderers = self.figure.y_range.renderers + [renderer]
 
         # for markers add additional renderer so hover pops up for all
         # of them (this will only apply if no line renderer is set)
