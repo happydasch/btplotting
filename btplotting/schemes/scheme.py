@@ -177,6 +177,7 @@ class Scheme(PlotScheme):
     def _set_params(self):
         self.multiple_tabs = False
         self.show_headline = True
+        self.headline = ''
         self.hover_tooltip_config = ''
 
         self.barup_wick = self.barup
