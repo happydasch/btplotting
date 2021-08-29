@@ -399,12 +399,12 @@ class Figure(CDSObject):
             lineplotinfo = getattr(obj.plotlines, '_%d' % lineidx, None)
             if not lineplotinfo:
                 lineplotinfo = getattr(obj.plotlines, linealias, None)
-            if not lineplotinfo or lineplotinfo._get('_plotskip', False):
+            if not lineplotinfo or getattr(lineplotinfo, '_plotskip', False):
                 continue
 
             # check if marker and get method to plot line
-            marker = lineplotinfo._get('marker', None)
-            method = lineplotinfo._get('_method', None)
+            marker = getattr(lineplotinfo, 'marker', None)
+            method = getattr(lineplotinfo, '_method', None)
             if not marker and not method:
                 method = 'line'
             elif not method:
@@ -416,7 +416,7 @@ class Figure(CDSObject):
             # get a color
             color = getattr(lineplotinfo, 'color', None)
             if color is None:
-                if not lineplotinfo._get('_samecolor', False):
+                if not getattr(lineplotinfo, '_samecolor', False):
                     self._nextcolor()
                 color = self._color()
             color = convert_color(color)
@@ -426,7 +426,7 @@ class Figure(CDSObject):
             label = obj2label(obj, True)
 
             if obj.size() > 1 and plotinfo.plotlinelabels:
-                label += ' ' + (lineplotinfo._get('_name', None)
+                label += ' ' + (getattr(lineplotinfo, '_name', None)
                                 or linealias)
 
             if marker is not None:
@@ -485,7 +485,8 @@ class Figure(CDSObject):
                 kwglyph['bottom'] = 0
                 kwglyph['line_color'] = color
                 kwglyph['fill_color'] = color
-                kwglyph['width'] = self._bar_width
+                kwglyph['alpha'] = getattr(lineplotinfo, 'alpha', 1.0)
+                kwglyph['width'] = getattr(lineplotinfo, 'width', self._bar_width)
                 glyph_fnc = self.figure.vbar
                 # append renderer
                 self._figure_append_renderer(
@@ -495,6 +496,7 @@ class Figure(CDSObject):
                            'legend_label': label}
                 kwglyph['line_width'] = 1
                 kwglyph['color'] = color
+                kwglyph['alpha'] = getattr(lineplotinfo, 'alpha', 1.0)
                 kwglyph['y'] = source_id
                 linestyle = getattr(lineplotinfo, 'ls', None)
                 if linestyle:
@@ -523,7 +525,7 @@ class Figure(CDSObject):
                     ('_lt', cds_op_lt),
                     ('', cds_op_non)]:
                 fattr = '_fill' + ftype
-                fref, fcolor = lineplotinfo._get(fattr, (None, None))
+                fref, fcolor = getattr(lineplotinfo, fattr, (None, None))
                 if fref is not None:
                     # set name for new column
                     col_name = source_id + ftype
