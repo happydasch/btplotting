@@ -124,12 +124,12 @@ class CDSObject:
         # use text NaN for nan values
         c_df.fillna('NaN')
         # ensure df contains corresponding datetime entries
-        c_df['datetime'] = df.loc[c_df.index,
-                                  'datetime'].to_numpy(dtype=np.datetime64)
+        c_df['datetime'] = df.loc[
+            c_df.index, 'datetime'].to_numpy(dtype=np.datetime64)
 
         # ensure df contains index
-        c_df['index'] = df.loc[c_df.index,
-                               'index'].to_numpy(dtype=np.int64)
+        c_df['index'] = df.loc[
+            c_df.index, 'index'].to_numpy(dtype=np.int64)
 
         # add additional columns
         for a in additional:
