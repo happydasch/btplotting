@@ -184,6 +184,8 @@ class CDSObject:
                 columns.append('datetime')
             for c in columns:
                 val = series[c]
+                if c == 'datetime':
+                    val = val.to_numpy()
                 cds_val = self._cds.data[c][idx]
                 if c in fill_nan or cds_val != val:
                     if val != val:
