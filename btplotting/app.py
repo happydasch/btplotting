@@ -261,9 +261,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             tmpdir = tempfile.gettempdir()
             filename = os.path.join(tmpdir, f'bt_bokeh_plot_{figid}.html')
 
+        now = datetime.now()
         env = Environment(loader=PackageLoader('btplotting', 'templates'))
         templ = env.get_template(template)
-        now = datetime.now()
         templ.globals['now'] = now.strftime('%Y-%m-%d %H:%M:%S')
 
         html = file_html(model,

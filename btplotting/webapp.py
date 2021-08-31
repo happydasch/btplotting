@@ -1,5 +1,7 @@
 import sys
 
+from datetime import datetime
+
 from bokeh.application.handlers.function import FunctionHandler
 from bokeh.application import Application
 from bokeh.document import Document
@@ -37,12 +39,12 @@ class Webapp:
             doc.title = self._title
 
             # set document template
+            now = datetime.now()
             env = Environment(loader=PackageLoader('btplotting', 'templates'))
-            doc.template = env.get_template(self._html_template)
-            doc.template_variables['stylesheet'] = generate_stylesheet(
-                self._scheme)
-
-            # get root model
+            templ = env.get_template(self._html_template)
+            templ.globals['now'] = now.strftime('%Y-%m-%d %H:%M:%S')
+            doc.template = templ
+            doc.template_variables['stylesheet'] = generate_stylesheet(self._scheme)
             model = self._model_factory_fnc(doc)
             doc.add_root(model)
 
