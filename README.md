@@ -59,6 +59,26 @@ Live plotting:
 
 Python >= 3.6 is required.
 
+
+## How to use
+* Add to cele as an analyzer:
+```python
+from btplotting import BacktraderPlottingLive
+  ...
+  ...
+
+cerebro = bt.Cerebro()
+cerebro.addstrategy(MyStrategy)
+cerebro.adddata(LiveDataStream())
+cerebro.addanalyzer(BacktraderPlottingLive)
+cerebro.run()
+cerebro.plot()
+```
+* If you need to change the default port or share the plotting to public:
+```python
+cerebro.addanalyzer(BacktraderPlottingLive, address="*", port=8889)
+```
+
 ## Demos
 
 <https://happydasch.github.io/btplotting/>
