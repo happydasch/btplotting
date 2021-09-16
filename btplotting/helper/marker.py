@@ -32,11 +32,11 @@ _mrk_fncs = {
     '4': ('y', ['color', 'size'],
           {'angle': 90, 'angle_units': 'deg'}, {}),
     # '8'	m11	octagon
-    '8': ('octagon', ['color', 'size'], {}, {}),
+    '8': ('star', ['color', 'size'], {}, {}),
     # 's'	m12	square
     's': ('square', ['color', 'size'], {}, {}),
     # 'p'	m13	pentagon
-    'p': ('pentagon', ['color', 'size'], {}, {}),
+    'p': ('star_dot', ['color', 'size'], {}, {}),
     # 'P'	m23	plus(filled)
     'P': ('plus', ['color', 'size'], {}, {'size': -3}),
     # '*'	m14	star
