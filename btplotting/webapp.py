@@ -79,7 +79,7 @@ class Webapp:
                 view(f'http://localhost:{port}')
             else:
                 print(f'Open browser at: http://localhost:{port}')
-            server = Server(apps, address=address, port=port, allow_websocket_origin=[address], io_loop=ioloop)
+            server = Server(apps, port=port, allow_websocket_origin=[address], io_loop=ioloop)
             if ioloop is None:
                 server.run_until_shutdown()
             else:
