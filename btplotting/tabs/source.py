@@ -12,8 +12,11 @@ class SourceTab(BacktraderPlottingTab):
         return not self._app.is_iplot()
 
     def _getSource(self):
-        text = inspect.getsource(
-            self._figurepage.strategy.__class__)
+        try:
+            text = inspect.getsource(
+                self._figurepage.strategy.__class__)
+        except Exception:
+            text = ''
         return text
 
     def _get_panel(self):
