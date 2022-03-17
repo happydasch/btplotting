@@ -74,9 +74,30 @@ cerebro.addanalyzer(BacktraderPlottingLive)
 cerebro.run()
 cerebro.plot()
 ```
+
 * If you need to change the default port or share the plotting to public:
+
 ```python
 cerebro.addanalyzer(BacktraderPlottingLive, address="*", port=8889)
+```
+
+## Jupyter
+
+In Jupyter you can plut to a single browser tab with iplot=False:
+
+```python
+plot = btplotting.BacktraderPlotting()
+cerebro.plot(plot, iplot=False)
+```
+
+You may encounters TypeError: `<class '__main__.YourStrategyClass'>` is a built-in class error.
+
+To remove the source code tab use:
+
+```python
+plot = btplotting.BacktraderPlotting()
+plot.tabs.remove(btplotting.tabs.SourceTab)
+cerebro.plot(plot, iplot=False)
 ```
 
 ## Demos
