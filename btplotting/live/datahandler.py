@@ -76,7 +76,7 @@ class LiveDataHandler:
                 if idx is None:
                     self._datastore = self._datastore.append(data)
                 else:
-                    self._datastore.at[idx] = data
+                    self._datastore.loc[idx] = data
             else:
                 raise Exception('Unsupported data provided')
             self._datastore = self._datastore.tail(
