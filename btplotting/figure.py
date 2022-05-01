@@ -686,7 +686,8 @@ class Figure(CDSObject):
         if self._scheme.plot_title:
             self._figure_append_title(title)
 
-        if self._scheme.style == 'line':
+        style = hasattr(data.plotinfo, 'plotstyle') and data.plotinfo.plotstyle or self._scheme.style
+        if style == 'line':
             if data.plotinfo.plotmaster is None:
                 color = convert_color(self._scheme.loc)
             else:
@@ -705,7 +706,7 @@ class Figure(CDSObject):
                 'Close',
                 f'@{source_id}close{{{self._scheme.number_format}}}',
                 data)
-        elif self._scheme.style in ['bar', 'candle']:
+        elif style in ['bar', 'candle']:
             kwargs_seg = {
                 'x0': 'index',
                 'y0': source_id + 'high',
@@ -744,7 +745,7 @@ class Figure(CDSObject):
                 f'@{source_id}close{{{self._scheme.number_format}}}',
                 data)
         else:
-            raise Exception(f'Unsupported style "{self._scheme.style}"')
+            raise Exception(f'Unsupported style "{style}"')
 
         if self._scheme.volume and self._scheme.voloverlay:
             self.plot_volume(data, self._scheme.voltrans, True)
