@@ -491,6 +491,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # create DataFrame
         df = pd.DataFrame()
 
+        # series list for store new lines
+        new_line_series = []
+
         # generate data for all figurepage objects
         for d in objs:
             for obj in objs[d]:
@@ -511,7 +514,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                             line,
                             clkalign=clkidx,
                             fill_gaps=fill_gaps)
-                        df[source_id] = new_line
+                        new_line_series.append(pd.Series(new_line, name=source_id))
+                        
+        # concat new lines to df
+        if  len(new_line_series) > 0:
+            df = pd.concat([df, *new_line_series], axis=1)
 
         # set required values and apply index
         if df.shape[0] > 0:
@@ -521,13 +528,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             else:
                 indices = list(range(len(clkidx)))
             df.index = indices
-            df['index'] = indices
-            df['datetime'] = clkidx
+            df = pd.concat([df, pd.Series(indices, name='index'), pd.Series(clkidx, name='datetime')], axis=1)
         else:
             # if there is no data ensure the dtype is correct for
             # required values
-            df['index'] = np.array([], dtype=np.int64)
-            df['datetime'] = np.array([], dtype=np.datetime64)
+            df = pd.concat([df, pd.Series([], name='index'), pd.Series([], name='datetime')], axis=1)
         return df
 
     def plot_optmodel(self, obj):
