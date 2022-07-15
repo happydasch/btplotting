@@ -515,9 +515,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                             clkalign=clkidx,
                             fill_gaps=fill_gaps)
                         new_line_series.append(pd.Series(new_line, name=source_id))
-                        
+
         # concat new lines to df
-        if  len(new_line_series) > 0:
+        if len(new_line_series) > 0:
             df = pd.concat([df, *new_line_series], axis=1)
 
         # set required values and apply index
@@ -532,7 +532,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         else:
             # if there is no data ensure the dtype is correct for
             # required values
-            df = pd.concat([df, pd.Series([], name='index'), pd.Series([], name='datetime')], axis=1)
+            df = pd.concat(
+                [df,
+                 pd.Series([], name='index', dtype='int64'),
+                 pd.Series([], name='datetime', dtype='datetime64[ns]')],
+                axis=1)
         return df
 
     def plot_optmodel(self, obj):
