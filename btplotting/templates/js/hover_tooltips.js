@@ -28,6 +28,6 @@ if (index >= 0) {
         }
     }
     hover.tooltips = ttips;
-} else {
+} else {
     hover.tooltips = hover.defaults;
 }
