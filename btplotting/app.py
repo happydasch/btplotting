@@ -10,7 +10,6 @@ import tempfile
 import backtrader as bt
 
 import pandas as pd
-import numpy as np
 
 from bokeh.models.widgets import Panel, Tabs
 from bokeh.layouts import gridplot
@@ -24,10 +23,9 @@ from jinja2 import Environment, PackageLoader
 from .schemes import Scheme, Blackly
 
 from .utils import get_dataname, get_datanames, get_source_id, \
-    get_last_avail_idx, get_plotobjs, get_smallest_dataname, \
-    filter_obj
+    get_plotobjs, get_smallest_dataname, filter_obj
 from .figure import FigurePage, FigureType, Figure
-from .clock import ClockGenerator, ClockHandler
+from .clock import DataClockHandler
 from .helper.label import obj2label
 from .helper.bokeh import generate_stylesheet
 from .tab import BacktraderPlottingTab
@@ -246,6 +244,29 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         fp.analyzers += [
             a for _, a in optreturn.analyzers.getitems()]
 
+    def _create_data_clock(self, figid=0):
+        '''
+        Creates the data clock for the given figurepage
+        '''
+        fp = self.get_figurepage(figid)
+        strategy = fp.strategy
+
+        # collect all objects to generate data for
+        objs = defaultdict(list)
+        for f in fp.figures:
+            dataname = get_dataname(f.master)
+            objs[dataname].append(f.master)
+            for c in f.childs:
+                dataname = get_dataname(c)
+                objs[dataname].append(c)
+
+        # use smallest data as clock
+        smallest = get_smallest_dataname(strategy, objs.keys())
+
+        # store data clock details in figurepage
+        fp.data_clock = DataClockHandler(strategy, smallest)
+        fp.data_clock_objs = objs
+
     def _output_stylesheet(self, template='basic.css.j2'):
         '''
         Renders and returns the stylesheet
@@ -280,29 +301,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return filename
 
-    def is_iplot(self):
-        '''
-        Returns iplot value
-        '''
-        return self._iplot
-
-    def get_last_idx(self, figid=0):
-        '''
-        Returns the last index of figurepage data
-        '''
-        fp = self.get_figurepage(figid)
-        datanames = []
-        for f in fp.figures:
-            dataname = get_dataname(f.master)
-            if dataname not in datanames:
-                datanames.append(dataname)
-            for c in f.childs:
-                dataname = get_dataname(c)
-                if dataname not in datanames:
-                    datanames.append(dataname)
-        dataname = get_smallest_dataname(fp.strategy, datanames)
-        return get_last_avail_idx(fp.strategy, dataname)
-
     def create_figurepage(self, obj, figid=0, start=None, end=None,
                           filter=None, filldata=True):
         '''
@@ -317,8 +315,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         if isinstance(obj, bt.Strategy):
             self._configure_plotting(figid)
             self._blueprint_strategy(figid, filter)
+            self._create_data_clock(figid)
             if filldata:
-                df = self.generate_data(figid, start=start, end=end)
+                df = self.get_data(figid, start=start, end=end)
                 fp.set_cds_columns_from_df(df)
         elif isinstance(obj, bt.OptReturn):
             self._blueprint_optreturn(figid)
@@ -424,120 +423,46 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return panels
 
-    def generate_data(self, figid=0, start=None, end=None, back=None,
-                      preserveidx=False, fill_gaps=False):
+    def get_data(self, figid=0, start=None, end=None, back=None,
+                 preserveidx=False, fillgaps=False):
         '''
-        Generates data for current figurepage
+        Returns data for given figurepage
         '''
         fp = self.get_figurepage(figid)
-        strategy = fp.strategy
+        data_clock = fp.data_clock
+        objs = fp.data_clock_objs
 
-        # collect all objects to generate data for
-        objs = defaultdict(list)
-        for f in fp.figures:
-            dataname = get_dataname(f.master)
-            objs[dataname].append(f.master)
-            for c in f.childs:
-                dataname = get_dataname(c)
-                objs[dataname].append(c)
-
-        # use first data as clock
-        smallest = get_smallest_dataname(strategy, objs.keys())
-
-        # create clock values
-        clock_values = {}
-        # create the main clock for data alignment
-        generator = ClockGenerator(strategy, smallest)
-        clock_values[smallest] = generator.get_clock(
-            start, end, back)
-        # create the clock range values for other clocks
-        if len(clock_values[smallest][0]) > 0:
-            # if not first index, check all data between last index
-            # and current index
-            if clock_values[smallest][1] > 0:
-                clkstart = generator.get_clock_time_at_idx(
-                    clock_values[smallest][1] - 1) + timedelta(milliseconds=1)
-            else:
-                clkstart = generator.get_clock_time_at_idx(
-                    clock_values[smallest][1])
-            clkend = generator.get_clock_time_at_idx(clock_values[smallest][2])
-        else:
-            clkstart, clkend = None, None
-        # ensure to reset end if no end is set, so we get also new
-        # data for current candle, assuming that all data belongs to
-        # current smallest candle coming after the start time of last
-        # candle
-        if end is None:
-            clkend = None
-        # generate remaining clock values
-        for dataname in objs.keys():
-            if dataname not in clock_values:
-                generator = ClockGenerator(strategy, dataname)
-                clock_values[dataname] = generator.get_clock(
-                    clkstart, clkend)
-
-        # generate clock handlers
-        clocks = {}
-        for name in clock_values:
-            tclk, tstart, tend = clock_values[name]
-            clocks[name] = ClockHandler(tclk, tstart, tend)
-
-        # for easier access get the smallest clock to use to
-        # align everything to
-        clock = clocks[smallest]
-        # get clock list for index
-        clkidx = clock.clk
-
-        # create DataFrame
-        df = pd.DataFrame()
-
-        # series list for store new lines
-        new_line_series = []
+        # create dataframe
+        int_idx = data_clock.get_index_list(start, end, back, preserveidx)
+        dt_idx = data_clock.get_dt_list(start, end, back)
+        start_dt, end_dt = dt_idx[0], dt_idx[-1]
+        df = pd.DataFrame(
+            data={
+                'index': pd.Series(int_idx, dtype='int64'),
+                'datetime': pd.Series(dt_idx, dtype='datetime64[ns]')})
 
         # generate data for all figurepage objects
         for d in objs:
             for obj in objs[d]:
-                tmpclk = clocks[get_dataname(obj)]
-                if isinstance(obj, bt.AbstractDataBase):
-                    source_id = get_source_id(obj)
-                    df_data = tmpclk.get_df_from_series(
-                        obj,
-                        clkalign=clkidx,
-                        name_prefix=source_id,
-                        skip=['datetime'],
-                        fill_gaps=fill_gaps)
-                    df = df_data.join(df)
-                else:
-                    for lineidx, line in enumerate(obj.lines):
-                        source_id = get_source_id(line)
-                        new_line = tmpclk.get_list_from_line(
-                            line,
-                            clkalign=clkidx,
-                            fill_gaps=fill_gaps)
-                        new_line_series.append(pd.Series(new_line, name=source_id))
+                df_data = data_clock.get_data(
+                    obj=obj, start=start_dt, end=end_dt, fillgaps=fillgaps)
+                df = df.join(df_data)
 
-        # concat new lines to df
-        if len(new_line_series) > 0:
-            df = pd.concat([df, *new_line_series], axis=1)
-
-        # set required values and apply index
-        if df.shape[0] > 0:
-            if preserveidx:
-                idxstart = clock.start
-                indices = list(range(idxstart, idxstart + len(clkidx)))
-            else:
-                indices = list(range(len(clkidx)))
-            df.index = indices
-            df = pd.concat([df, pd.Series(indices, name='index'), pd.Series(clkidx, name='datetime')], axis=1)
-        else:
-            # if there is no data ensure the dtype is correct for
-            # required values
-            df = pd.concat(
-                [df,
-                 pd.Series([], name='index', dtype='int64'),
-                 pd.Series([], name='datetime', dtype='datetime64[ns]')],
-                axis=1)
+        df.set_index('index')
         return df
+
+    def get_last_idx(self, figid=0):
+        '''
+        Returns the last index of figurepage data
+        '''
+        fp = self.get_figurepage(figid)
+        return len(fp.data_clock) - 1
+
+    def is_iplot(self):
+        '''
+        Returns iplot value
+        '''
+        return self._iplot
 
     def plot_optmodel(self, obj):
         '''
@@ -561,13 +486,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception('numfigs must be 1')
         if use is not None:
             raise Exception('Different backends by "use" not supported')
-
-        self._iplot = iplot and 'ipykernel' in sys.modules
-        if self._iplot:
-            try:
-                get_ipython
-            except:
-                self._iplot = False
 
         # set filter from params if none provided
         if not filter:

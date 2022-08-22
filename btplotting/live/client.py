@@ -2,7 +2,7 @@ import logging
 from functools import partial
 
 from bokeh.layouts import column, row, layout
-from bokeh.models import Select, Spacer, Tabs, Button
+from bokeh.models import Select, Spacer, Tabs, Button, Slider
 
 from .datahandler import LiveDataHandler
 from ..tabs import ConfigTab
@@ -21,6 +21,7 @@ class LiveClient:
 
     def __init__(self, doc, app, strategy, lookback):
         self._app = app
+        self._doc = doc
         self._strategy = strategy
         self._refresh_fnc = None
         self._datahandler = None
@@ -32,9 +33,7 @@ class LiveClient:
         # amount of candles to plot
         self.lookback = lookback
         # should gaps in data be filled
-        self.fill_gaps = False
-        # bokeh document for client
-        self.doc = doc
+        self.fillgaps = False
         # model is the root model for bokeh and will be set in baseapp
         self.model = None
 
@@ -47,10 +46,11 @@ class LiveClient:
         # create figurepage
         self._figid, self._figurepage = self._app.create_figurepage(
             self._strategy, filldata=False)
+
         # create model
         self.model, self._refresh_fnc = self._createmodel()
         # update model with current figurepage
-        self.updatemodel()
+        self.refreshmodel()
 
     def _createmodel(self):
 
@@ -80,7 +80,7 @@ class LiveClient:
             update_nav_buttons(self)
 
         def refresh(self):
-            self.doc.add_next_tick_callback(partial(update_nav_buttons, self))
+            self._doc.add_next_tick_callback(partial(update_nav_buttons, self))
 
         def reset_nav_buttons(self):
             btn_nav_prev.disabled = True
@@ -141,6 +141,10 @@ class LiveClient:
                       btn_nav_action,
                       btn_nav_next,
                       btn_nav_next_big])
+        slider = Slider(
+            title='Period for data to plot',
+            value=self.lookback,
+            start=1, end=200, step=1)
         # tabs
         tabs = Tabs(
             id='tabs',
@@ -150,7 +154,7 @@ class LiveClient:
             [
                 # app settings, top area
                 [column(controls, width_policy='min'),
-                 Spacer(),
+                 column(slider, sizing_mode='stretch_width'),
                  column(nav, width_policy='min')],
                 Spacer(height=15),
                 # layout for tabs
@@ -158,32 +162,6 @@ class LiveClient:
             ],
             sizing_mode='stretch_width')
         return model, partial(refresh, self)
-
-    def updatemodel(self):
-        self.doc.hold()
-        self._app.update_figurepage(filter=self._get_filter())
-        panels = self._app.generate_model_panels()
-        for t in self._app.tabs:
-            tab = t(self._app, self._figurepage, self)
-            if tab.is_useable():
-                panels.append(tab.get_panel())
-
-        # set all tabs (from panels, without None)
-        self._get_tabs().tabs = list(filter(None.__ne__, panels))
-
-        # create new data handler
-        if self._datahandler is not None:
-            self._datahandler.stop()
-        self._datahandler = LiveDataHandler(
-            doc=self.doc,
-            app=self._app,
-            figid=self._figid,
-            lookback=self.lookback,
-            fill_gaps=self.fill_gaps)
-
-        # refresh model
-        self._refresh_fnc()
-        self.doc.unhold()
 
     def _get_filter(self):
         res = {}
@@ -203,6 +181,7 @@ class LiveClient:
         self._paused = False
 
     def _set_data_by_idx(self, idx=None):
+        return # TODO
         # if a index is provided, ensure that index is within data range
         if idx:
             # don't allow idx to be bigger than max idx
@@ -211,26 +190,55 @@ class LiveClient:
             # don't allow idx to be smaller than lookback - 1
             idx = max(idx, self.lookback - 1)
         # create DataFrame based on last index with length of lookback
-        df = self._app.generate_data(
+        # FIXME check
+        df = self._app.get_data(
             figid=self._figid,
-            end=idx,
             back=self.lookback,
             preserveidx=True,
-            fill_gaps=self.fill_gaps)
+            fillgaps=self.fillgaps)
         self._datahandler.set(df)
 
     def _get_tabs(self):
         return self.model.select_one({'id': 'tabs'})
 
-    def next(self):
-        '''
-        Request for updating data with rows
-        '''
-        if not self._paused:
-            self._datahandler.update()
+    def get_app(self):
+        return self._app
+
+    def get_doc(self):
+        return self._doc
+
+    def get_figurepage(self):
+        return self._figurepage
+
+    def get_figid(self):
+        return self._figid
+
+    def is_paused(self):
+        return self._paused
+
+    def refresh(self):
         if self._refresh_fnc:
             self._refresh_fnc()
 
+    def refreshmodel(self):
+        self._doc.hold()
+        self._app.update_figurepage(filter=self._get_filter())
+        panels = self._app.generate_model_panels()
+        for t in self._app.tabs:
+            tab = t(self._app, self._figurepage, self)
+            if tab.is_useable():
+                panels.append(tab.get_panel())
+
+        # set all tabs (from panels, without None)
+        self._get_tabs().tabs = list(filter(None.__ne__, panels))
+
+        # create new data handler
+        if self._datahandler is not None:
+            self._datahandler.stop()
+        self._datahandler = LiveDataHandler(
+            self, lookback=self.lookback, fillgaps=self.fillgaps)
+        self._doc.unhold()
+        self._refresh_fnc()
+
     def stop(self):
         self._datahandler.stop()
-        pass

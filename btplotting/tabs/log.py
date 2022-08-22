@@ -84,7 +84,7 @@ class LogTab(BacktraderPlottingTab):
         if handler is None:
             init_log_tab([])
         if self._client is not None:
-            doc = self._client.doc
+            doc = self._client.get_doc()
         else:
             doc = curdoc()
 

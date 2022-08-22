@@ -30,8 +30,9 @@ class LivePlotAnalyzer(bt.Analyzer):
         title = self.p.title
         if title is None:
             title = 'Live %s' % type(self.strategy).__name__
+        self._title = title
         self._webapp = Webapp(
-            title,
+            self._title,
             'basic.html.j2',
             self.p.scheme,
             self._app_cb_build_root_model,
@@ -84,11 +85,3 @@ class LivePlotAnalyzer(bt.Analyzer):
         with self._lock:
             for c in self._clients.values():
                 c.stop()
-
-    def next(self):
-        '''
-        Next from backtrader, new data arrives
-        '''
-        with self._lock:
-            for c in self._clients.values():
-                c.next()

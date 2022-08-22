@@ -103,20 +103,13 @@ def get_last_avail_idx(strategy, dataname=False):
         data = strategy.getdatabyname(dataname)
     else:
         data = strategy
-    offset = 0
-    while True:
-        if (len(data) > offset
-                and data.datetime[-offset] != data.datetime[-offset]):
-            offset += 1
-            continue
-        break
-    return len(data) - 1 - offset
+    return len(data) - 1
 
 
 def filter_obj(obj, filter):
     '''
     Returns if the given object should be filtered.
-    False if object should not be filtered out, 
+    False if object should not be filtered out,
     True if object should be filtered out.
     '''
 
