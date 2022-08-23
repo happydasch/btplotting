@@ -106,45 +106,45 @@ def get_last_avail_idx(strategy, dataname=False):
     return len(data) - 1
 
 
-def filter_obj(obj, filter):
+def filter_obj(obj, filterdata):
     '''
     Returns if the given object should be filtered.
     False if object should not be filtered out,
     True if object should be filtered out.
     '''
 
-    if filter is None:
+    if filterdata is None:
         return False
 
     dataname = get_dataname(obj)
     plotid = obj.plotinfo.plotid
 
     # filter by dataname
-    if 'dataname' in filter:
+    if 'dataname' in filterdata:
         if dataname is not False:
-            if isinstance(filter['dataname'], str):
-                if dataname != filter['dataname']:
+            if isinstance(filterdata['dataname'], str):
+                if dataname != filterdata['dataname']:
                     return True
-            elif isinstance(filter['dataname', list]):
-                if dataname not in filter['dataname']:
+            elif isinstance(filterdata['dataname', list]):
+                if dataname not in filterdata['dataname']:
                     return True
-    if 'group' in filter:
-        if isinstance(filter['group'], str):
-            if filter['group'] != '':
-                plotids = filter['group'].split(',')
+    if 'group' in filterdata:
+        if isinstance(filterdata['group'], str):
+            if filterdata['group'] != '':
+                plotids = filterdata['group'].split(',')
                 if plotid not in plotids:
                     return True
 
     return False
 
 
-def get_datanames(strategy, filter=True):
+def get_datanames(strategy, onlyplotable=True):
     '''
     Returns the names of all data sources
     '''
     datanames = []
     for d in strategy.datas:
-        if not filter or d.plotinfo.plot is not False:
+        if not onlyplotable or d.plotinfo.plot is not False:
             datanames.append(get_dataname(d))
     return datanames
 

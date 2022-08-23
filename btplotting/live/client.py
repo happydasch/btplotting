@@ -1,5 +1,7 @@
+import time
 import logging
 from functools import partial
+from threading import Thread
 
 from bokeh.layouts import column, row, layout
 from bokeh.models import Select, Spacer, Tabs, Button, Slider
@@ -17,17 +19,21 @@ class LiveClient:
     LiveClient provides live plotting functionality.
     '''
 
-    NAV_BUTTON_WIDTH = 38
+    NAV_BUTTON_WIDTH = 35
 
-    def __init__(self, doc, app, strategy, lookback):
+    def __init__(self, doc, app, strategy, lookback, interval=0.5):
         self._app = app
         self._doc = doc
         self._strategy = strategy
+        self._interval = interval
+        self._thread = Thread(target=self._t_thread, daemon=True)
         self._refresh_fnc = None
         self._datahandler = None
         self._figurepage = None
+        self._running = True
         self._paused = False
-        self._filter = ''
+        self._lastlen = -1
+        self._filterdata = ''
         # plotgroup for filter
         self.plotgroup = ''
         # amount of candles to plot
@@ -41,26 +47,40 @@ class LiveClient:
         if self._app.p.use_default_tabs:
             self._app.tabs.append(ConfigTab)
         # set plotgroup from app params if provided
-        if self._app.p.filter and self._app.p.filter['group']:
-            self.plotgroup = self._app.p.filter['group']
+        if self._app.p.filterdata and self._app.p.filterdata['group']:
+            self.plotgroup = self._app.p.filterdata['group']
         # create figurepage
         self._figid, self._figurepage = self._app.create_figurepage(
             self._strategy, filldata=False)
 
-        # create model
+        # create model and finish initialization
         self.model, self._refresh_fnc = self._createmodel()
-        # update model with current figurepage
         self.refreshmodel()
+        self._thread.start()
+
+    def _t_thread(self):
+        '''
+        Thread method for updates
+        '''
+        if self._interval == 0:
+            return
+        while self._running:
+            if not self.is_paused():
+                if len(self._strategy) == self._lastlen:
+                    continue
+                self._datahandler.update()
+                self._lastlen = len(self._strategy)
+            time.sleep(self._interval)
 
     def _createmodel(self):
 
-        def on_select_filter(self, a, old, new):
-            _logger.debug(f'Switching filter to {new}...')
+        def on_select_filterdata(self, a, old, new):
+            _logger.debug(f'Switching filterdata to {new}...')
             # ensure datahandler is stopped
             self._datahandler.stop()
-            self._filter = new
-            self.updatemodel()
-            _logger.debug('Switching filter finished')
+            self._filterdata = new
+            self.refreshmodel()
+            _logger.debug('Switching filterdata finished')
 
         def on_click_nav_action(self):
             if not self._paused:
@@ -114,13 +134,13 @@ class LiveClient:
         for d in datanames:
             options.append(('D' + d, f'Data: {d}'))
         options.append(('G', 'Plot Group'))
-        self._filter = 'D' + datanames[0]
-        select_filter = Select(
-            value=self._filter,
+        self._filterdata = 'D' + datanames[0]
+        select_filterdata = Select(
+            value=self._filterdata,
             options=options)
-        select_filter.on_change(
+        select_filterdata.on_change(
             'value',
-            partial(on_select_filter, self))
+            partial(on_select_filterdata, self))
         # nav
         btn_nav_prev = Button(label='❮', width=self.NAV_BUTTON_WIDTH)
         btn_nav_prev.on_click(partial(on_click_nav_prev, self))
@@ -134,7 +154,7 @@ class LiveClient:
         btn_nav_next_big.on_click(partial(on_click_nav_next, self, 10))
         # layout
         controls = row(
-            children=[select_filter])
+            children=[select_filterdata])
         nav = row(
             children=[btn_nav_prev_big,
                       btn_nav_prev,
@@ -163,25 +183,18 @@ class LiveClient:
             sizing_mode='stretch_width')
         return model, partial(refresh, self)
 
-    def _get_filter(self):
+    def _get_filterdata(self):
         res = {}
-        if self._filter.startswith('D'):
-            res['dataname'] = self._filter[1:]
-        elif self._filter.startswith('G'):
+        if self._filterdata.startswith('D'):
+            res['dataname'] = self._filterdata[1:]
+        elif self._filterdata.startswith('G'):
             res['group'] = self.plotgroup
         return res
 
-    def _pause(self):
-        self._paused = True
-
-    def _resume(self):
-        if not self._paused:
-            return
-        self._datahandler.update()
-        self._paused = False
+    def _get_tabs(self):
+        return self.model.select_one({'id': 'tabs'})
 
     def _set_data_by_idx(self, idx=None):
-        return # TODO
         # if a index is provided, ensure that index is within data range
         if idx:
             # don't allow idx to be bigger than max idx
@@ -190,16 +203,22 @@ class LiveClient:
             # don't allow idx to be smaller than lookback - 1
             idx = max(idx, self.lookback - 1)
         # create DataFrame based on last index with length of lookback
-        # FIXME check
+        end = self._figurepage.data_clock.get_dt_at_idx(idx)
         df = self._app.get_data(
+            end=end,
             figid=self._figid,
             back=self.lookback,
-            preserveidx=True,
-            fillgaps=self.fillgaps)
-        self._datahandler.set(df)
+            fillgaps=self.fillgaps,
+            preserveidx=True)
+        self._datahandler.set_df(df)
 
-    def _get_tabs(self):
-        return self.model.select_one({'id': 'tabs'})
+    def _pause(self):
+        self._paused = True
+
+    def _resume(self):
+        if not self._paused:
+            return
+        self._paused = False
 
     def get_app(self):
         return self._app
@@ -222,23 +241,28 @@ class LiveClient:
 
     def refreshmodel(self):
         self._doc.hold()
-        self._app.update_figurepage(filter=self._get_filter())
+        self._app.update_figurepage(filterdata=self._get_filterdata())
         panels = self._app.generate_model_panels()
         for t in self._app.tabs:
             tab = t(self._app, self._figurepage, self)
             if tab.is_useable():
                 panels.append(tab.get_panel())
-
-        # set all tabs (from panels, without None)
         self._get_tabs().tabs = list(filter(None.__ne__, panels))
-
-        # create new data handler
         if self._datahandler is not None:
             self._datahandler.stop()
-        self._datahandler = LiveDataHandler(
-            self, lookback=self.lookback, fillgaps=self.fillgaps)
+        self._datahandler = LiveDataHandler(self)
         self._doc.unhold()
-        self._refresh_fnc()
+        self.refresh()
+
+    def next(self):
+        if self._interval != 0:
+            return
+        if len(self._strategy) == self._lastlen:
+            return
+        self._lastlen = len(self._strategy)
+        self._datahandler.update()
 
     def stop(self):
+        self._running = False
+        self._thread.join()
         self._datahandler.stop()

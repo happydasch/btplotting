@@ -1,6 +1,6 @@
 from copy import copy
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 import re
 import os
@@ -23,7 +23,7 @@ from jinja2 import Environment, PackageLoader
 from .schemes import Scheme, Blackly
 
 from .utils import get_dataname, get_datanames, \
-    get_plotobjs, get_smallest_dataname, filter_obj
+    get_plotobjs, filter_obj
 from .figure import FigurePage, FigureType, Figure
 from .clock import DataClockHandler
 from .helper.label import obj2label
@@ -69,8 +69,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         ('tabs', []),
         # should default tabs be used
         ('use_default_tabs', True),
-        # default filter to apply on plots
-        ('filter', None),
+        # default filterdata to apply on plots
+        ('filterdata', None),
     )
 
     def __init__(self, **kwargs):
@@ -116,13 +116,13 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         i = 0
         for d in objs:
             if not isinstance(d, bt.Strategy):
-                self._configure_plotobject(d, i)
+                self._configure_plotobj(d, i)
                 i += 1
             for s in objs[d]:
-                self._configure_plotobject(s, i)
+                self._configure_plotobj(s, i)
                 i += 1
 
-    def _configure_plotobject(self, obj, idx):
+    def _configure_plotobj(self, obj, idx):
         '''
         Applies config to a single object
         '''
@@ -164,7 +164,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 raise RuntimeError(
                     f'Unknown config type in plotting config: {k}')
 
-    def _get_plotobjects(self, figid=0, filter=None):
+    def _get_plotobjs(self, figid=0, filterdata=None):
         '''
         Returns a filtered dict of objects to be plotted
         '''
@@ -172,31 +172,39 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         objs = get_plotobjs(fp.strategy, order_by_plotmaster=True)
         filtered = {}
         for o in objs:
-            if filter_obj(o, filter):
+            if filter_obj(o, filterdata):
                 continue
             childs = []
             for c in objs[o]:
-                if not filter_obj(c, filter):
+                if not filter_obj(c, filterdata):
                     childs.append(c)
             filtered[o] = childs
         return filtered
 
-    def _blueprint_strategy(self, figid=0, filter=None):
+    def _blueprint_strategy(self, figid=0, filterdata=None):
         '''
         Fills a FigurePage with Figures of all objects to be plotted
         '''
         fp = self.get_figurepage(figid)
+        strategy = fp.strategy
         scheme = self.scheme
         fp.reset()
-        fp.analyzers += [
-            a for _, a in fp.strategy.analyzers.getitems()]
+        fp.analyzers += [a for _, a in fp.strategy.analyzers.getitems()]
+
+        # store data clock in figurepage
+        dataname = False
+        for i in get_datanames(strategy, True):
+            dataname = i
+            if not filter_obj(strategy.getdatabyname(i), filterdata):
+                break
+        fp.data_clock = DataClockHandler(strategy, dataname)
 
         # get the objects to be plotted
-        objects = self._get_plotobjects(figid, filter)
+        objs = self._get_plotobjs(figid, filterdata)
 
         # create figures
         figures = []
-        for parent, childs in objects.items():
+        for parent, childs in objs.items():
             figure = Figure(
                 fp=fp,
                 scheme=scheme,
@@ -244,29 +252,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         fp.analyzers += [
             a for _, a in optreturn.analyzers.getitems()]
 
-    def _create_data_clock(self, figid=0):
-        '''
-        Creates the data clock for the given figurepage
-        '''
-        fp = self.get_figurepage(figid)
-        strategy = fp.strategy
-
-        # collect all objects to generate data for
-        objs = defaultdict(list)
-        for f in fp.figures:
-            dataname = get_dataname(f.master)
-            objs[dataname].append(f.master)
-            for c in f.childs:
-                dataname = get_dataname(c)
-                objs[dataname].append(c)
-
-        # use smallest data as clock
-        smallest = get_smallest_dataname(strategy, objs.keys())
-
-        # store data clock details in figurepage
-        fp.data_clock = DataClockHandler(strategy, smallest)
-        fp.data_clock_objs = objs
-
     def _output_stylesheet(self, template='basic.css.j2'):
         '''
         Renders and returns the stylesheet
@@ -302,7 +287,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return filename
 
     def create_figurepage(self, obj, figid=0, start=None, end=None,
-                          filter=None, filldata=True):
+                          filterdata=None, filldata=True):
         '''
         Creates new FigurePage for given obj.
         The obj can be either an instance of bt.Strategy or bt.OptReturn
@@ -314,8 +299,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         if isinstance(obj, bt.Strategy):
             self._configure_plotting(figid)
-            self._blueprint_strategy(figid, filter)
-            self._create_data_clock(figid)
+            self._blueprint_strategy(figid, filterdata)
             if filldata:
                 df = self.get_data(figid, start=start, end=end)
                 fp.set_cds_columns_from_df(df)
@@ -326,11 +310,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 f'Unsupported plot source object: {str(type(obj))}')
         return figid, fp
 
-    def update_figurepage(self, figid=0, filter=None):
+    def update_figurepage(self, figid=0, filterdata=None):
         '''
         Updates the figurepage with the given figid
         '''
-        self._blueprint_strategy(figid, filter)
+        self._blueprint_strategy(figid, filterdata)
 
     def get_figurepage(self, figid=0):
         '''
@@ -372,7 +356,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # sort figures
         data_sort = {False: 0}
         for i, d in enumerate(
-                get_datanames(fp.strategy, filter=False),
+                get_datanames(fp.strategy, onlyplotable=False),
                 start=1):
             data_sort[d] = i
         sorted_figs = list(fp.figures)
@@ -430,7 +414,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         '''
         fp = self.get_figurepage(figid)
         data_clock = fp.data_clock
-        objs = fp.data_clock_objs
         # only start_idx, end_idx should be used so all data
         # is aligned to the same clock length.
         startidx, endidx = data_clock.get_start_end_idx(start, end, back)
@@ -438,7 +421,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         dt_idx = data_clock.get_dt_list(startidx, endidx)
         # create index column
         int_idx = data_clock.get_index_list(
-            startidx, startidx, preserveidx=preserveidx)
+            startidx, endidx, preserveidx=preserveidx)
         # create dataframe with datetime and prepared index
         # the index will be applied at the end after data is
         # set
@@ -447,15 +430,15 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 'index': pd.Series(int_idx, dtype='int64'),
                 'datetime': pd.Series(dt_idx, dtype='datetime64[ns]')})
         # generate data for all figurepage objects
-        for d in objs:
-            for obj in objs[d]:
-                # merge data from object aligned to clock
+        df_objs = []
+        for f in fp.figures:
+            for obj in [f.master] + f.childs:
                 df_data = data_clock.get_data(
                     obj, startidx, endidx, fillgaps=fillgaps)
-                df = df.join(df_data)
+                df_objs.append(df_data)
+        df = df.join(df_objs)
         # set index and return dataframe
-        df.set_index('index')
-        return df
+        return df.set_index('index')
 
     def get_last_idx(self, figid=0):
         '''
@@ -483,7 +466,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return self.generate_model(0)
 
     def plot(self, obj, figid=0, numfigs=1, iplot=True, start=None,
-             end=None, use=None, filter=None, **kwargs):
+             end=None, use=None, filterdata=None, **kwargs):
         '''
         Plot either a strategy or an optimization result
         This method is called by backtrader
@@ -493,9 +476,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         if use is not None:
             raise Exception('Different backends by "use" not supported')
 
-        # set filter from params if none provided
-        if not filter:
-            filter = self.p.filter
+        # set filterdata from params if none provided
+        if not filterdata:
+            filterdata = self.p.filterdata
 
         # create figurepage for obj
         self.create_figurepage(
@@ -503,7 +486,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             figid=figid,
             start=start,
             end=end,
-            filter=filter)
+            filterdata=filterdata)
 
         # returns all figurepages
         return self._figurepages
