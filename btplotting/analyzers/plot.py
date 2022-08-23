@@ -82,6 +82,13 @@ class LivePlotAnalyzer(bt.Analyzer):
         Stop from backtrader
         '''
         _logger.debug('Stopping PlotListener...')
-        with self._lock:
-            for c in self._clients.values():
-                c.stop()
+
+        for c in list(self._clients.values()):
+            c.stop()
+
+    def next(self):
+        '''
+        Next from backtrader, new data arrives
+        '''
+        for c in list(self._clients.values()):
+            c.next()
