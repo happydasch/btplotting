@@ -31,7 +31,7 @@ class LiveClient:
         self._datahandler = None
         self._figurepage = None
         self._running = True
-        self._paused = False
+        self._paused = True
         self._lastlen = -1
         self._filterdata = ''
         # plotgroup for filter
@@ -68,15 +68,15 @@ class LiveClient:
             if not self.is_paused():
                 if len(self._strategy) == self._lastlen:
                     continue
-                self._datahandler.update()
                 self._lastlen = len(self._strategy)
+                self._datahandler.update()
+            self.refresh()
             time.sleep(self._interval)
 
     def _createmodel(self):
 
         def on_select_filterdata(self, a, old, new):
             _logger.debug(f'Switching filterdata to {new}...')
-            # ensure datahandler is stopped
             self._datahandler.stop()
             self._filterdata = new
             self.refreshmodel()
@@ -104,12 +104,19 @@ class LiveClient:
 
         def reset_nav_buttons(self):
             btn_nav_prev.disabled = True
+            btn_nav_prev_big.disabled = True
             btn_nav_next.disabled = True
+            btn_nav_next_big.disabled = True
             btn_nav_action.label = '❙❙'
 
         def update_nav_buttons(self):
             last_idx = self._datahandler.get_last_idx()
             last_avail_idx = self._app.get_last_idx(self._figid)
+
+            if self._paused:
+                btn_nav_action.label = '▶'
+            else:
+                btn_nav_action.label = '❙❙'
 
             if last_idx < self.lookback:
                 btn_nav_prev.disabled = True
@@ -123,10 +130,6 @@ class LiveClient:
             else:
                 btn_nav_next.disabled = False
                 btn_nav_next_big.disabled = False
-            if self._paused:
-                btn_nav_action.label = '▶'
-            else:
-                btn_nav_action.label = '❙❙'
 
         # filter selection
         datanames = get_datanames(self._strategy)
@@ -141,6 +144,7 @@ class LiveClient:
         select_filterdata.on_change(
             'value',
             partial(on_select_filterdata, self))
+
         # nav
         btn_nav_prev = Button(label='❮', width=self.NAV_BUTTON_WIDTH)
         btn_nav_prev.on_click(partial(on_click_nav_prev, self))
@@ -152,6 +156,7 @@ class LiveClient:
         btn_nav_next.on_click(partial(on_click_nav_next, self))
         btn_nav_next_big = Button(label='❯❯', width=self.NAV_BUTTON_WIDTH)
         btn_nav_next_big.on_click(partial(on_click_nav_next, self, 10))
+
         # layout
         controls = row(
             children=[select_filterdata])
@@ -165,10 +170,12 @@ class LiveClient:
             title='Period for data to plot',
             value=self.lookback,
             start=1, end=200, step=1)
+
         # tabs
         tabs = Tabs(
             id='tabs',
             sizing_mode=self._app.scheme.plot_sizing_mode)
+
         # model
         model = layout(
             [
@@ -181,6 +188,8 @@ class LiveClient:
                 [tabs]
             ],
             sizing_mode='stretch_width')
+
+        # return model and a refrash function
         return model, partial(refresh, self)
 
     def _get_filterdata(self):

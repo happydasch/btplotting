@@ -105,7 +105,7 @@ class CDSObject:
             else:
                 raise Exception("Unsupported col provided")
 
-    def set_cds_columns_from_df(self, df, dropna=True):
+    def set_cds_columns_from_df(self, df):
         '''
         Sets the ColumnDataSource columns based on the given DataFrame using
         the given columns. Only the given columns will be added, all will be
@@ -114,21 +114,12 @@ class CDSObject:
         columns, additional = self._get_cds_cols()
         if not len(columns) > 0:
             columns = list(df.columns)
+        columns = ['datetime'] + [x for x in columns if x not in 'datetime']
         try:
             c_df = df.loc[:, columns]
+            c_df.fillna('NaN')
         except Exception:
             return None
-        # remove empty rows
-        if dropna:
-            c_df = c_df.dropna(how='all')
-        # use text NaN for nan values
-        c_df.fillna('NaN')
-        # ensure df contains corresponding datetime entries
-        c_df['datetime'] = df.loc[
-            c_df.index, 'datetime'].to_numpy(dtype=np.datetime64)
-        # ensure df contains index
-        c_df['index'] = df.index[
-            c_df.index].to_numpy(dtype=np.int64)
 
         # add additional columns
         for a in additional:
@@ -136,6 +127,7 @@ class CDSObject:
             c_df[a[0]] = col
 
         # set cds
+        c_df = c_df.reset_index()
         for c in c_df.columns:
             if c in self._cds.column_names:
                 self._cds.remove(c)
@@ -148,17 +140,12 @@ class CDSObject:
         columns, additional = self._get_cds_cols()
         if not len(columns) > 0:
             columns = list(df.columns)
+        columns = ['datetime'] + [x for x in columns if x not in 'datetime']
         try:
             c_df = df.loc[:, columns]
+            c_df.fillna('NaN')
         except Exception:
             return {}
-
-        # use text NaN for nan values
-        c_df.fillna('NaN')
-        # ensure c_df contains datetime
-        c_df['datetime'] = df.loc[c_df.index, 'datetime']
-        # ensure df contains index as a column
-        c_df['index'] = c_df.index.to_numpy(dtype=np.int64)
 
         # add additional columns
         for a in additional:
@@ -168,7 +155,7 @@ class CDSObject:
         res = ColumnDataSource.from_df(c_df)
         return res
 
-    def get_cds_patchdata_from_series(self, idx, series):
+    def get_cds_patchdata_from_series(self, idx, series, fillnan=[]):
         '''
         Creates patch data from a pandas Series
         '''
@@ -192,19 +179,23 @@ class CDSObject:
                 val = series[c]
                 if c == 'datetime':
                     val = val.to_numpy()
-                if val != val:
-                    val = 'NaN'
-                p_data[c].append((idx, val))
+                cds_val = self._cds.data[c][idx]
+                if c in fillnan or cds_val != val:
+                    if val != val:
+                        val = 'NaN'
+                    p_data[c].append((idx, val))
             for a in additional:
                 c = a[0]
                 val = self._create_cds_col_from_series(a, series)
-                if val != val:
-                    val = 'NaN'
-                p_data[c].append((idx, val))
+                if c in fillnan or cds_val != val:
+                    if val != val:
+                        val = 'NaN'
+                    p_data[c].append((idx, val))
         else:
             # add all columns to stream result. This may be needed if a value
             # was nan and therefore not added before
-            s_data = self.get_cds_streamdata_from_df(pd.DataFrame([series]))
+            df = pd.DataFrame([series])
+            s_data = self.get_cds_streamdata_from_df(df)
         return p_data, s_data
 
     def cds_reset(self):
