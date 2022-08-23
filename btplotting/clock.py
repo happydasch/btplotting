@@ -1,9 +1,8 @@
-import bisect
-
-from datetime import datetime
-
 import pandas as pd
 import backtrader as bt
+
+from bisect import bisect_left
+from datetime import timedelta
 
 from .utils import get_dataname, get_source_id
 
@@ -93,69 +92,40 @@ class DataClockHandler:
         # if no dataname provided, use first data
         return strategy.datetime, strategy.data._tz
 
-    def _get_start_end_idx(
-            self, start: datetime = None, end: datetime = None,
-            back=None, alwaysreturn=False):
-        '''
-        Returns the start and end idx for a given datetime
-        '''
-        start_idx = (
-            None
-            if start is None
-            else bisect.bisect_left(
-                self._clk.array, bt.date2num(start, tz=self._tz)))
-        if start_idx is not None and start_idx >= len(self):
-            start_idx = None
-        end_idx = (
-            None
-            if end is None
-            else bisect.bisect_right(
-                self._clk.array, bt.date2num(end, tz=self._tz)))
-        if end_idx is not None and end_idx >= len(self):
-            end_idx = None
-        if back:
-            if end_idx is None:
-                end_idx = len(self) - 1
-            start_idx = end_idx - back + 1
-        if alwaysreturn and start_idx is None:
-            start_idx = 0
-        if alwaysreturn and end_idx is None:
-            end_idx = len(self) - 1
-        return start_idx, end_idx
-
-    def _align_slice(self, slicedata, start: datetime = None,
-                     end: datetime = None, back=None, fillgaps=False):
+    def _align_slice(self, slicedata, startidx=None, endidx=None,
+                     fillgaps=False):
         '''
         Aligns a slice to the clock
         '''
         res = []
         last_idx = -1 if not len(slicedata['float']) else 0
         last_val = None
-        dt_list = self.get_dt_list(start, end, back, asfloat=True)
-        for i in range(0, len(dt_list)):
+        dtlist = self.get_dt_list(startidx, endidx, asfloat=True)
+        for i in range(0, len(dtlist)):
             aval = float('nan')
             # get the time range for current clock entry
-            start_dt = dt_list[i]
-            end_dt = None
-            if i < len(dt_list) - 1:
-                end_dt = dt_list[i + 1]
+            startdt = dtlist[i]
+            enddt = None
+            if i < len(dtlist) - 1:
+                enddt = dtlist[i + 1]
             if last_idx < 0:
                 res.append(aval)
                 continue
             while True:
-                if last_idx >= len(slicedata['float']) or last_idx >= len(slicedata['value']):
+                if (last_idx >= len(slicedata['float'])
+                        or last_idx >= len(slicedata['value'])):
                     # all consumed
                     break
                 c_float = slicedata['float'][last_idx]
                 c_val = slicedata['value'][last_idx]
-                # forward until start dt is reached
-                if c_float < start_dt:
+                # forward until startdt is reached
+                if c_float < startdt:
                     if c_val == c_val:
                         last_val = c_val
                     last_idx += 1
                     continue
                 # wait, current value belongs to next clock entry
-                if end_dt and c_float >= end_dt:
+                if enddt and c_float >= enddt:
                     break
                 # set value
                 # either last value if nan and fillgaps or current value
@@ -165,44 +135,66 @@ class DataClockHandler:
                     aval = c_val
                 last_val = aval
                 last_idx += 1
-
             res.append(aval)
         return res
 
+    def get_idx_for_dt(self, dt):
+        return bisect_left(self._clk.array, bt.date2num(dt, tz=self._tz))
+
+    def get_start_end_idx(self, startdt=None, enddt=None, back=None):
+        '''
+        Returns the startidx and endidx for a given datetime
+        '''
+        startidx = (
+            0
+            if startdt is None
+            else bisect_left(
+                self._clk.array, bt.date2num(startdt, tz=self._tz)))
+        if startidx is not None and startidx >= len(self):
+            startidx = 0
+        endidx = (
+            len(self) - 1
+            if enddt is None
+            else bisect_left(
+                self._clk.array, bt.date2num(enddt, tz=self._tz)))
+        if endidx is not None and endidx >= len(self):
+            endidx = len(self) - 1
+        if back:
+            if endidx is None:
+                endidx = len(self) - 1
+            startidx = max(0, endidx - back + 1)
+        return startidx, endidx
+
     def get_dt_at_idx(self, idx, localized=True):
+        '''
+        Returns a datetime object for given index
+        '''
         return bt.num2date(
             self._clk.array[idx],
             tz=None if not localized else self._tz)
 
-    def get_float_at_idx(self, idx):
-        return self._clk.array[idx]
-
-    def get_index_list(self, start: datetime = None, end: datetime = None,
-                       back=None, preserveidx=False):
+    def get_index_list(self, startidx=None, endidx=None, preserveidx=False):
         '''
         Returns a list with int indexes for the clock
         '''
-        start_idx, end_idx = self._get_start_end_idx(
-            start, end, back, alwaysreturn=True)
         if preserveidx:
-            return [int(x) for x in range(start_idx, end_idx + 1)]
-        return [int(x) for x in range(end_idx - start_idx + 1)]
+            return [int(x) for x in range(startidx, endidx + 1)]
+        return [int(x) for x in range(endidx - startidx + 1)]
 
-    def get_dt_list(self, start: datetime = None, end: datetime = None,
-                    back=None, asfloat=False, localized=True):
+    def get_dt_list(self, startidx=None, endidx=None, asfloat=False,
+                    localized=True):
         '''
         Returns a list with datetime/float indexes for the clock
         '''
-        dt_list = []
-        for i in self.get_index_list(start, end, back, True):
+        dtlist = []
+        for i in self.get_index_list(startidx, endidx, preserveidx=True):
             val = self._clk.array[i]
             if not asfloat:
                 val = bt.num2date(val, tz=None if not localized else self._tz)
-            dt_list.append(val)
-        return dt_list
+            dtlist.append(val)
+        return dtlist
 
-    def get_slice(self, line, start: datetime = None, end: datetime = None,
-                  back=None):
+    def get_slice(self, line, startdt=None, enddt=None):
         '''
         Returns a slice from given line
 
@@ -210,23 +202,22 @@ class DataClockHandler:
         alignment in another clock.
         '''
         res = {'float': [], 'value': []}
-        for i in self.get_index_list(start, end, back, True):
+        startidx, endidx = self.get_start_end_idx(startdt, enddt)
+        for i in self.get_index_list(startidx, endidx, preserveidx=True):
             res['float'].append(self._clk.array[i])
-            res['value'].append(line.array[i])
+            if i < len(line.array):
+                res['value'].append(line.array[i])
+            else:
+                res['value'].append(float('nan'))
         return res
 
-    def get_data(self, obj, start: datetime = None, end: datetime = None,
-                 back=None, fillgaps=False):
-        start_idx, end_idx = self._get_start_end_idx(
-            start, end, back, alwaysreturn=True)
-        start_dt = (
-            self.get_dt_at_idx(start_idx)
-            if start_idx is not None
-            else self.get_dt_at_idx(0))
-        end_dt = (
-            self.get_dt_at_idx(end_idx)
-            if end_idx is not None
-            else None)
+    def get_data(self, obj, startidx=None, endidx=None, fillgaps=False):
+        slice_startdt = self.get_dt_at_idx(startidx)
+        if endidx < len(self) - 1:
+            slice_enddt = (
+                self.get_dt_at_idx(endidx + 1) - timedelta(microseconds=1))
+        else:
+            slice_enddt = None
         dataname = get_dataname(obj)
         tmpclk = DataClockHandler(self._strategy, dataname)
         df = pd.DataFrame()
@@ -236,13 +227,17 @@ class DataClockHandler:
                 if linealias in ['datetime']:
                     continue
                 line = getattr(obj, linealias)
-                slicedata = tmpclk.get_slice(line, start_dt, end_dt)
-                data = self._align_slice(slicedata, start_dt, end_dt, fillgaps)
+                slicedata = tmpclk.get_slice(
+                    line, slice_startdt, slice_enddt)
+                data = self._align_slice(
+                    slicedata, startidx, endidx, fillgaps=fillgaps)
                 df[source_id + linealias] = data
         else:
             for lineidx, line in enumerate(obj.lines):
-                slicedata = tmpclk.get_slice(line, start_dt, end_dt)
                 source_id = get_source_id(line)
-                data = self._align_slice(slicedata, start_dt, end_dt, fillgaps)
+                slicedata = tmpclk.get_slice(
+                    line, slice_startdt, slice_enddt)
+                data = self._align_slice(
+                    slicedata, startidx, endidx, fillgaps=fillgaps)
                 df[source_id] = data
         return df

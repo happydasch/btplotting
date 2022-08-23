@@ -431,16 +431,14 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         fp = self.get_figurepage(figid)
         data_clock = fp.data_clock
         objs = fp.data_clock_objs
-
-        # get index based on dt_idx to ensure all fetched
-        # data will have the same length when aligning
-        dt_idx = data_clock.get_dt_list(start, end, back)
-        # only start_dt, end_dt should be used so all data
-        # is aligned to the same clock length
-        start_dt, end_dt = dt_idx[0], dt_idx[-1]
-        # create index based on start and end time from dt_idx
+        # only start_idx, end_idx should be used so all data
+        # is aligned to the same clock length.
+        startidx, endidx = data_clock.get_start_end_idx(start, end, back)
+        # create datetime column
+        dt_idx = data_clock.get_dt_list(startidx, endidx)
+        # create index column
         int_idx = data_clock.get_index_list(
-            start=start_dt, end=end_dt, preserveidx=preserveidx)
+            startidx, startidx, preserveidx=preserveidx)
         # create dataframe with datetime and prepared index
         # the index will be applied at the end after data is
         # set
@@ -453,7 +451,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             for obj in objs[d]:
                 # merge data from object aligned to clock
                 df_data = data_clock.get_data(
-                    obj=obj, start=start_dt, end=end_dt, fillgaps=fillgaps)
+                    obj, startidx, endidx, fillgaps=fillgaps)
                 df = df.join(df_data)
         # set index and return dataframe
         df.set_index('index')

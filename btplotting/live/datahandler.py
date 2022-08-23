@@ -179,7 +179,7 @@ class LiveDataHandler:
         Request to update data with given data
         '''
         # TODO append df to datastore
-        for idx, row in rows.iterrows():
+        for idx, row in data.iterrows():
             if (self._datastore.shape[0] > 0
                     and idx in self._datastore.index):
                 update_type = UpdateType.UPDATE
@@ -206,19 +206,20 @@ class LiveDataHandler:
                 last_idx = self.get_last_idx()
                 last_avail_idx = self._app.get_last_idx(self._figid)
                 data = None
-                if last_idx < 0 or last_avail_idx - last_idx > (2 * self._lookback):
+                if (last_idx < 0
+                        or last_avail_idx - last_idx > (2 * self._lookback)):
+                    startidx = last_avail_idx - self._lookback
                     # if there is more new data then lookback length
                     # don't load from last index but from end of data
                     data = self._app.get_data(
-                        back=self._lookback,
+                        startidx=startidx,
                         preserveidx=True,
                         fillgaps=self._fillgaps)
                 elif last_idx < last_avail_idx:
                     # if there is just some new data (less then lookback)
                     # load from last index, so no data is skipped
-                    start = self._figurepage.data_clock.get_dt_at_idx(self._last_idx)
                     data = self._app.get_data(
-                        start=last_idx,
+                        startidx=self._lastidx,
                         preserveidx=True,
                         fillgaps=self._fillgaps)
                 if data is not None:
