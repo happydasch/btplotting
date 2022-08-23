@@ -1,7 +1,5 @@
-import time
 import logging
 from enum import Enum
-from threading import Thread, Lock
 from tornado import gen
 
 import pandas as pd
@@ -20,26 +18,8 @@ class LiveDataHandler:
     Handler for live data
     '''
 
-    def __init__(self, client, lookback, fillgaps=True, interval=1):
+    def __init__(self, client):
         self._client = client
-        # doc of client
-        self._doc = client.get_doc()
-        # app instance
-        self._app = client.get_app()
-        # figurepage
-        self._figurepage = client.get_figurepage()
-        # figurepage id
-        self._figid = client.get_figid()
-        # lookback length
-        self._lookback = lookback
-        # should gaps be filled
-        self._fillgaps = fillgaps
-        # interval for thread updates
-        self._interval = interval
-        # thread to process new data
-        self._thread = Thread(target=self._t_thread, daemon=True)
-        self._lock = Lock()
-        self._running = True
         self._datastore = None
         self._lastidx = None
         self._patches = []
@@ -47,8 +27,6 @@ class LiveDataHandler:
         self._cb_add = None
         # inital fill of datastore
         self._fill()
-        # start thread
-        self._thread.start()
 
     @gen.coroutine
     def _cb_push_adds(self):
@@ -65,7 +43,7 @@ class LiveDataHandler:
         # store last index of streamed data
         self._lastidx = update_df.index[-1]
 
-        fp = self._figurepage
+        fp = self._client.get_figurepage()
         # create stream data for figurepage
         data = fp.get_cds_streamdata_from_df(update_df)
         if data:
@@ -93,9 +71,9 @@ class LiveDataHandler:
         if len(patches) == 0:
             return
 
+        fp = self._client.get_figurepage()
+        fillgaps = self._client.fillgaps
         for patch in patches:
-            fp = self._figurepage
-
             # patch figurepage
             p_data, s_data = fp.get_cds_patchdata_from_series(patch)
             if len(p_data) > 0:
@@ -109,7 +87,7 @@ class LiveDataHandler:
             # patch all figures
             for f in fp.figures:
                 # only fill with nan if not filling gaps
-                if not self._fillgaps:
+                if not fillgaps:
                     c_fill_nan = f.fill_nan()
                 else:
                     c_fill_nan = []
@@ -128,51 +106,52 @@ class LiveDataHandler:
         '''
         Fills datastore with latest values
         '''
-        df = self._app.get_data(
-            figid=self._figid,
-            back=self._lookback,
-            preserveidx=True,
-            fillgaps=self._fillgaps)
+        app = self._client.get_app()
+        fp = self._client.get_figurepage()
+        figid = self._client.get_figid()
+        lookback = self._client.lookback
+        fillgaps = self._client.fillgaps
+        df = app.get_data(
+            figid=figid, back=lookback, fillgaps=fillgaps, preserveidx=True)
         self._set_data(df)
         # init by calling set_cds_columns_from_df
         # after this, all cds will already contain data
-        self._figurepage.set_cds_columns_from_df(self._datastore)
+        fp.set_cds_columns_from_df(self._datastore)
 
     def _set_data(self, data, idx=None):
         '''
         Replaces or appends data to datastore
         '''
-        with self._lock:
-            if isinstance(data, pd.DataFrame):
-                self._datastore = data
-                self._lastidx = -1
-            elif isinstance(data, pd.Series):
-                if idx is None:
-                    self._datastore = self._datastore.append(data)
-                else:
-                    self._datastore.loc[idx] = data
+        if isinstance(data, pd.DataFrame):
+            self._datastore = data
+            self._lastidx = -1
+        elif isinstance(data, pd.Series):
+            if idx is None:
+                self._datastore = self._datastore.append(data)
             else:
-                raise Exception('Unsupported data provided')
-            self._datastore = self._datastore.tail(
-                self._get_data_stream_length())
+                self._datastore.loc[idx] = data
+        else:
+            raise Exception('Unsupported data provided')
+        self._datastore = self._datastore.tail(
+            self._get_data_stream_length())
 
     def _push_adds(self):
-        doc = self._doc
+        doc = self._client.get_doc()
         try:
             doc.remove_next_tick_callback(self._cb_add)
+            self._cb_add = doc.add_next_tick_callback(
+                self._cb_push_adds)
         except ValueError:
             pass
-        self._cb_add = doc.add_next_tick_callback(
-            self._cb_push_adds)
 
     def _push_patches(self):
-        doc = self._doc
+        doc = self._client.get_doc()
         try:
             doc.remove_next_tick_callback(self._cb_patch)
+            self._cb_patch = doc.add_next_tick_callback(
+                self._cb_push_patches)
         except ValueError:
             pass
-        self._cb_patch = doc.add_next_tick_callback(
-            self._cb_push_patches)
 
     def _process_data(self, data):
         '''
@@ -197,41 +176,11 @@ class LiveDataHandler:
                 self._set_data(row)
                 self._push_adds()
 
-    def _t_thread(self):
-        '''
-        Thread method for datahandler
-        '''
-        while self._running:
-            if not self._client.is_paused():
-                last_idx = self.get_last_idx()
-                last_avail_idx = self._app.get_last_idx(self._figid)
-                data = None
-                if (last_idx < 0
-                        or last_avail_idx - last_idx > (2 * self._lookback)):
-                    startidx = last_avail_idx - self._lookback
-                    # if there is more new data then lookback length
-                    # don't load from last index but from end of data
-                    data = self._app.get_data(
-                        startidx=startidx,
-                        preserveidx=True,
-                        fillgaps=self._fillgaps)
-                elif last_idx < last_avail_idx:
-                    # if there is just some new data (less then lookback)
-                    # load from last index, so no data is skipped
-                    data = self._app.get_data(
-                        startidx=self._lastidx,
-                        preserveidx=True,
-                        fillgaps=self._fillgaps)
-                if data is not None:
-                    self._process_data(data)
-                    self._client.refresh()
-            time.sleep(self._interval)
-
     def _get_data_stream_length(self):
         '''
         Returns the length of data stream to use
         '''
-        return min(self._lookback, self._datastore.shape[0])
+        return min(self._client.lookback, self._datastore.shape[0])
 
     def get_last_idx(self):
         '''
@@ -241,28 +190,53 @@ class LiveDataHandler:
             return self._datastore.index[-1]
         return -1
 
-    def set(self, df):
+    def set_df(self, df):
         '''
         Sets a new df and streams data
         '''
         self._set_data(df)
         self._push_adds()
 
+    def update(self):
+        fp = self._client.get_figurepage()
+        app = self._client.get_app()
+        figid = self._client.get_figid()
+        lookback = self._client.lookback
+        fillgaps = self._client.fillgaps
+        data_clock = fp.data_clock
+        last_idx = self.get_last_idx()
+        last_avail_idx = app.get_last_idx(figid)
+        data = None
+        idx = max(0, last_avail_idx - lookback)
+        start = data_clock.get_dt_at_idx(idx)
+        # if there is more new data then lookback length
+        # don't load from last index but from end of data
+        if (start == start
+            and (last_idx < 0
+                 or last_avail_idx - last_idx > (2 * lookback))):
+            data = app.get_data(
+                start=start, fillgaps=fillgaps, preserveidx=True)
+        # if there is just some new data (less then lookback)
+        # load from last index, so no data is skipped
+        elif last_idx < last_avail_idx:
+            start = data_clock.get_dt_at_idx(self._lastidx)
+            data = app.get_data(
+                start=start, fillgaps=fillgaps, preserveidx=True)
+        # if any new data was loaded
+        if data is not None:
+            self._process_data(data)
+
     def stop(self):
         '''
         Stops the datahandler
         '''
-        # mark as not running
-        self._running = False
         # ensure no pending calls are set
+        doc = self._client.get_doc()
         try:
-            self._doc.remove_next_tick_callback(self._cb_patch)
+            doc.remove_next_tick_callback(self._cb_patch)
         except ValueError:
             pass
         try:
-            self._doc.remove_next_tick_callback(self._cb_add)
+            doc.remove_next_tick_callback(self._cb_add)
         except ValueError:
             pass
-        # it would not really be neccessary to join this thread but doing
-        # it for readability
-        self._thread.join(0)
