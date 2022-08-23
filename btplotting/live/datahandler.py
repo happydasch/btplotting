@@ -1,5 +1,4 @@
 import logging
-from enum import Enum
 from tornado import gen
 
 import pandas as pd

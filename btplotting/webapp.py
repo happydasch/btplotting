@@ -68,12 +68,6 @@ class Webapp:
 
         ipython = iplot and 'ipykernel' in sys.modules
         if ipython:
-            try:
-                get_ipython
-            except:
-                ipython = False
-
-        if ipython:
             show(app, notebook_url=notebook_url)  # noqa
         else:
             apps = {'/': app}

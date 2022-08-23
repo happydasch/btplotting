@@ -373,7 +373,8 @@ class Figure(CDSObject):
             range = self.figure.extra_y_ranges[kwargs['y_range_name']]
             range.renderers = range.renderers + [renderer]
         else:
-            self.figure.y_range.renderers = self.figure.y_range.renderers + [renderer]
+            self.figure.y_range.renderers = self.figure.y_range.renderers
+            self.figure.y_range.renderers += [renderer]
 
         # for markers add additional renderer so hover pops up for all
         # of them (this will only apply if no line renderer is set)
@@ -485,8 +486,10 @@ class Figure(CDSObject):
                 kwglyph['bottom'] = 0
                 kwglyph['line_color'] = color
                 kwglyph['fill_color'] = color
-                kwglyph['alpha'] = getattr(lineplotinfo, 'alpha', 1.0)
-                kwglyph['width'] = getattr(lineplotinfo, 'width', self._bar_width)
+                kwglyph['alpha'] = getattr(lineplotinfo, 'alpha',
+                                           1.0)
+                kwglyph['width'] = getattr(lineplotinfo, 'width',
+                                           self._bar_width)
                 glyph_fnc = self.figure.vbar
                 # append renderer
                 self._figure_append_renderer(
@@ -684,7 +687,9 @@ class Figure(CDSObject):
         if self._scheme.plot_title:
             self._figure_append_title(title)
 
-        style = hasattr(data.plotinfo, 'plotstyle') and data.plotinfo.plotstyle or self._scheme.style
+        style = (hasattr(data.plotinfo, 'plotstyle')
+                 and data.plotinfo.plotstyle
+                 or self._scheme.style)
         if style == 'line':
             if data.plotinfo.plotmaster is None:
                 color = convert_color(self._scheme.loc)

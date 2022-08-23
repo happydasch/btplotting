@@ -476,6 +476,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         if use is not None:
             raise Exception('Different backends by "use" not supported')
 
+        self._iplot = iplot and 'ipykernel' in sys.modules
+
         # set filterdata from params if none provided
         if not filterdata:
             filterdata = self.p.filterdata
