@@ -22,7 +22,7 @@ from jinja2 import Environment, PackageLoader
 
 from .schemes import Scheme, Blackly
 
-from .utils import get_dataname, get_datanames, get_source_id, \
+from .utils import get_dataname, get_datanames, \
     get_plotobjs, get_smallest_dataname, filter_obj
 from .figure import FigurePage, FigureType, Figure
 from .clock import DataClockHandler
@@ -432,22 +432,30 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         data_clock = fp.data_clock
         objs = fp.data_clock_objs
 
-        # create dataframe
-        int_idx = data_clock.get_index_list(start, end, back, preserveidx)
+        # get index based on dt_idx to ensure all fetched
+        # data will have the same length when aligning
         dt_idx = data_clock.get_dt_list(start, end, back)
+        # only start_dt, end_dt should be used so all data
+        # is aligned to the same clock length
         start_dt, end_dt = dt_idx[0], dt_idx[-1]
+        # create index based on start and end time from dt_idx
+        int_idx = data_clock.get_index_list(
+            start=start_dt, end=end_dt, preserveidx=preserveidx)
+        # create dataframe with datetime and prepared index
+        # the index will be applied at the end after data is
+        # set
         df = pd.DataFrame(
             data={
                 'index': pd.Series(int_idx, dtype='int64'),
                 'datetime': pd.Series(dt_idx, dtype='datetime64[ns]')})
-
         # generate data for all figurepage objects
         for d in objs:
             for obj in objs[d]:
+                # merge data from object aligned to clock
                 df_data = data_clock.get_data(
                     obj=obj, start=start_dt, end=end_dt, fillgaps=fillgaps)
                 df = df.join(df_data)
-
+        # set index and return dataframe
         df.set_index('index')
         return df
 
