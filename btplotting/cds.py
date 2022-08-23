@@ -152,30 +152,37 @@ class CDSObject:
             c_df = df.loc[:, columns]
         except Exception:
             return {}
+
         # use text NaN for nan values
         c_df.fillna('NaN')
         # ensure c_df contains datetime
         c_df['datetime'] = df.loc[c_df.index, 'datetime']
+        # ensure df contains index as a column
+        c_df['index'] = c_df.index.to_numpy(dtype=np.int64)
+
         # add additional columns
         for a in additional:
             col = self._create_cds_col_from_df(a, c_df)
             c_df[a[0]] = col
+
         res = ColumnDataSource.from_df(c_df)
         return res
 
-    def get_cds_patchdata_from_series(self, series, fill_nan=[]):
+    def get_cds_patchdata_from_series(self, idx, series):
         '''
         Creates patch data from a pandas Series
         '''
         p_data = defaultdict(list)
         s_data = defaultdict(list)
         columns, additional = self._get_cds_cols()
+
         idx_map = {d: idx for idx, d in enumerate(self._cds.data['index'])}
         # get the index in cds for series index
-        if series['index'] in idx_map:
-            idx = idx_map[series['index']]
+        if idx in idx_map:
+            idx = idx_map[idx]
         else:
             idx = False
+
         # create patch or stream data based on given series
         if idx is not False:
             # ensure datetime is checked for changes
@@ -185,19 +192,15 @@ class CDSObject:
                 val = series[c]
                 if c == 'datetime':
                     val = val.to_numpy()
-                cds_val = self._cds.data[c][idx]
-                if c in fill_nan or cds_val != val:
-                    if val != val:
-                        val = 'NaN'
-                    p_data[c].append((idx, val))
+                if val != val:
+                    val = 'NaN'
+                p_data[c].append((idx, val))
             for a in additional:
                 c = a[0]
-                cds_val = self._cds.data[c][idx]
                 val = self._create_cds_col_from_series(a, series)
-                if c in fill_nan or cds_val != val:
-                    if val != val:
-                        val = 'NaN'
-                    p_data[c].append((idx, val))
+                if val != val:
+                    val = 'NaN'
+                p_data[c].append((idx, val))
         else:
             # add all columns to stream result. This may be needed if a value
             # was nan and therefore not added before
