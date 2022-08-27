@@ -83,7 +83,7 @@ cerebro.addanalyzer(BacktraderPlottingLive, address="*", port=8889)
 
 ## Jupyter
 
-In Jupyter you can plut to a single browser tab with iplot=False:
+In Jupyter you can plot to a single browser tab with iplot=False:
 
 ```python
 plot = btplotting.BacktraderPlotting()
