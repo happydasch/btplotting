@@ -30,7 +30,7 @@ from .helper.label import obj2label
 from .helper.bokeh import generate_stylesheet
 from .tab import BacktraderPlottingTab
 from .tabs import AnalyzerTab, MetadataTab, LogTab, SourceTab
-from bokeh.io import output_notebook, show
+from bokeh.io import show
 if 'ipykernel' in sys.modules:
     from IPython.core.display import display, HTML
 
@@ -506,7 +506,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
             if self.p.output_mode in ['show', 'save']:
                 if self._iplot:
-                    output_notebook()
                     css = self._output_stylesheet()
                     display(HTML(css))
                     show(model)

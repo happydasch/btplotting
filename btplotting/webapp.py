@@ -6,15 +6,19 @@ from bokeh.document import Document
 from bokeh.server.server import Server
 from bokeh.io import show
 from bokeh.util.browser import view
-
+from bokeh.server.views.ws import WSHandler
 from jinja2 import Environment, PackageLoader
 
 from .helper.bokeh import generate_stylesheet
 
 
+def check_origin_overwrite(self, origin):
+    return True
+
+
 class Webapp:
     def __init__(self, title, html_template, scheme, model_factory_fnc,
-                 on_session_destroyed=None, address="localhost", port=8889,
+                 on_session_destroyed=None, address="localhost", port=81,
                  autostart=False, iplot=True):
         self._title = title
         self._html_template = html_template
@@ -56,13 +60,11 @@ class Webapp:
 
     @staticmethod
     def _run_server(fnc_make_document, ioloop=None, address='localhost',
-                    port=8889, autostart=False, notebook_url='localhost:8889',
-                    iplot=True):
+                    port=81, autostart=False, iplot=True):
         '''
         Runs a Bokeh webserver application. Documents will be created using
         fnc_make_document
         '''
-
         handler = FunctionHandler(fnc_make_document)
         app = Application(handler)
 
@@ -70,21 +72,25 @@ class Webapp:
             try:
                 # src: https://stackoverflow.com/questions/44100477/how-to-check-if-you-are-in-a-jupyter-notebook
                 get_ipython  # noqa: *
-                show(app, notebook_url=notebook_url)
-                return
+                # patch ws handler as a workaround for jupyter in vscode
+                # check_origin will return allways true
+                WSHandler.check_origin_src = WSHandler.check_origin
+                WSHandler.check_origin = check_origin_overwrite
+                return show(app)
             except NameError:
                 pass
 
         apps = {'/': app}
         display_address = address if address != '*' else 'localhost'
+        origin = [f'{address}:{port}' if address != '*' else address]
+        server = Server(apps, port=port, io_loop=ioloop,
+                        allow_websocket_origin=origin)
         if autostart:
             print('Browser is launching at'
                   f' http://{display_address}:{port}')
             view(f'http://{display_address}:{port}')
         else:
             print(f'Open browser at http://{display_address}:{port}')
-        server = Server(apps, port=port, allow_websocket_origin=[address],
-                        io_loop=ioloop)
         if ioloop is None:
             server.run_until_shutdown()
         else:
