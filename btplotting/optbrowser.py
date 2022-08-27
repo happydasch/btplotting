@@ -19,7 +19,7 @@ class OptBrowser:
     def __init__(self, app, optresults, usercolumns=None,
                  num_result_limit=None, sortcolumn=None,
                  sortasc=True, address='localhost', port=80,
-                 autostart=False):
+                 autostart=False, iplot=True):
         self._usercolumns = {} if usercolumns is None else usercolumns
         self._num_result_limit = num_result_limit
         self._app = app
@@ -29,6 +29,7 @@ class OptBrowser:
         self._address = address
         self._port = port
         self._autostart = autostart
+        self._iplot = iplot
 
     def start(self, ioloop=None):
         webapp = Webapp(
@@ -38,7 +39,8 @@ class OptBrowser:
             self.build_optresult_model,
             address=self._address,
             port=self._port,
-            autostart=self._autostart)
+            autostart=self._autostart,
+            iplot=self._iplot)
         webapp.start(ioloop)
 
     def _build_optresult_selector(self, optresults):

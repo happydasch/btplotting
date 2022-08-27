@@ -1,5 +1,3 @@
-import sys
-
 from datetime import datetime
 
 from bokeh.application.handlers.function import FunctionHandler
@@ -17,7 +15,7 @@ from .helper.bokeh import generate_stylesheet
 class Webapp:
     def __init__(self, title, html_template, scheme, model_factory_fnc,
                  on_session_destroyed=None, address="localhost", port=8889,
-                 autostart=False):
+                 autostart=False, iplot=True):
         self._title = title
         self._html_template = html_template
         self._scheme = scheme
@@ -26,6 +24,7 @@ class Webapp:
         self._address = address
         self._port = port
         self._autostart = autostart
+        self._iplot = iplot
 
     def start(self, ioloop=None):
         '''
@@ -52,12 +51,13 @@ class Webapp:
             doc.add_root(model)
 
         self._run_server(make_document, ioloop=ioloop, address=self._address,
-                         port=self._port, autostart=self._autostart)
+                         port=self._port, autostart=self._autostart,
+                         iplot=self._iplot)
 
     @staticmethod
-    def _run_server(fnc_make_document, notebook_url='localhost:8889',
-                    iplot=True, ioloop=None, address='localhost', port=8889,
-                    autostart=False):
+    def _run_server(fnc_make_document, ioloop=None, address='localhost',
+                    port=8889, autostart=False, notebook_url='localhost:8889',
+                    iplot=True):
         '''
         Runs a Bokeh webserver application. Documents will be created using
         fnc_make_document
@@ -66,21 +66,27 @@ class Webapp:
         handler = FunctionHandler(fnc_make_document)
         app = Application(handler)
 
-        ipython = iplot and 'ipykernel' in sys.modules
-        if ipython:
-            show(app, notebook_url=notebook_url)  # noqa
+        if iplot:
+            try:
+                # src: https://stackoverflow.com/questions/44100477/how-to-check-if-you-are-in-a-jupyter-notebook
+                get_ipython  # noqa: *
+                show(app, notebook_url=notebook_url)
+                return
+            except NameError:
+                pass
+
+        apps = {'/': app}
+        display_address = address if address != '*' else 'localhost'
+        if autostart:
+            print('Browser is launching at'
+                  f' http://{display_address}:{port}')
+            view(f'http://{display_address}:{port}')
         else:
-            apps = {'/': app}
-            display_address = address if address != '*' else 'localhost'
-            if autostart:
-                print(f'Browser is launching at http://{display_address}:{port}')
-                view(f'http://{display_address}:{port}')
-            else:
-                print(f'Open browser at http://{display_address}:{port}')
-            server = Server(apps, port=port, allow_websocket_origin=[address],
-                            io_loop=ioloop)
-            if ioloop is None:
-                server.run_until_shutdown()
-            else:
-                server.start()
-                ioloop.start()
+            print(f'Open browser at http://{display_address}:{port}')
+        server = Server(apps, port=port, allow_websocket_origin=[address],
+                        io_loop=ioloop)
+        if ioloop is None:
+            server.run_until_shutdown()
+        else:
+            server.start()
+            ioloop.start()

@@ -30,14 +30,11 @@ from .helper.label import obj2label
 from .helper.bokeh import generate_stylesheet
 from .tab import BacktraderPlottingTab
 from .tabs import AnalyzerTab, MetadataTab, LogTab, SourceTab
+from bokeh.io import output_notebook, show
+if 'ipykernel' in sys.modules:
+    from IPython.core.display import display, HTML
 
 _logger = logging.getLogger(__name__)
-
-
-if 'ipykernel' in sys.modules:
-    from IPython.core.display import display, HTML  # noqa
-    from bokeh.io import output_notebook, show
-    output_notebook()
 
 
 class BacktraderPlotting(metaclass=bt.MetaParams):
@@ -432,9 +429,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # generate data for all figurepage objects
         df_objs = []
         for f in fp.figures:
+            fillnan = f.fillnan()
             for obj in [f.master] + f.childs:
                 df_data = data_clock.get_data(
-                    obj, startidx, endidx, fillgaps=fillgaps)
+                    obj, startidx, endidx, fillgaps=fillgaps, fillnan=fillnan)
                 df_objs.append(df_data)
         df = df.join(df_objs)
         # set index and return dataframe
@@ -476,9 +474,14 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         if use is not None:
             raise Exception('Different backends by "use" not supported')
 
-        self._iplot = iplot and 'ipykernel' in sys.modules
+        if iplot:
+            # src: https://stackoverflow.com/questions/44100477/how-to-check-if-you-are-in-a-jupyter-notebook
+            try:
+                get_ipython  # noqa: *
+                self._iplot = True
+            except NameError:
+                pass
 
-        # set filterdata from params if none provided
         if not filterdata:
             filterdata = self.p.filterdata
 
@@ -502,7 +505,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             model = self.generate_model(figid)
 
             if self.p.output_mode in ['show', 'save']:
-                if self.is_iplot():
+                if self._iplot:
+                    output_notebook()
                     css = self._output_stylesheet()
                     display(HTML(css))
                     show(model)
