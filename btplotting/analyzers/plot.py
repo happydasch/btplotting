@@ -1,7 +1,6 @@
 import asyncio
 import logging
-from threading import Lock
-import threading
+from threading import Thread, Lock
 
 import backtrader as bt
 
@@ -73,7 +72,7 @@ class LivePlotAnalyzer(bt.Analyzer):
         Start from backtrader
         '''
         _logger.debug('Starting PlotListener...')
-        t = threading.Thread(target=self._t_server)
+        t = Thread(target=self._t_server)
         t.daemon = True
         t.start()
 
@@ -82,7 +81,6 @@ class LivePlotAnalyzer(bt.Analyzer):
         Stop from backtrader
         '''
         _logger.debug('Stopping PlotListener...')
-
         for c in list(self._clients.values()):
             c.stop()
 
