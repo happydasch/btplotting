@@ -18,7 +18,7 @@ class Tradimo(Blackly):
 
         self.text_color = '#222222'
 
-        self.crosshair_line_color = '#CCCCCC'
+        self.crosshair_line_color = '#444444'
         self.tag_pre_background_color = '#FFFFFF'
         self.tag_pre_text_color = dark_text
 
