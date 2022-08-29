@@ -91,7 +91,7 @@ class OptBrowser:
             fit_columns=True)
         return selector, cds
 
-    def build_optresult_model(self, _=None):
+    def build_optresult_model(self, doc):
         '''
         Generates and returns an interactive model for an OptResult
         or an OrderedOptResult
@@ -103,15 +103,27 @@ class OptBrowser:
             return self._app.plot_optmodel(
                 self._optresults[selected][0])
 
+        def update_model_new(selector_cds, stratidx):
+            new_model = _get_model(selector_cds, stratidx)
+            model.children.append(new_model)
+
+        def update_model(selector_cds, name, old, new):
+            if len(new) == 0:
+                return
+            stratidx = new[0]
+            del(model.children[-1])
+            doc.add_next_tick_callback(
+                partial(update_model_new, selector_cds, stratidx))
+
+
         # we have list of results, each result contains the result for
         # one strategy. we don't support having more than one strategy!
         if len(self._optresults) > 0 and len(self._optresults[0]) > 1:
             raise RuntimeError(
                 'You passed on optimization result based on more than'
-                + ' one strategy which is not supported!')
+                ' one strategy which is not supported!')
 
-        selector, selector_cds = self._build_optresult_selector(
-            self._optresults)
+        selector, selector_cds = self._build_optresult_selector(self._optresults)
 
         # show the first result in list as default
         model = column(
@@ -119,14 +131,7 @@ class OptBrowser:
             sizing_mode='stretch_width')
         model.background = self._app.params.scheme.background_fill
 
-        def update(selector_cds, name, old, new):
-            if len(new) == 0:
-                return
-            stratidx = new[0]
-            model.children[-1] = _get_model(
-                selector_cds, stratidx)
-
         selector_cds.selected.on_change(
-            'indices', partial(update, selector_cds))
+            'indices', partial(update_model, selector_cds))
 
         return model
