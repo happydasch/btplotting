@@ -383,6 +383,43 @@ class Figure(CDSObject):
         else:
             self._set_single_hover_renderer(renderer)
 
+    def _get_plotinfo(self, obj):
+        plotinfo = getattr(obj, 'plotinfo', None)
+        return plotinfo
+
+    def _get_plotinfo_style(self, plotinfo):
+        style = ((hasattr(plotinfo, 'plotstyle') and plotinfo.plotstyle)
+            or self._scheme.style)
+        return style
+
+    def _get_lineplotinfo(self, obj, linealias, only_plotable=True):
+        lineplotinfo = getattr(obj.plotlines, linealias, None)
+        if not lineplotinfo or getattr(lineplotinfo, '_plotskip', False):
+            if only_plotable:
+                return None
+        return lineplotinfo
+
+    def _get_lineplotinfo_style(self, lineplotinfo):
+        marker = getattr(lineplotinfo, 'marker', None)
+        method = getattr(lineplotinfo, '_method', None)
+        style = None
+        if method:
+            style = method
+        elif marker:
+            style = 'marker'
+        else:
+            style = 'line'
+        return style
+
+    def _get_lineplotinfo_color(self, lineplotinfo):
+        color = getattr(lineplotinfo, 'color', None)
+        if color is None:
+            if not getattr(lineplotinfo, '_samecolor', False):
+                self._nextcolor()
+            color = self._color()
+        color = convert_color(color)
+        return color
+
     def _plot_indicator_observer(self, obj):
         '''
         Common method to plot observer and indicator lines
@@ -392,47 +429,26 @@ class Figure(CDSObject):
         plotinfo = obj.plotinfo
 
         for lineidx, line in enumerate(obj.lines):
-            source_id = get_source_id(line)
-            self.set_cds_col(source_id)
             linealias = obj.lines._getlinealias(lineidx)
+            source_id = get_source_id(line)
 
             # get plotinfo
-            lineplotinfo = getattr(obj.plotlines, '_%d' % lineidx, None)
+            lineplotinfo = self._get_lineplotinfo(obj, linealias)
             if not lineplotinfo:
-                lineplotinfo = getattr(obj.plotlines, linealias, None)
-            if not lineplotinfo or getattr(lineplotinfo, '_plotskip', False):
                 continue
-
-            # check if marker and get method to plot line
-            marker = getattr(lineplotinfo, 'marker', None)
-            method = getattr(lineplotinfo, '_method', None)
-            if not marker and not method:
-                method = 'line'
-            elif not method:
-                if (getattr(lineplotinfo, 'ls', None)
-                        or getattr(lineplotinfo, 'lw', None)
-                        or getattr(lineplotinfo, 'drawstyle', None)):
-                    method = 'line'
-
-            # get a color
-            color = getattr(lineplotinfo, 'color', None)
-            if color is None:
-                if not getattr(lineplotinfo, '_samecolor', False):
-                    self._nextcolor()
-                color = self._color()
-            color = convert_color(color)
+            style = self._get_lineplotinfo_style(lineplotinfo)
+            color = self._get_lineplotinfo_color(lineplotinfo)
 
             # either all individual lines of are displayed in the legend
             # or only the ind/obs as a whole
             label = obj2label(obj, True)
-
             if obj.size() > 1 and plotinfo.plotlinelabels:
-                label += ' ' + (getattr(lineplotinfo, '_name', None)
-                                or linealias)
+                label += ' ' + linealias
 
-            if marker is not None:
+            if style == 'marker':
                 kwglyph = {'x': 'index', 'name': linealias + 'marker',
                            'legend_label': label}
+                marker = getattr(lineplotinfo, 'marker', None)
                 fnc_name, attrs, vals, updates = get_marker_info(marker)
                 markersize = (7
                               if not hasattr(lineplotinfo, 'markersize')
@@ -446,8 +462,8 @@ class Figure(CDSObject):
                         vals.update({'text': {'value': 'y'}})
                     else:
                         raise Exception(
-                            'Sorry, unsupported marker:'
-                            + f' "{marker}". Please report to GitHub.')
+                            f'Sorry, unsupported marker: "{marker}".'
+                            ' Please report to GitHub.')
                         return
                 # set kwglyph values
                 kwglyph['y'] = source_id
@@ -479,7 +495,7 @@ class Figure(CDSObject):
                 self._figure_append_renderer(
                     glyph_fnc, marker=marker, **kwglyph)
 
-            if method == 'bar':
+            elif style == 'bar':
                 kwglyph = {'x': 'index', 'name': linealias + 'bar',
                            'legend_label': label}
                 kwglyph['top'] = source_id
@@ -494,7 +510,8 @@ class Figure(CDSObject):
                 # append renderer
                 self._figure_append_renderer(
                     glyph_fnc, marker=None, **kwglyph)
-            elif method == 'line':
+
+            elif style == 'line':
                 kwglyph = {'x': 'index', 'name': linealias + 'line',
                            'legend_label': label}
                 kwglyph['line_width'] = 1
@@ -564,6 +581,9 @@ class Figure(CDSObject):
             if hover_label:
                 self._fp.hover.add_hovertip(hover_label, hover_data, obj)
 
+            # set cds column for line
+            self.set_cds_col(source_id)
+
         self._set_yticks(obj)
         self._plot_hlines(obj)
 
@@ -601,11 +621,28 @@ class Figure(CDSObject):
         In most cases nan should not be filled, only if style is not line
         for data. Since with nan values in data there will be gaps, this
         will happen when patching data.
-        See: DataHandler for usage of fill_nan()
+        See: BacktraderPlotting and DataHandler for usage of fillnan()
         '''
-        if self.get_type() == FigureType.DATA and self._scheme.style != 'line':
-            return self._datacols
-        return []
+        res = []
+        for obj in [self.master] + self.childs:
+            figuretype = FigureType.get_type(obj)
+            if figuretype == FigureType.DATA:
+                plotinfo = self._get_plotinfo(obj)
+                if not plotinfo:
+                    continue
+                style = self._get_plotinfo_style(plotinfo)
+                if style != 'line':
+                    res += self._datacols + [get_source_id(obj) + 'volume']
+            else:
+                for lineidx, line in enumerate(obj.lines):
+                    alias = obj.lines._getlinealias(lineidx)
+                    lineplotinfo = self._get_lineplotinfo(obj, alias)
+                    if not lineplotinfo:
+                        continue
+                    style = self._get_lineplotinfo_style(lineplotinfo)
+                    if style != 'line':
+                        res.append(get_source_id(line))
+        return res
 
     def get_type(self):
         '''
@@ -687,15 +724,14 @@ class Figure(CDSObject):
         if self._scheme.plot_title:
             self._figure_append_title(title)
 
-        style = (hasattr(data.plotinfo, 'plotstyle')
-                 and data.plotinfo.plotstyle
-                 or self._scheme.style)
+        plotinfo = self._get_plotinfo(data)
+        style = self._get_plotinfo_style(plotinfo)
         if style == 'line':
             if data.plotinfo.plotmaster is None:
                 color = convert_color(self._scheme.loc)
             else:
-                self._nextcolor(data.plotinfo.plotmaster)
-                color = convert_color(self._color(data.plotinfo.plotmaster))
+                self._nextcolor(plotinfo.plotmaster)
+                color = convert_color(self._color(plotinfo.plotmaster))
             kwargs = {
                 'x': 'index',
                 'y': source_id + 'close',
@@ -731,22 +767,15 @@ class Figure(CDSObject):
             self._figure_append_renderer(self.figure.segment, **kwargs_seg)
             self._figure_append_renderer(self.figure.vbar, **kwargs_vbar)
             # set hover label
+            number_format = self._scheme.number_format
             self._fp.hover.add_hovertip(
-                'Open',
-                f'@{source_id}open{{{self._scheme.number_format}}}',
-                data)
+                'Open', f'@{source_id}open{{{number_format}}}', data)
             self._fp.hover.add_hovertip(
-                'High',
-                f'@{source_id}high{{{self._scheme.number_format}}}',
-                data)
+                'High', f'@{source_id}high{{{number_format}}}', data)
             self._fp.hover.add_hovertip(
-                'Low',
-                f'@{source_id}low{{{self._scheme.number_format}}}',
-                data)
+                'Low', f'@{source_id}low{{{number_format}}}', data)
             self._fp.hover.add_hovertip(
-                'Close',
-                f'@{source_id}close{{{self._scheme.number_format}}}',
-                data)
+                'Close', f'@{source_id}close{{{number_format}}}', data)
         else:
             raise Exception(f'Unsupported style "{style}"')
 
