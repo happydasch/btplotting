@@ -5,10 +5,12 @@ class Blackly(Scheme):
     def _set_params(self):
         super()._set_params()
 
-        self.crosshair_line_color = '#AAAAAA'
-
         self.legend_background_color = '#3C3F41'
         self.legend_text_color = 'lightgrey'
+
+        self.crosshair_line_color = '#AAAAAA'
+        self.tag_pre_background_color = '#2B2B2B'
+        self.tag_pre_text_color = 'lightgrey'
 
         self.background_fill = '#2B2B2B'
         self.body_background_color = '#2B2B2B'
@@ -31,6 +33,3 @@ class Blackly(Scheme):
         self.tooltip_background_color = '#4C4F51'
         self.tooltip_text_label_color = '#848EFF'
         self.tooltip_text_value_color = '#AAAAAA'
-
-        self.tag_pre_background_color = '#222222'
-        self.tag_pre_text_color = 'lightgrey'
