@@ -25,7 +25,7 @@ class LivePlotAnalyzer(bt.Analyzer):
         ('title', None),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self, iplot=True, autostart=False, **kwargs):
         title = self.p.title
         if title is None:
             title = 'Live %s' % type(self.strategy).__name__
@@ -37,7 +37,9 @@ class LivePlotAnalyzer(bt.Analyzer):
             self._app_cb_build_root_model,
             on_session_destroyed=self._on_session_destroyed,
             address=self.p.address,
-            port=self.p.port)
+            port=self.p.port,
+            autostart=autostart,
+            iplot=iplot)
         self._lock = Lock()
         self._clients = {}
         self._app_kwargs = kwargs
