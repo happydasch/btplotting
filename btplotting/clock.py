@@ -205,6 +205,10 @@ class DataClockHandler:
         '''
         Returns a list with int indexes for the clock
         '''
+        if startidx is not None:
+            startidx = max(0, startidx)
+        if endidx is not None:
+            endidx = min(len(self), endidx)
         if preserveidx:
             return [int(x) for x in range(startidx, endidx + 1)]
         return [int(x) for x in range(endidx - startidx + 1)]

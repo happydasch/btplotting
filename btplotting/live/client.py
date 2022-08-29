@@ -70,7 +70,7 @@ class LiveClient:
                     continue
                 self._lastlen = len(self._strategy)
                 self._datahandler.update()
-            self.refresh()
+                self.refresh()
             time.sleep(self._interval)
 
     def _createmodel(self):
@@ -87,7 +87,7 @@ class LiveClient:
                 self._pause()
             else:
                 self._resume()
-            refresh(self)
+            update_nav_buttons(self)
 
         def on_click_nav_prev(self, steps=1):
             self._pause()
@@ -99,8 +99,12 @@ class LiveClient:
             self._set_data_by_idx(self._datahandler.get_last_idx() + steps)
             update_nav_buttons(self)
 
-        def refresh(self):
-            self._doc.add_next_tick_callback(partial(update_nav_buttons, self))
+        def refresh(self, now=False):
+            if now:
+                update_nav_buttons(self)
+            else:
+                self._doc.add_next_tick_callback(
+                    partial(update_nav_buttons, self))
 
         def reset_nav_buttons(self):
             btn_nav_prev.disabled = True
@@ -206,11 +210,11 @@ class LiveClient:
     def _set_data_by_idx(self, idx=None):
         # if a index is provided, ensure that index is within data range
         if idx:
+            # don't allow idx to be smaller than lookback - 1
+            idx = max(idx, self.lookback - 1)
             # don't allow idx to be bigger than max idx
             last_avail_idx = self._app.get_last_idx(self._figid)
             idx = min(idx, last_avail_idx)
-            # don't allow idx to be smaller than lookback - 1
-            idx = max(idx, self.lookback - 1)
         # create DataFrame based on last index with length of lookback
         end = self._figurepage.data_clock.get_dt_at_idx(idx)
         df = self._app.get_data(
@@ -246,21 +250,19 @@ class LiveClient:
 
     def refresh(self):
         if self._refresh_fnc:
-            self._refresh_fnc()
+            self._refresh_fnc(False)
 
     def refreshmodel(self):
-        self._doc.hold()
+        if self._datahandler is not None:
+            self._datahandler.stop()
         self._app.update_figurepage(filterdata=self._get_filterdata())
+        self._datahandler = LiveDataHandler(self)
         panels = self._app.generate_model_panels()
         for t in self._app.tabs:
             tab = t(self._app, self._figurepage, self)
             if tab.is_useable():
                 panels.append(tab.get_panel())
         self._get_tabs().tabs = list(filter(None.__ne__, panels))
-        if self._datahandler is not None:
-            self._datahandler.stop()
-        self._datahandler = LiveDataHandler(self)
-        self._doc.unhold()
         self.refresh()
 
     def next(self):

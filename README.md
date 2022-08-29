@@ -13,16 +13,16 @@ Basic:
 
 * No need for custom backtrader
 * Different naming / structure
-* Different data generation which allows to generate data for different data sources.
+* Data alignment which allows to generate data for different data sources.
   This is useful when replaying or resampling data, for example to remove gaps.
-* Different filtering of plot objects
+* Possibility to fill gaps on higher timeframes with data
 * Support for replay data
+* Different filtering of plot objects
 * Every figure has its own ColumnDataSource, so the live client can patch without
   having issues with nan values, every figure is updated individually
-* Display of plots looks more like backtrader plotting (order, heights, etc.)
-* Allows to generate custom columns, which don't have to be hardcoded. This is being used to generate
-  color for candles, varea values, etc.
-* Possibility to fill gaps of higher timeframes with data
+* Plotting looks very similar to backtraders own plotting (order, heights, etc.)
+* Allows to generate custom columns, which don't have to be hardcoded.
+* This is being used to generate color for candles, varea values, etc.
 
 Plotting:
 
@@ -59,9 +59,10 @@ Live plotting:
 
 Python >= 3.6 is required.
 
-
 ## How to use
-* Add to cele as an analyzer:
+
+* Add to cerebro as an analyzer:
+
 ```python
 from btplotting import BacktraderPlottingLive
   ...

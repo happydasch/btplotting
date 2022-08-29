@@ -138,7 +138,7 @@ class CDSObject:
         Creates stream data from a pandas DataFrame
         '''
         columns, additional = self._get_cds_cols()
-        if not len(columns) > 0:
+        if not len(columns):
             columns = list(df.columns)
         columns = ['datetime'] + [x for x in columns if x not in 'datetime']
         try:

@@ -63,9 +63,11 @@ class LiveDataHandler:
                 if len(s_data) > 0:
                     _logger.debug(f'Sending stream for figure: {s_data}')
                     f.cds.stream(s_data, self._get_data_stream_length())
+                    self._lastidx = s_data['index'][-1]
 
+        '''
         # take all rows from datastore that were not yet streamed
-        update_df = self._datastore[self._datastore.index > self._lastidx]
+        update_df = self._datastore[self._datastore.index >= self._lastidx]
         if not update_df.shape[0]:
             return
 
@@ -84,6 +86,8 @@ class LiveDataHandler:
             if data:
                 _logger.debug(f'Sending stream for figure: {data}')
                 f.cds.stream(data, self._get_data_stream_length())
+        self._lastidx = self._datastore.index[-1]
+        '''
 
     def _fill(self):
         '''
@@ -136,6 +140,7 @@ class LiveDataHandler:
                 self._patches[idx] = row
             else:
                 self._set_data(row)
+
         self._push()
 
     def _get_data_stream_length(self):
@@ -177,7 +182,8 @@ class LiveDataHandler:
         # if there is just some new data (less then lookback)
         # load from last index, so no data is skipped
         elif lastidx <= lastavailidx:
-            start = data_clock.get_dt_at_idx(lastidx)
+            startidx = max(0, lastidx - 2)
+            start = data_clock.get_dt_at_idx(startidx)
             data = app.get_data(
                 start=start, fillgaps=fillgaps, preserveidx=True)
         # if any new data was loaded
