@@ -157,6 +157,11 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 if plotid is None or plotid != target:
                     continue
                 apply_config(obj, config)
+            elif ctype == 'name':  # name
+                label = obj2label(obj)
+                if not label.contains(target):
+                    continue
+                apply_config(obj, config)
             else:
                 raise RuntimeError(
                     f'Unknown config type in plotting config: {k}')
@@ -321,13 +326,13 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception(f'FigurePage with figid "{figid}" does not exist')
         return self._figurepages[figid]
 
-    def generate_model(self, figid=0):
+    def generate_bokeh_model(self, figid=0):
         '''
         Generates bokeh model used for the current figurepage
         '''
         fp = self.get_figurepage(figid)
         if fp.strategy is not None:
-            panels = self.generate_model_panels()
+            panels = self.generate_bokeh_model_panels()
         else:
             panels = []
 
@@ -344,7 +349,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return model
 
-    def generate_model_panels(self, figid=0):
+    def generate_bokeh_model_panels(self, figid=0):
         '''
         Generates bokeh panels used for figurepage
         '''
@@ -461,7 +466,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # we support only one strategy at a time so pass fixed zero index
         # if we ran optresults=False then we have a full strategy object
         # -> pass it to get full plot
-        return self.generate_model(0)
+        return self.generate_bokeh_model(0)
 
     def plot(self, obj, figid=0, numfigs=1, iplot=True, start=None,
              end=None, use=None, filterdata=None, **kwargs):
@@ -502,7 +507,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         This method is called by backtrader
         '''
         for figid in self._figurepages:
-            model = self.generate_model(figid)
+            model = self.generate_bokeh_model(figid)
 
             if self.p.output_mode in ['show', 'save']:
                 if self._iplot:

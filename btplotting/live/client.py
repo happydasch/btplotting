@@ -257,7 +257,7 @@ class LiveClient:
             self._datahandler.stop()
         self._app.update_figurepage(filterdata=self._get_filterdata())
         self._datahandler = LiveDataHandler(self)
-        panels = self._app.generate_model_panels()
+        panels = self._app.generate_bokeh_model_panels()
         for t in self._app.tabs:
             tab = t(self._app, self._figurepage, self)
             if tab.is_useable():
