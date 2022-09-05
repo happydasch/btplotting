@@ -19,7 +19,7 @@ from .cds import CDSObject
 from .utils import get_source_id, get_clock_obj
 from .helper.cds_ops import cds_op_gt, cds_op_lt, cds_op_non, \
     cds_op_color
-from .helper.bokeh import convert_color, sanitize_source_name
+from .helper.plot import convert_color, sanitize_source_name
 from .helper.label import obj2label, obj2data
 from .helper.marker import get_marker_info
 
