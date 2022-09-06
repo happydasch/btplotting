@@ -5,4 +5,3 @@ jinja2
 pandas
 matplotlib
 selenium>=4.4.3
-chromedriver-binary
