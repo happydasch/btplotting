@@ -128,6 +128,8 @@ def filter_obj(obj, filterdata):
             elif isinstance(filterdata['dataname', list]):
                 if dataname not in filterdata['dataname']:
                     return True
+        else:
+            return True
     if 'group' in filterdata:
         if isinstance(filterdata['group'], str):
             if filterdata['group'] != '':
