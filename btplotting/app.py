@@ -1,6 +1,3 @@
-from selenium import webdriver  # noqa: *
-import chromedriver_binary  # noqa: * Adds chromedriver binary to path
-
 from copy import copy
 from collections import defaultdict
 from datetime import datetime
