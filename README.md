@@ -23,6 +23,8 @@ Basic:
 * Plotting looks very similar to backtraders own plotting (order, heights, etc.)
 * Allows to generate custom columns, which don't have to be hardcoded.
 * This is being used to generate color for candles, varea values, etc.
+* Save images of strategy or a single data (for example save an image of data when
+  a trade is happening)
 
 Plotting:
 
@@ -43,6 +45,8 @@ Tabs:
 * Can be extended with custom tabs (for example order execution with live client, custom analysis, etc.)
 
 Live plotting:
+
+** (Live plotting is broken at the moment) **
 
 * Navigation in live client (Pause, Backward, Forward)
 * Live plotting is done using an analyzer, so there is no need to use custom backtrader
