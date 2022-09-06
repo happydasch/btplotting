@@ -1,3 +1,6 @@
+from selenium import webdriver  # noqa: *
+import chromedriver_binary  # noqa: * Adds chromedriver binary to path
+
 from copy import copy
 from collections import defaultdict
 from datetime import datetime
@@ -12,11 +15,12 @@ import backtrader as bt
 import pandas as pd
 
 from bokeh.models.widgets import Panel, Tabs
-from bokeh.layouts import gridplot
+from bokeh.layouts import gridplot, column
 
 from bokeh.embed import file_html
 from bokeh.resources import CDN
 from bokeh.util.browser import view
+from bokeh.io import show, export_png
 
 from jinja2 import Environment, PackageLoader
 
@@ -30,7 +34,7 @@ from .helper.label import obj2label
 from .helper.bokeh import generate_stylesheet
 from .tab import BacktraderPlottingTab
 from .tabs import AnalyzerTab, MetadataTab, LogTab, SourceTab
-from bokeh.io import show
+
 if 'ipykernel' in sys.modules:
     from IPython.core.display import display, HTML
 
@@ -326,23 +330,25 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception(f'FigurePage with figid "{figid}" does not exist')
         return self._figurepages[figid]
 
-    def generate_bokeh_model(self, figid=0):
+    def generate_bokeh_model(self, figid=0, tabs=True):
         '''
         Generates bokeh model used for the current figurepage
         '''
         fp = self.get_figurepage(figid)
-        if fp.strategy is not None:
-            panels = self.generate_bokeh_model_panels()
+        if tabs:
+            if fp.strategy is not None:
+                panels = self.generate_bokeh_model_panels()
+            else:
+                panels = []
+
+            for t in self.tabs:
+                tab = t(self, fp, None)
+                if tab.is_useable():
+                    panels.append(tab.get_panel())
+            # set all tabs (filter out None)
+            model = Tabs(tabs=list(filter(None.__ne__, panels)))
         else:
-            panels = []
-
-        for t in self.tabs:
-            tab = t(self, fp, None)
-            if tab.is_useable():
-                panels.append(tab.get_panel())
-
-        # set all tabs (filter out None)
-        model = Tabs(tabs=list(filter(None.__ne__, panels)))
+            model = self.generate_bokeh_model_plots()
         # attach the model to the underlying figure for
         # later reference (e.g. unit test)
         fp.model = model
@@ -408,6 +414,29 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             panels.append(Panel(title=tab, child=g))
 
         return panels
+
+    def generate_bokeh_model_plots(self, figid=0):
+        '''
+        Generates bokeh panels used for figurepage
+        '''
+        fp = self.get_figurepage(figid)
+
+        # sort figures
+        data_sort = {False: 0}
+        for i, d in enumerate(
+                get_datanames(fp.strategy, onlyplotable=False),
+                start=1):
+            data_sort[d] = i
+        sorted_figs = list(fp.figures)
+        for f in sorted_figs:
+            f.figure.toolbar.logo = None
+            f.figure.toolbar_location = None
+        sorted_figs.sort(key=lambda x: (
+            x.get_plotorder(),
+            data_sort[get_dataname(x.master)],
+            x.get_type().value))
+
+        return column([x.figure for x in sorted_figs])
 
     def get_data(self, figid=0, start=None, end=None, back=None,
                  preserveidx=False, fillgaps=False):
@@ -525,3 +554,18 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 raise RuntimeError(
                     'Invalid parameter "output_mode"'
                     + f' with value: {self.p.output_mode}')
+
+    def save_png(self, obj, figid=0, start=None, end=None,
+                 filterdata=None, filename='out.png'):
+        if not filterdata:
+            filterdata = self.p.filterdata
+        # create figurepage for obj
+        self.create_figurepage(
+            obj,
+            figid=figid,
+            start=start,
+            end=end,
+            filterdata=filterdata)
+        # create and export model
+        model = self.generate_bokeh_model(figid, tabs=False)
+        export_png(model, filename=filename)
