@@ -15,9 +15,10 @@ from bokeh.models.widgets import Panel, Tabs
 from bokeh.layouts import gridplot, column
 
 from bokeh.embed import file_html
-from bokeh.resources import CDN
+from bokeh.resources import CDN, Resources
 from bokeh.util.browser import view
-from bokeh.io import show, export_png
+from bokeh.io import show
+from bokeh.io.export import get_screenshot_as_png
 
 from jinja2 import Environment, PackageLoader
 
@@ -405,8 +406,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             g = gridplot([[x.figure] for x in tabs[tab]],
                          toolbar_options={'logo': None},
                          toolbar_location=self.scheme.toolbar_location,
-                         sizing_mode=self.scheme.plot_sizing_mode,
-                         )
+                         sizing_mode=self.scheme.plot_sizing_mode)
             # append created panel
             panels.append(Panel(title=tab, child=g))
 
@@ -553,7 +553,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     + f' with value: {self.p.output_mode}')
 
     def save_png(self, obj, figid=0, start=None, end=None,
-                 filterdata=None, filename='out.png'):
+                 filterdata=None, filename='out.png', driver=None):
         if not filterdata:
             filterdata = self.p.filterdata
         # create figurepage for obj
@@ -565,4 +565,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             filterdata=filterdata)
         # create and export model
         model = self.generate_bokeh_model(figid, tabs=False)
-        export_png(model, filename=filename)
+        css = self._output_stylesheet()
+        resources = Resources()
+        resources.css_raw.append(css)
+        image = get_screenshot_as_png(
+            model, width=None, height=None,
+            driver=driver,
+            timeout=5,
+            resources=resources)
+        image.save(filename)
