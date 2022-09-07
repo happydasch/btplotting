@@ -553,7 +553,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     + f' with value: {self.p.output_mode}')
 
     def save_png(self, obj, figid=0, start=None, end=None,
-                 filterdata=None, filename='out.png', driver=None):
+                 filterdata=None, filename='out.png', driver=None,
+                 timeout=5):
         if not filterdata:
             filterdata = self.p.filterdata
         # create figurepage for obj
@@ -571,6 +572,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         image = get_screenshot_as_png(
             model, width=None, height=None,
             driver=driver,
-            timeout=5,
+            timeout=timeout,
             resources=resources)
         image.save(filename)
