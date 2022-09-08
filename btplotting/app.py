@@ -566,12 +566,12 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             filterdata=filterdata)
         # create and export model
         model = self.generate_bokeh_model(figid, tabs=False)
-        css = self._output_stylesheet()
         resources = Resources()
-        resources.css_raw.append(css)
+        resources.css_raw.append(self._output_stylesheet())
         image = get_screenshot_as_png(
             model, width=None, height=None,
             driver=driver,
             timeout=timeout,
             resources=resources)
-        image.save(filename)
+        if image.width != 0 and image.height != 0:
+            image.save(filename)
