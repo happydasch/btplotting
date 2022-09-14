@@ -221,8 +221,7 @@ class LiveClient:
             end=end,
             figid=self._figid,
             back=self.lookback,
-            fillgaps=self.fillgaps,
-            preserveidx=True)
+            fillgaps=self.fillgaps)
         self._datahandler.set_df(df)
 
     def _pause(self):

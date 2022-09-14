@@ -98,8 +98,7 @@ class LiveDataHandler:
         figid = self._client.get_figid()
         lookback = self._client.lookback
         fillgaps = self._client.fillgaps
-        df = app.get_data(
-            figid=figid, back=lookback, fillgaps=fillgaps, preserveidx=True)
+        df = app.get_data(figid=figid, back=lookback, fillgaps=fillgaps)
         self._set_data(df)
         # init by calling set_cds_columns_from_df
         # after this, all cds will already contain data
@@ -177,15 +176,13 @@ class LiveDataHandler:
         # if there is more new data then lookback length
         # don't load from last index but from end of data
         if (lastidx < 0 or lastavailidx - lastidx > (2 * lookback)):
-            data = app.get_data(
-                back=lookback, fillgaps=fillgaps, preserveidx=True)
+            data = app.get_data(back=lookback, fillgaps=fillgaps)
         # if there is just some new data (less then lookback)
         # load from last index, so no data is skipped
         elif lastidx <= lastavailidx:
             startidx = max(0, lastidx - 2)
             start = data_clock.get_dt_at_idx(startidx)
-            data = app.get_data(
-                start=start, fillgaps=fillgaps, preserveidx=True)
+            data = app.get_data(start=start, fillgaps=fillgaps)
         # if any new data was loaded
         if data is not None:
             self._process_data(data)
