@@ -49,7 +49,7 @@ class CDSObject:
     def _get_cds_cols(self):
         '''
         Returns all set columns
-        2 lissts will be returned:
+        2 lists will be returned:
         - columns: columns from data source
         - additional: additional data sources which should be
           created from data source
@@ -114,10 +114,10 @@ class CDSObject:
         columns, additional = self._get_cds_cols()
         if not len(columns) > 0:
             columns = list(df.columns)
-        columns = ['datetime'] + [x for x in columns if x not in 'datetime']
+        columns = ['index', 'datetime'] + [
+            x for x in columns if x not in ['index', 'datetime']]
         try:
             c_df = df.loc[:, columns]
-            c_df.fillna('NaN')
         except Exception:
             return None
 
@@ -127,7 +127,6 @@ class CDSObject:
             c_df[a[0]] = col
 
         # set cds
-        c_df = c_df.reset_index()
         for c in c_df.columns:
             if c in self._cds.column_names:
                 self._cds.remove(c)
@@ -140,7 +139,8 @@ class CDSObject:
         columns, additional = self._get_cds_cols()
         if not len(columns):
             columns = list(df.columns)
-        columns = ['datetime'] + [x for x in columns if x not in 'datetime']
+        columns = ['index', 'datetime'] + [
+            x for x in columns if x not in ['index', 'datetime']]
         try:
             c_df = df.loc[:, columns]
             c_df.fillna('NaN')

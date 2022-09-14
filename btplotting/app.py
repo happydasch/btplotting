@@ -436,7 +436,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         return column([x.figure for x in sorted_figs])
 
     def get_data(self, figid=0, start=None, end=None, back=None,
-                 preserveidx=False, fillgaps=False):
+                 fillgaps=False):
         '''
         Returns data for given figurepage
         '''
@@ -448,8 +448,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # create datetime column
         dt_idx = data_clock.get_dt_list(startidx, endidx)
         # create index column
-        int_idx = data_clock.get_index_list(
-            startidx, endidx, preserveidx=preserveidx)
+        int_idx = data_clock.get_idx_list(startidx, endidx)
         # create dataframe with datetime and prepared index
         # the index will be applied at the end after data is
         # set
@@ -467,7 +466,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 df_objs.append(df_data)
         df = df.join(df_objs)
         # set index and return dataframe
-        return df.set_index('index')
+        return df
 
     def get_last_idx(self, figid=0):
         '''

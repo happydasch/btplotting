@@ -59,8 +59,9 @@ class DataClockHandler:
     '''
 
     def __init__(self, strategy, dataname=False):
-        clk, tz = self._get_clock_details(strategy, dataname)
+        clk, tz = self._get_clk_details(strategy, dataname)
         self._strategy = strategy
+        self._dataname = dataname
         self._clk = clk
         self._tz = tz
 
@@ -69,122 +70,167 @@ class DataClockHandler:
         Length of the clock
         '''
         offset = 0
-        idx = len(self._clk.array) - 1
+        clk = self._get_clk()
+        idx = len(clk) - 1
         while True:
             if idx < 0:
                 break
-            val = self._clk.array[idx - offset]
+            val = clk[idx - offset]
             if val == val:
                 break
             offset += 1
         return (idx - offset) + 1  # last valid index + 1
 
-    def _get_clock_details(self, strategy, dataname):
+    def _get_clk(self):
+        '''
+        Returns the clock to use
+        '''
+        # ensure clk has unique values also use only reported len
+        # of data from clock
+        return sorted(set(self._clk.array[-len(self._clk)+1:]))
+
+    def _get_clk_details(self, strategy, dataname):
         '''
         Returns clock details (clk, tz)
         '''
         if dataname is not False:
             data = strategy.getdatabyname(dataname)
-            return data.datetime, data._tz
+            return data.datetime, data._tz or strategy.data._tz
         # if no dataname provided, use first data
         return strategy.datetime, strategy.data._tz
 
     def _align_slice(self, slicedata, startidx=None, endidx=None,
-                     fillgaps=False):
+                     fillgaps=False, rightedge=True):
         '''
         Aligns a slice to the clock
         '''
         res = []
 
+        # loop through timestamps of curent clock as float values
+        dtlist = self.get_dt_list(startidx, endidx, asfloat=True)
         # initialize last index used in slicedata
         l_idx = -1 if not len(slicedata['float']) else 0
         maxidx = min(len(slicedata['float']), len(slicedata['value'])) - 1
-
-        # loop through timestamps of curent clock as float values
-        dtlist = self.get_dt_list(startidx, endidx, asfloat=True)
         for i in range(0, len(dtlist)):
-
             # set initial value for this candle
-            val = float('nan')
-            l_val = float('nan')
-            t_start = dtlist[i]
-            t_end = dtlist[i + 1] if i < len(dtlist) - 1 else None
-
-            # align slicedata to clock
+            p_val = float('nan')  # previous candle value in current candle
+            t_val = float('nan')  # target candle value
+            if rightedge:
+                t_end = dtlist[i]
+                if i == 0:
+                    if len(dtlist) > 1:
+                        duration = dtlist[1] - dtlist[0]
+                    else:
+                        duration = 0
+                else:
+                    duration = dtlist[i] - dtlist[i - 1]
+                t_start = t_end - duration
+            else:
+                t_start = dtlist[i]
+                if i < len(dtlist) - 1:
+                    duration = dtlist[i + 1] - dtlist[i]
+                else:
+                    if len(dtlist) > 1:
+                        duration = dtlist[1] - dtlist[0]
+                    else:
+                        duration = 0
+                t_end = t_start + duration
+            # align slicedata to target clock
             while True:
                 # there is no data to align, just set nan values
                 if l_idx < 0:
-                    res.append(val)
+                    res.append(t_val)
                     break
-
                 # all candles from data consumed
                 if (l_idx > maxidx):
                     break
-
+                # get duration of current candle
                 # current values from data
                 c_val = slicedata['value'][l_idx]
-                c_start = slicedata['float'][l_idx]
-                c_end = None
-                if t_end and l_idx < maxidx - 1:
-                    c_end = slicedata['float'][l_idx + 1]
-
-                # forward until start of clock candle is reached
-                # only if current candle is over
-                if c_end and c_end < t_start and c_start < t_start:
+                if rightedge:
+                    c_end = slicedata['float'][l_idx]
+                    if l_idx == 0:
+                        if maxidx > 1:
+                            c_duration = (slicedata['float'][1]
+                                          - slicedata['float'][0])
+                        else:
+                            c_duration = 0
+                    else:
+                        c_duration = (slicedata['float'][l_idx]
+                                      - slicedata['float'][l_idx - 1])
+                    c_start = c_end - c_duration
+                else:
+                    c_start = slicedata['float'][l_idx]
+                    if l_idx < maxidx - 1:
+                        c_duration = (slicedata['float'][l_idx + 1]
+                                      - slicedata['float'][l_idx])
+                    else:
+                        if maxidx > 1:
+                            c_duration = (slicedata['float'][1]
+                                          - slicedata['float'][0])
+                        else:
+                            duration = 0
+                    c_end = c_start + c_duration
+                # check if value belongs to next candle, if current value
+                # belongs to next target candle don't use this value and
+                # stop here and use previously set value
+                if not fillgaps and c_start >= t_end:
+                    break
+                # forward until start of target start is readched
+                # move forward in source data and remember the last value
+                # of the candle, also don't process further if last candle
+                # and after start of target
+                if ((c_end and c_end < t_start and c_start < t_start)
+                        or (not c_end and c_start > t_start)):
+                    # if current value is a non-nan value remember it
                     if c_val == c_val:
-                        l_val = c_val
+                        p_val = c_val
                     l_idx += 1
                     continue
-
-                # data belongs to next candle
-                if not fillgaps and c_end and c_end > t_end:
-                    break
-
-                # set value: either last non nan value or current or nan
+                # set value: either last non-nan value or current or nan
                 if fillgaps:
+                    # when filling gaps either nan if no previous value
+                    # previous value if current value is nan
+                    # else current value
                     if c_val != c_val:
-                        val = l_val
+                        t_val = p_val
                     else:
-                        val = c_val
+                        t_val = c_val
                 else:
-                    if c_val != c_val and l_val == l_val:
-                        val = l_val
-                    else:
-                        val = c_val
-
-                # remember last value for current candle
-                l_val = val
-
-                # increment index in slice data if current candle consumed
+                    # set target value
+                    if c_val == c_val:
+                        t_val = c_val
+                # data is not consumed yet, if filling gaps, keep this value
                 if fillgaps and c_end and c_end > t_end:
-                    # data is not consumed yet
                     break
+                # increment index in slice data if current candle consumed
                 l_idx += 1
-
             # append the set value to aligned list with values
-            res.append(val)
-
+            res.append(t_val)
+            # remember last value for current candle
+            if t_val == t_val:
+                p_val = t_val
         return res
 
     def get_idx_for_dt(self, dt):
-        return bisect_left(self._clk.array, bt.date2num(dt, tz=self._tz))
+        clk = self._get_clk()
+        return bisect_left(clk, bt.date2num(dt, tz=self._tz))
 
     def get_start_end_idx(self, startdt=None, enddt=None, back=None):
         '''
         Returns the startidx and endidx for a given datetime
         '''
+        clk = self._get_clk()
         startidx = (
             0
             if startdt is None
-            else bisect_left(
-                self._clk.array, bt.date2num(startdt, tz=self._tz)))
+            else bisect_left(clk, bt.date2num(startdt, tz=self._tz)))
         if startidx is not None and startidx >= len(self):
             startidx = 0
         endidx = (
             len(self) - 1
             if enddt is None
-            else bisect_left(
-                self._clk.array, bt.date2num(enddt, tz=self._tz)))
+            else bisect_left(clk, bt.date2num(enddt, tz=self._tz)))
         if endidx is not None and endidx >= len(self):
             endidx = len(self) - 1
         if back:
@@ -197,11 +243,12 @@ class DataClockHandler:
         '''
         Returns a datetime object for given index
         '''
+        clk = self._get_clk()
         return bt.num2date(
-            self._clk.array[idx],
+            clk[idx],
             tz=None if not localized else self._tz)
 
-    def get_index_list(self, startidx=None, endidx=None, preserveidx=False):
+    def get_idx_list(self, startidx=None, endidx=None, preserveidx=True):
         '''
         Returns a list with int indexes for the clock
         '''
@@ -218,9 +265,10 @@ class DataClockHandler:
         '''
         Returns a list with datetime/float indexes for the clock
         '''
+        clk = self._get_clk()
         dtlist = []
-        for i in self.get_index_list(startidx, endidx, preserveidx=True):
-            val = self._clk.array[i]
+        for i in self.get_idx_list(startidx, endidx):
+            val = clk[i]
             if not asfloat:
                 val = bt.num2date(val, tz=None if not localized else self._tz)
             dtlist.append(val)
@@ -233,10 +281,11 @@ class DataClockHandler:
         This method is used to slice something from another clock for later
         alignment in another clock.
         '''
+        clk = self._get_clk()
         res = {'float': [], 'value': []}
         startidx, endidx = self.get_start_end_idx(startdt, enddt)
-        for i in self.get_index_list(startidx, endidx, preserveidx=True):
-            res['float'].append(self._clk.array[i])
+        for i in self.get_idx_list(startidx, endidx):
+            res['float'].append(clk[i])
             if i < len(line.array):
                 res['value'].append(line.array[i])
             else:
@@ -245,7 +294,9 @@ class DataClockHandler:
 
     def get_data(self, obj, startidx=None, endidx=None,
                  fillgaps=False, fillnan=[]):
-
+        '''
+        Returns data from object aligned to clock
+        '''
         slice_startdt = self.get_dt_at_idx(startidx)
         if endidx < len(self) - 1:
             slice_enddt = (
