@@ -390,7 +390,7 @@ class Figure(CDSObject):
 
     def _get_plotinfo_style(self, plotinfo):
         style = ((hasattr(plotinfo, 'plotstyle') and plotinfo.plotstyle)
-            or self._scheme.style)
+                 or self._scheme.style)
         return style
 
     def _get_lineplotinfo(self, obj, linealias, only_plotable=True):
