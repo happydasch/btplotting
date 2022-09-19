@@ -174,7 +174,7 @@ class DataClockHandler:
                 # check if value belongs to next candle, if current value
                 # belongs to next target candle don't use this value and
                 # stop here and use previously set value
-                if not fillgaps and c_start >= t_end:
+                if not fillgaps and c_start > t_end:
                     break
                 # forward until start of target start is readched
                 # move forward in source data and remember the last value
