@@ -116,7 +116,7 @@ class DataClockHandler:
             p_val = float('nan')  # previous candle value in current candle
             t_val = float('nan')  # target candle value
             if rightedge:
-                t_end = dtlist[i]
+                t_end = dtlist[i] - 1e-6
                 if i == 0:
                     if len(dtlist) > 1:
                         duration = dtlist[1] - dtlist[0]
@@ -134,7 +134,7 @@ class DataClockHandler:
                         duration = dtlist[1] - dtlist[0]
                     else:
                         duration = 0
-                t_end = t_start + duration
+                t_end = t_start + duration - 1e-6
             # align slicedata to target clock
             while True:
                 # there is no data to align, just set nan values
