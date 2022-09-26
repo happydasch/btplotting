@@ -64,6 +64,11 @@ class DataClockHandler:
         self._dataname = dataname
         self._clk = clk
         self._tz = tz
+        if not dataname:
+            data = strategy.data
+        else:
+            data = strategy.getdatabyname(dataname)
+        self._rightedge = data.p._get('rightedge', True)
 
     def __len__(self):
         '''
@@ -111,30 +116,25 @@ class DataClockHandler:
         # initialize last index used in slicedata
         l_idx = -1 if not len(slicedata['float']) else 0
         maxidx = min(len(slicedata['float']), len(slicedata['value'])) - 1
+        p_val = float('nan')  # previous candle value in current candle
         for i in range(0, len(dtlist)):
             # set initial value for this candle
-            p_val = float('nan')  # previous candle value in current candle
             t_val = float('nan')  # target candle value
             if rightedge:
-                t_end = dtlist[i] - 1e-6
-                if i == 0:
-                    if len(dtlist) > 1:
-                        duration = dtlist[1] - dtlist[0]
+                t_end = dtlist[i]
+                t_start = t_end
+                if len(dtlist) > 1:
+                    if i == 0:
+                        t_start = t_end - dtlist[1] - dtlist[0]
                     else:
-                        duration = 0
-                else:
-                    duration = dtlist[i] - dtlist[i - 1]
-                t_start = t_end - duration
+                        t_start = dtlist[i - 1]
             else:
                 t_start = dtlist[i]
+                t_end = t_start
                 if i < len(dtlist) - 1:
-                    duration = dtlist[i + 1] - dtlist[i]
-                else:
-                    if len(dtlist) > 1:
-                        duration = dtlist[1] - dtlist[0]
-                    else:
-                        duration = 0
-                t_end = t_start + duration - 1e-6
+                    t_end = dtlist[i + 1]
+                elif len(dtlist) > 1:
+                    t_end = t_start + dtlist[1] - dtlist[0]
             # align slicedata to target clock
             while True:
                 # there is no data to align, just set nan values
@@ -149,39 +149,31 @@ class DataClockHandler:
                 c_val = slicedata['value'][l_idx]
                 if rightedge:
                     c_end = slicedata['float'][l_idx]
-                    if l_idx == 0:
-                        if maxidx > 1:
-                            c_duration = (slicedata['float'][1]
-                                          - slicedata['float'][0])
+                    c_start = None
+                    if maxidx > 1:
+                        if l_idx == 0:
+                            c_start = (c_end - (slicedata['float'][1]
+                                                - slicedata['float'][0]))
                         else:
-                            c_duration = 0
-                    else:
-                        c_duration = (slicedata['float'][l_idx]
-                                      - slicedata['float'][l_idx - 1])
-                    c_start = c_end - c_duration
+                            c_start = slicedata['float'][l_idx - 1]
                 else:
                     c_start = slicedata['float'][l_idx]
+                    c_end = None
                     if l_idx < maxidx - 1:
-                        c_duration = (slicedata['float'][l_idx + 1]
-                                      - slicedata['float'][l_idx])
-                    else:
-                        if maxidx > 1:
-                            c_duration = (slicedata['float'][1]
-                                          - slicedata['float'][0])
-                        else:
-                            duration = 0
-                    c_end = c_start + c_duration
+                        c_end = slicedata['float'][l_idx + 1]
+                    elif maxidx > 1:
+                        c_end = (c_start + (slicedata['float'][1]
+                                            - slicedata['float'][0]))
                 # check if value belongs to next candle, if current value
                 # belongs to next target candle don't use this value and
                 # stop here and use previously set value
-                if not fillgaps and c_start > t_end:
+                if not fillgaps and c_start and c_start > t_end:
                     break
                 # forward until start of target start is readched
                 # move forward in source data and remember the last value
                 # of the candle, also don't process further if last candle
                 # and after start of target
-                if ((c_end and c_end < t_start and c_start < t_start)
-                        or (not c_end and c_start > t_start)):
+                if c_start and c_end and c_end <= t_start and c_start <= t_start:
                     # if current value is a non-nan value remember it
                     if c_val == c_val:
                         p_val = c_val
@@ -201,15 +193,17 @@ class DataClockHandler:
                     if c_val == c_val:
                         t_val = c_val
                 # data is not consumed yet, if filling gaps, keep this value
-                if fillgaps and c_end and c_end > t_end:
+                if fillgaps and c_end and c_end >= t_end:
                     break
                 # increment index in slice data if current candle consumed
                 l_idx += 1
             # append the set value to aligned list with values
             res.append(t_val)
             # remember last value for current candle
-            if t_val == t_val:
-                p_val = t_val
+            if fillgaps:
+                p_val = c_val
+            else:
+                p_val = float('nan')
         return res
 
     def get_idx_for_dt(self, dt):
@@ -318,7 +312,8 @@ class DataClockHandler:
             slicedata = tmpclk.get_slice(line, slice_startdt, slice_enddt)
             c_fillgaps = fillgaps or name not in fillnan
             data = self._align_slice(
-                slicedata, startidx, endidx, fillgaps=c_fillgaps)
+                slicedata, startidx, endidx,
+                fillgaps=c_fillgaps, rightedge=self._rightedge)
             df[name] = data
 
         return df
