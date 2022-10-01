@@ -38,8 +38,6 @@ class LiveClient:
         self.plotgroup = ''
         # amount of candles to plot
         self.lookback = lookback
-        # should gaps in data be filled
-        self.fillgaps = False
         # model is the root model for bokeh and will be set in baseapp
         self.model = None
 
@@ -220,8 +218,7 @@ class LiveClient:
         df = self._app.get_data(
             end=end,
             figid=self._figid,
-            back=self.lookback,
-            fillgaps=self.fillgaps)
+            back=self.lookback)
         self._datahandler.set_df(df)
 
     def _pause(self):

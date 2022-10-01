@@ -24,31 +24,10 @@ class ConfigTab(BacktraderPlottingTab):
 
     def _on_button_save_config(self):
         # apply config
-        self._apply_fillgaps_config()
         self._apply_lookback_config()
         self._apply_plotgroup_config()
         self._apply_aspectratio_config()
         self._client.refreshmodel()
-
-    def _create_fillgaps_config(self):
-        title = Paragraph(
-            text='Fill Gaps',
-            css_classes=['config-title'])
-
-        if self._client.fillgaps:
-            active = [0]
-        else:
-            active = []
-        self.chk_fillgaps = CheckboxGroup(
-            labels=['Fill gaps with data'],
-            active=active)
-
-        return column([title, self.chk_fillgaps], sizing_mode='stretch_width')
-
-    def _apply_fillgaps_config(self):
-        self._client.fillgaps = (True
-                                  if 0 in self.chk_fillgaps.active
-                                  else False)
 
     def _create_lookback_config(self):
         title = Paragraph(
@@ -259,8 +238,7 @@ class ConfigTab(BacktraderPlottingTab):
         button.on_click(self._on_button_save_config)
         # layout for config area
         config = column(
-            [self._create_fillgaps_config(),
-             self._create_lookback_config(),
+            [self._create_lookback_config(),
              self._create_plotgroup_config(),
              self._create_aspectratio_config()],
             sizing_mode='scale_width')

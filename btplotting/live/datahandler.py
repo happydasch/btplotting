@@ -27,7 +27,6 @@ class LiveDataHandler:
         Pushes to all ColumnDataSources
         '''
         fp = self._client.get_figurepage()
-        fillgaps = self._client.fillgaps
 
         # get all rows to patch
         patches = {}
@@ -50,10 +49,7 @@ class LiveDataHandler:
             # patch all figures
             for f in fp.figures:
                 # only fill with nan if not filling gaps
-                if not fillgaps:
-                    fillnan = f.fillnan()
-                else:
-                    fillnan = []
+                fillnan = f.fillnan()
                 # get patch data
                 p_data, s_data = f.get_cds_patchdata_from_series(
                     idx, patch, fillnan)
@@ -97,8 +93,7 @@ class LiveDataHandler:
         fp = self._client.get_figurepage()
         figid = self._client.get_figid()
         lookback = self._client.lookback
-        fillgaps = self._client.fillgaps
-        df = app.get_data(figid=figid, back=lookback, fillgaps=fillgaps)
+        df = app.get_data(figid=figid, back=lookback)
         self._set_data(df)
         # init by calling set_cds_columns_from_df
         # after this, all cds will already contain data
@@ -169,20 +164,19 @@ class LiveDataHandler:
         app = self._client.get_app()
         figid = self._client.get_figid()
         lookback = self._client.lookback
-        fillgaps = self._client.fillgaps
         data_clock = fp.data_clock
         lastidx = self._lastidx
         lastavailidx = app.get_last_idx(figid)
         # if there is more new data then lookback length
         # don't load from last index but from end of data
         if (lastidx < 0 or lastavailidx - lastidx > (2 * lookback)):
-            data = app.get_data(back=lookback, fillgaps=fillgaps)
+            data = app.get_data(back=lookback)
         # if there is just some new data (less then lookback)
         # load from last index, so no data is skipped
         elif lastidx <= lastavailidx:
             startidx = max(0, lastidx - 2)
             start = data_clock.get_dt_at_idx(startidx)
-            data = app.get_data(start=start, fillgaps=fillgaps)
+            data = app.get_data(start=start)
         # if any new data was loaded
         if data is not None:
             self._process_data(data)

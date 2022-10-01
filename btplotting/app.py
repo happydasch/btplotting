@@ -435,8 +435,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return column([x.figure for x in sorted_figs])
 
-    def get_data(self, figid=0, start=None, end=None, back=None,
-                 fillgaps=False):
+    def get_data(self, figid=0, start=None, end=None, back=None):
         '''
         Returns data for given figurepage
         '''
@@ -464,7 +463,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             for obj in [f.master] + f.childs:
                 df_data = data_clock.get_data(
                     obj, startidx, endidx,
-                    fillgaps=fillgaps,
                     fillnan=fillnan,
                     skipnan=skipnan)
                 df_objs.append(df_data)

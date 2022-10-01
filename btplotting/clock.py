@@ -25,37 +25,6 @@ class DataClockHandler:
     filled with nan or the last seen entry.
 
     the index is 0 based to len(clock) - 1
-
-    examples:
-
-        exmample 1:
-            clock entries:
-            10:00, 10:05, 10:10
-            data entries:
-            10:00 10:01, 10:02, 10:03, 10:04, 10:05, 10:06, 10:07
-
-            will result in:
-            index   clock   aligned data    fillgaps
-            1       10:00   10:04           10:04
-            2       10:05   10:07           10:07
-            3       10:10   nan             10:07
-
-        example 2:
-            clock entries:
-            10:00 10:01, 10:02, 10:03, 10:04, 10:05, 10:06, 10:07
-            data entries:
-            10:00, 10:05
-
-            will result in:
-            index   clock   aligned data    fillgaps
-            1       10:00   10:00           10:00
-            2       10:01   10:00           10:00
-            3       10:02   10:00           10:00
-            4       10:03   10:00           10:00
-            5       10:04   10:00           10:00
-            6       10:05   10:05           10:05
-            7       10:06   10:05           10:05
-            8       10:07   10:05           10:05
     '''
 
     def __init__(self, strategy, dataname=False):
@@ -105,7 +74,7 @@ class DataClockHandler:
         return strategy.datetime, strategy.data._tz
 
     def _align_slice(self, slicedata, startidx=None, endidx=None,
-                     fillgaps=False, rightedge=True):
+                     rightedge=True):
         '''
         Aligns a slice to the clock
         '''
@@ -116,7 +85,6 @@ class DataClockHandler:
         # initialize last index used in slicedata
         l_idx = -1 if not len(slicedata['float']) else 0
         maxidx = min(len(slicedata['float']), len(slicedata['value'])) - 1
-        p_val = float('nan')  # previous candle value in current candle
         for i in range(0, len(dtlist)):
             # set initial value for this candle
             t_val = float('nan')  # target candle value
@@ -167,43 +135,22 @@ class DataClockHandler:
                 # check if value belongs to next candle, if current value
                 # belongs to next target candle don't use this value and
                 # stop here and use previously set value
-                if not fillgaps and c_start and c_start > t_end:
+                if c_start and c_start > t_end:
                     break
                 # forward until start of target start is readched
                 # move forward in source data and remember the last value
                 # of the candle, also don't process further if last candle
                 # and after start of target
-                if c_start and c_end and c_end <= t_start:
-                    # if current value is a non-nan value remember it
-                    if c_val == c_val:
-                        p_val = c_val
+                if c_end and c_end <= t_start:
                     l_idx += 1
                     continue
-                # set value: either last non-nan value or current or nan
-                if fillgaps:
-                    # when filling gaps either nan if no previous value
-                    # previous value if current value is nan
-                    # else current value
-                    if c_val != c_val:
-                        t_val = p_val
-                    else:
-                        t_val = c_val
-                else:
-                    # set target value
-                    if c_val == c_val:
-                        t_val = c_val
-                # data is not consumed yet, if filling gaps, keep this value
-                if fillgaps and c_end and c_end >= t_end:
-                    break
+                # set target value
+                if c_val == c_val:
+                    t_val = c_val
                 # increment index in slice data if current candle consumed
                 l_idx += 1
             # append the set value to aligned list with values
             res.append(t_val)
-            # remember last value for current candle
-            if fillgaps:
-                p_val = c_val
-            else:
-                p_val = float('nan')
         return res
 
     def get_idx_for_dt(self, dt):
@@ -287,7 +234,7 @@ class DataClockHandler:
         return res
 
     def get_data(self, obj, startidx=None, endidx=None,
-                 fillgaps=False, fillnan=[], skipnan=[]):
+                 fillnan=[], skipnan=[]):
         '''
         Returns data from object aligned to clock
         '''
@@ -310,12 +257,10 @@ class DataClockHandler:
             else:
                 name = get_source_id(line)
             slicedata = tmpclk.get_slice(line, slice_startdt, slice_enddt)
-            c_fillgaps = fillgaps or name not in fillnan
             data = self._align_slice(
-                slicedata, startidx, endidx,
-                fillgaps=c_fillgaps, rightedge=self._rightedge)
+                slicedata, startidx, endidx, rightedge=self._rightedge)
             df[name] = data
-            if name in skipnan:
+            if name not in fillnan or name in skipnan:
                 df[name] = df[name].interpolate()
 
         return df
