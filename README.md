@@ -33,7 +33,7 @@ Plotting:
 * Only one axis for volume will be added when using multiple data sources on one figure
 * Volume axis position is configureable in scheme, by default it is being plotted on the right side
 * Linked Crosshair across all figures
-* fill_gt, fill_lt, fill support
+* _skipnan, fill_gt, fill_lt, fill support
 * Plot objects can be filtered by one or more datanames or by plot group
 * Custom plot group, which can be configured in app or in live client by providing all
   plotids in a comma-seperated list or by selecting the parts of the plot to display
@@ -46,7 +46,7 @@ Tabs:
 
 Live plotting:
 
-** (Live plotting is broken at the moment) **
+**(Live plotting is broken at the moment)**
 
 * Navigation in live client (Pause, Backward, Forward)
 * Live plotting is done using an analyzer, so there is no need to use custom backtrader
