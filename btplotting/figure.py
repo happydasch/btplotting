@@ -421,6 +421,10 @@ class Figure(CDSObject):
         color = convert_color(color)
         return color
 
+    def _get_lineplotinfo_skipnan(self, lineplotinfo):
+        skipnan = getattr(lineplotinfo, '_skipnan', False)
+        return skipnan
+
     def _plot_indicator_observer(self, obj):
         '''
         Common method to plot observer and indicator lines
@@ -641,7 +645,8 @@ class Figure(CDSObject):
                     if not lineplotinfo:
                         continue
                     style = self._get_lineplotinfo_style(lineplotinfo)
-                    if style != 'line':
+                    skipnan = self._get_lineplotinfo_skipnan(lineplotinfo)
+                    if style != 'line' or skipnan:
                         res.append(get_source_id(line))
         return res
 
@@ -660,7 +665,7 @@ class Figure(CDSObject):
                 lineplotinfo = self._get_lineplotinfo(obj, alias)
                 if not lineplotinfo:
                     continue
-                skipnan = getattr(lineplotinfo, '_skipnan', False)
+                skipnan = self._get_lineplotinfo_skipnan(lineplotinfo)
                 if skipnan:
                     res.append(get_source_id(line))
         return res
