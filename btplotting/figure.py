@@ -618,7 +618,7 @@ class Figure(CDSObject):
 
     def fillnan(self):
         '''
-        Workaround for bokeh issue with nan
+        Workaround for bokeh handling of nan
         In most cases nan should not be filled, only if style is not line
         for data. Since with nan values in data there will be gaps, this
         will happen when patching data.
@@ -643,6 +643,26 @@ class Figure(CDSObject):
                     style = self._get_lineplotinfo_style(lineplotinfo)
                     if style != 'line':
                         res.append(get_source_id(line))
+        return res
+
+    def skipnan(self):
+        '''
+        Workaround for bokeh handling of nan
+        See: BacktraderPlotting and DataHandler for usage of skipnan()
+        '''
+        res = []
+        for obj in [self.master] + self.childs:
+            figuretype = FigureType.get_type(obj)
+            if figuretype == FigureType.DATA:
+                continue
+            for lineidx, line in enumerate(obj.lines):
+                alias = obj.lines._getlinealias(lineidx)
+                lineplotinfo = self._get_lineplotinfo(obj, alias)
+                if not lineplotinfo:
+                    continue
+                skipnan = getattr(lineplotinfo, '_skipnan', False)
+                if skipnan:
+                    res.append(get_source_id(line))
         return res
 
     def get_type(self):

@@ -460,9 +460,13 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         df_objs = []
         for f in fp.figures:
             fillnan = f.fillnan()
+            skipnan = f.skipnan()
             for obj in [f.master] + f.childs:
                 df_data = data_clock.get_data(
-                    obj, startidx, endidx, fillgaps=fillgaps, fillnan=fillnan)
+                    obj, startidx, endidx,
+                    fillgaps=fillgaps,
+                    fillnan=fillnan,
+                    skipnan=skipnan)
                 df_objs.append(df_data)
         df = df.join(df_objs)
         # set index and return dataframe

@@ -173,7 +173,7 @@ class DataClockHandler:
                 # move forward in source data and remember the last value
                 # of the candle, also don't process further if last candle
                 # and after start of target
-                if c_start and c_end and c_end <= t_start and c_start <= t_start:
+                if c_start and c_end and c_end <= t_start:
                     # if current value is a non-nan value remember it
                     if c_val == c_val:
                         p_val = c_val
@@ -287,7 +287,7 @@ class DataClockHandler:
         return res
 
     def get_data(self, obj, startidx=None, endidx=None,
-                 fillgaps=False, fillnan=[]):
+                 fillgaps=False, fillnan=[], skipnan=[]):
         '''
         Returns data from object aligned to clock
         '''
@@ -315,5 +315,7 @@ class DataClockHandler:
                 slicedata, startidx, endidx,
                 fillgaps=c_fillgaps, rightedge=self._rightedge)
             df[name] = data
+            if name in skipnan:
+                df[name] = df[name].interpolate()
 
         return df
