@@ -15,7 +15,6 @@ Basic:
 * Different naming / structure
 * Data alignment which allows to generate data for different data sources.
   This is useful when replaying or resampling data, for example to remove gaps.
-* Possibility to fill gaps on higher timeframes with data
 * Support for replay data
 * Different filtering of plot objects
 * Every figure has its own ColumnDataSource, so the live client can patch without
