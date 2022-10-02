@@ -260,7 +260,11 @@ class DataClockHandler:
             data = self._align_slice(
                 slicedata, startidx, endidx, rightedge=self._rightedge)
             df[name] = data
-            if name not in fillnan or name in skipnan:
+            # make sure all data is filled correctly,
+            # either interpolate if skipnan
+            # or forward fill if not fillnan
+            if name in skipnan:
                 df[name] = df[name].interpolate()
-
+            elif name not in fillnan:
+                df[name] = df[name].fillna(method='ffill')
         return df
