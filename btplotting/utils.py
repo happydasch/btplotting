@@ -21,7 +21,8 @@ def get_plotobjs(strategy, include_non_plotable=False,
     objs[strategy] = []
     # first loop through datas
     for d in datas:
-        if not include_non_plotable and not d.plotinfo.plot:
+        if (not include_non_plotable
+                and not d.plotinfo._get('plot', True)):
             continue
         objs[d] = []
     # next loop through all ind and obs and set them to
@@ -39,7 +40,8 @@ def get_plotobjs(strategy, include_non_plotable=False,
             continue
         # should this indicator be plotted?
         if (not include_non_plotable
-                and (not obj.plotinfo.plot or obj.plotinfo.plotskip)):
+                and (not obj.plotinfo._get('plot', True)
+                     or obj.plotinfo._get('plotskip', False))):
             continue
         # append object to the data object
         pltmaster = get_plotmaster(obj)
@@ -61,7 +63,7 @@ def get_plotobjs(strategy, include_non_plotable=False,
             pobjs[pmaster] = []
         elif pmaster is not None and pmaster is not d:
             pobjs[pmaster].append(d)
-
+        # all objects in parent
         for o in objs[d]:
             pmaster = get_plotmaster(o.plotinfo.plotmaster)
             subplot = o.plotinfo.subplot
@@ -73,6 +75,7 @@ def get_plotobjs(strategy, include_non_plotable=False,
                 pmaster = get_plotmaster(get_clock_obj(o, True))
                 if pmaster is not None and pmaster in pobjs:
                     pobjs[pmaster].append(o)
+
     # return objects ordered by plotmaster
     return pobjs
 
