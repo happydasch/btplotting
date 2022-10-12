@@ -68,12 +68,19 @@ def get_plotobjs(strategy, include_non_plotable=False,
             pmaster = get_plotmaster(o.plotinfo.plotmaster)
             subplot = o.plotinfo.subplot
             if subplot and pmaster is None:
-                pobjs[o] = []
+                # ensure the plot object is set as a key in plot objects
+                if o not in pobjs:
+                    pobjs[o] = []
             elif pmaster is not None:
+                # even if subplot but has a plotmaster
                 pobjs[pmaster].append(o)
             else:
+                # get the plotmaster
                 pmaster = get_plotmaster(get_clock_obj(o, True))
                 if pmaster is not None and pmaster in pobjs:
+                    # only append if the plotmaster is really present in
+                    # plot objects, so no skipped plot objects will be
+                    # readded
                     pobjs[pmaster].append(o)
 
     # return objects ordered by plotmaster
