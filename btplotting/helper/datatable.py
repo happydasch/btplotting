@@ -84,15 +84,15 @@ class AnalysisTableGenerator:
         return analyzer.__class__.__name__, [table]
 
     def _get_formatter(self, ctype):
-        if ctype == ColummDataType.FLOAT:
+        if ctype.name == ColummDataType.FLOAT.name:
             return NumberFormatter(format=self._scheme.number_format)
-        elif ctype == ColummDataType.INT:
+        elif ctype.name == ColummDataType.INT.name:
             return NumberFormatter()
-        elif ctype == ColummDataType.DATETIME:
+        elif ctype.name == ColummDataType.DATETIME.name:
             return DateFormatter(format='%c')
-        elif ctype == ColummDataType.STRING:
+        elif ctype.name == ColummDataType.STRING.name:
             return StringFormatter()
-        elif ctype == ColummDataType.PERCENTAGE:
+        elif ctype.name == ColummDataType.PERCENTAGE.name:
             return NumberFormatter(format='0.000 %')
         else:
             raise Exception(f'Unsupported ColumnDataType: "{ctype}"')
