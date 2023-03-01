@@ -91,8 +91,6 @@ class PlotScheme(object):
         self.barup = '0.75'
         # Default color for a bearish bar/candle
         self.bardown = 'red'
-        # Level of transparency to apply to bars/cancles (NOT USED)
-        self.bartrans = 1.0
 
         # Wether the candlesticks have to be filled or be transparent
         self.barupfill = True
