@@ -210,6 +210,7 @@ class Figure(CDSObject):
         '-.': 'dashdot',
     }
 
+    _alpha = 1.0
     _bar_width = 0.5
 
     def __init__(self, fp, scheme, master, childs, type=None):
@@ -508,7 +509,7 @@ class Figure(CDSObject):
                 kwglyph['line_color'] = color
                 kwglyph['fill_color'] = color
                 kwglyph['alpha'] = getattr(lineplotinfo, 'alpha',
-                                           1.0)
+                                           self._alpha)
                 kwglyph['width'] = getattr(lineplotinfo, 'width',
                                            self._bar_width)
                 glyph_fnc = self.figure.vbar
@@ -778,6 +779,7 @@ class Figure(CDSObject):
                 'x1': 'index',
                 'y1': source_id + 'low',
                 'color': source_id + 'colors_wicks',
+                'alpha': self._scheme.baralpha,
                 'legend_label': title
             }
             kwargs_vbar = {
@@ -787,6 +789,7 @@ class Figure(CDSObject):
                 'bottom': source_id + 'close',
                 'fill_color': source_id + 'colors_bars',
                 'line_color': source_id + 'colors_outline',
+                'alpha': self._scheme.baralpha,
                 'legend_label': title
             }
             # append renderer
