@@ -19,10 +19,10 @@ class SourceTab(BacktraderPlottingTab):
             text = ''
         return text
 
-    def _get_panel(self):
+    def _get_tab_panel(self):
         title = Paragraph(
             text='Source Code',
-            css_classes=['panel-title'])
+            css_classes=['tab-panel-title'])
         child = column(
             [title,
              Div(text=self._getSource(),

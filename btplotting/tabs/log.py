@@ -78,7 +78,7 @@ class LogTab(BacktraderPlottingTab):
     def _is_useable(self):
         return is_log_tab_initialized()
 
-    def _get_panel(self):
+    def _get_tab_panel(self):
         global handler
 
         if handler is None:
@@ -94,17 +94,17 @@ class LogTab(BacktraderPlottingTab):
             sortable=False)
         title = Paragraph(
             text='Log Messages',
-            css_classes=['panel-title'])
+            css_classes=['tab-panel-title'])
         table = DataTable(
             source=handler.get_cds(doc),
             columns=[message],
-            height=250,
+            sizing_mode='stretch_width',
             scroll_to_selection=True,
             sortable=False,
             reorderable=False,
             fit_columns=True)
         child = column(
             children=[title, table],
-            sizing_mode='scale_width')
+            sizing_mode='stretch_width')
 
         return child, 'Log'
