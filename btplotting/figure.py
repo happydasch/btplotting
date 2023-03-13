@@ -9,7 +9,7 @@ import backtrader as bt
 
 from bokeh.models import Span
 from bokeh.plotting import figure
-from bokeh.models import HoverTool, CrosshairTool
+from bokeh.models import HoverTool, CrosshairTool, Span
 from bokeh.models import LinearAxis, DataRange1d
 from bokeh.models.formatters import NumeralTickFormatter
 from bokeh.models import CustomJS, CustomJSTickFormatter, \
@@ -147,12 +147,16 @@ class FigurePage(CDSObject):
         '''
         Link crosshairs across all figures
         src:
+        https://docs.bokeh.org/en/latest/docs/examples/interaction/linking/linked_crosshair.html
+        old solution:
         https://stackoverflow.com/questions/37965669/how-do-i-link-the-crosshairtool-in-bokeh-over-several-plots
         '''
         color = self.scheme.crosshair_line_color
-        crosshair_shared = CrosshairTool(dimensions='height', line_color=color)
+        height = Span(dimension='height', line_color=color, line_width=1)
+        crosshair_shared = CrosshairTool(overlay=height)
         for f in figures:
-            crosshair = CrosshairTool(dimensions='width', line_color=color)
+            width = Span(dimension='width', line_color=color, line_width=1)
+            crosshair = CrosshairTool(overlay=width)
             f.figure.add_tools(crosshair, crosshair_shared)
 
     def set_cds_columns_from_df(self, df):
