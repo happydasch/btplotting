@@ -219,7 +219,10 @@ class Scheme(PlotScheme):
         self.metadata_tab_num_cols = 3
         # Sizing mode for plot figures
         self.plot_sizing_mode = 'scale_width'
+        self.plot_width = 1000
+        self.plot_height = 300
         # Aspect ratios for different figure types
+        self.use_aspectratio = True
         self.data_aspectratio = 2.5
         self.vol_aspectratio = 5.0
         self.obs_aspectratio = 5.0

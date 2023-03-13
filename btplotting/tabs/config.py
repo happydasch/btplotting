@@ -3,7 +3,7 @@ from functools import partial
 
 from bokeh.layouts import column
 from bokeh.models import Slider, Button, Paragraph, \
-    CheckboxButtonGroup, CheckboxGroup, TextInput
+    CheckboxButtonGroup, TextInput
 
 from ..figure import FigureType
 from ..tab import BacktraderPlottingTab
@@ -224,13 +224,13 @@ class ConfigTab(BacktraderPlottingTab):
         self.scheme.vol_aspectratio = self.sld_vol_ar.value
         self.scheme.ind_aspectratio = self.sld_ind_ar.value
 
-    def _get_panel(self):
+    def _get_tab_panel(self):
         '''
-        Returns the panel for tab
+        Returns the tab panel for tab
         '''
         title = Paragraph(
             text='Client Configuration',
-            css_classes=['panel-title'])
+            css_classes=['tab-panel-title'])
         button = Button(
             label='Save',
             button_type='success',

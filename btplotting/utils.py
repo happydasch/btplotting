@@ -41,7 +41,8 @@ def get_plotobjs(strategy, include_non_plotable=False,
         # should this indicator be plotted?
         if (not include_non_plotable
                 and (not obj.plotinfo._get('plot', True)
-                     or obj.plotinfo._get('plotskip', False))):
+                     or obj.plotinfo._get('plotskip', False)
+                     or obj.plotinfo._get('_plotskip', False))):
             continue
         # append object to the data object
         pltmaster = get_plotmaster(obj)

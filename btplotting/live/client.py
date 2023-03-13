@@ -176,7 +176,7 @@ class LiveClient:
         # tabs
         tabs = Tabs(
             id='tabs',
-            sizing_mode=self._app.scheme.plot_sizing_mode)
+            sizing_mode='stretch_width')
 
         # model
         model = layout(
@@ -253,12 +253,12 @@ class LiveClient:
             self._datahandler.stop()
         self._app.update_figurepage(filterdata=self._get_filterdata())
         self._datahandler = LiveDataHandler(self)
-        panels = self._app.generate_bokeh_model_panels()
+        tab_panels = self._app.generate_bokeh_model_tab_panels()
         for t in self._app.tabs:
             tab = t(self._app, self._figurepage, self)
             if tab.is_useable():
-                panels.append(tab.get_panel())
-        self._get_tabs().tabs = list(filter(None.__ne__, panels))
+                tab_panels.append(tab.get_tab_panel())
+        self._get_tabs().tabs = list(filter(None.__ne__, tab_panels))
         self.refresh()
 
     def next(self):

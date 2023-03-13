@@ -11,7 +11,7 @@ import backtrader as bt
 
 import pandas as pd
 
-from bokeh.models.widgets import Panel, Tabs
+from bokeh.models.layouts import TabPanel, Tabs
 from bokeh.layouts import gridplot, column
 
 from bokeh.embed import file_html
@@ -75,7 +75,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
     def __init__(self, **kwargs):
         if not isinstance(self.p.scheme, Scheme):
             raise Exception('Provided scheme has to be a subclass'
-                            + ' of btplotting.schemes.scheme.Scheme')
+                            ' of btplotting.schemes.scheme.Scheme')
         # set new scheme instance for app, so source scheme
         # remains untouched
         self.scheme = copy(self.p.scheme)
@@ -97,7 +97,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             if not issubclass(tab, BacktraderPlottingTab):
                 raise Exception(
                     'Tab needs to be a subclass of'
-                    + ' btplotting.tab.BacktraderPlottingTab')
+                    ' btplotting.tab.BacktraderPlottingTab')
 
     def _reset(self):
         '''
@@ -328,23 +328,24 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception(f'FigurePage with figid "{figid}" does not exist')
         return self._figurepages[figid]
 
-    def generate_bokeh_model(self, figid=0, tabs=True):
+    def generate_bokeh_model(self, figid=0, use_tabs=True):
         '''
         Generates bokeh model used for the current figurepage
         '''
         fp = self.get_figurepage(figid)
-        if tabs:
+        if use_tabs:
             if fp.strategy is not None:
-                panels = self.generate_bokeh_model_panels()
+                tab_panels = self.generate_bokeh_model_tab_panels()
             else:
-                panels = []
+                tab_panels = []
 
             for t in self.tabs:
                 tab = t(self, fp, None)
                 if tab.is_useable():
-                    panels.append(tab.get_panel())
+                    tab_panels.append(tab.get_tab_panel())
             # set all tabs (filter out None)
-            model = Tabs(tabs=list(filter(None.__ne__, panels)))
+            all_tabs = list(filter(None.__ne__, tab_panels))
+            model = Tabs(tabs=all_tabs, sizing_mode='stretch_width')
         else:
             model = self.generate_bokeh_model_plots()
         # attach the model to the underlying figure for
@@ -353,9 +354,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
 
         return model
 
-    def generate_bokeh_model_panels(self, figid=0):
+    def generate_bokeh_model_tab_panels(self, figid=0):
         '''
-        Generates bokeh panels used for figurepage
+        Generates bokeh tab panels used for figurepage
         '''
         fp = self.get_figurepage(figid)
 
@@ -391,8 +392,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 else:
                     raise Exception(f'Unknown FigureType "{figtype}"')
 
-        # create panels for tabs
-        panels = []
+        # create tab panels for tabs
+        tab_panels = []
         for tab in tabs:
             if len(tabs[tab]) == 0:
                 continue
@@ -402,19 +403,23 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                     x.figure.xaxis.visible = (
                         False if i < len(tabs[tab]) - 1
                         else True)
-            # create gridplot for panel
-            g = gridplot([[x.figure] for x in tabs[tab]],
-                         toolbar_options={'logo': None},
-                         toolbar_location=self.scheme.toolbar_location,
-                         sizing_mode=self.scheme.plot_sizing_mode)
-            # append created panel
-            panels.append(Panel(title=tab, child=g))
+            # create gridplot for tab panel
+            plot_figures = [[x.figure] for x in tabs[tab]]
+            g = gridplot(plot_figures,
+                         merge_tools=False,
+                         toolbar_options={'logo': None, 'autohide': True},
+                         toolbar_location=self.scheme.toolbar_location,)
+            g.sizing_mode = 'stretch_both'
+            if self.scheme.use_aspectratio:
+                g.sizing_mode = 'stretch_width'
+            # append created tab panel
+            tab_panels.append(TabPanel(title=tab, child=g))
 
-        return panels
+        return tab_panels
 
     def generate_bokeh_model_plots(self, figid=0):
         '''
-        Generates bokeh panels used for figurepage
+        Generates bokeh plots used for figurepage
         '''
         fp = self.get_figurepage(figid)
 
@@ -432,8 +437,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             x.get_plotorder(),
             data_sort[get_dataname(x.master)],
             x.get_type().value))
-
-        return column([x.figure for x in sorted_figs])
+        all_figures = [x.figure for x in sorted_figs]
+        return column(all_figures)
 
     def get_data(self, figid=0, start=None, end=None, back=None):
         '''
@@ -566,7 +571,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             end=end,
             filterdata=filterdata)
         # create and export model
-        model = self.generate_bokeh_model(figid, tabs=False)
+        model = self.generate_bokeh_model(figid, use_tabs=False)
         resources = Resources()
         resources.css_raw.append(self._output_stylesheet())
         image = get_screenshot_as_png(

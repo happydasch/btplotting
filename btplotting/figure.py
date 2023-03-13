@@ -12,7 +12,7 @@ from bokeh.plotting import figure
 from bokeh.models import HoverTool, CrosshairTool
 from bokeh.models import LinearAxis, DataRange1d
 from bokeh.models.formatters import NumeralTickFormatter
-from bokeh.models import CustomJS, FuncTickFormatter, \
+from bokeh.models import CustomJS, CustomJSTickFormatter, \
     DatetimeTickFormatter
 
 from .cds import CDSObject
@@ -260,25 +260,31 @@ class Figure(CDSObject):
         '''
         Initializes the figure
         '''
-        ftype = self.get_type()
-        if ftype == FigureType.IND:
-            aspectratio = self._scheme.ind_aspectratio
-        elif ftype == FigureType.OBS:
-            aspectratio = self._scheme.obs_aspectratio
-        elif ftype == FigureType.VOL:
-            aspectratio = self._scheme.vol_aspectratio
-        elif ftype == FigureType.DATA:
-            aspectratio = self._scheme.data_aspectratio
-        else:
-            raise Exception(f'Unknown type "{ftype}"')
+        aspect_ratio = None
+        sizing_mode = self._scheme.plot_sizing_mode
+        if self._scheme.use_aspectratio:
+            ftype = self.get_type()
+            if ftype == FigureType.IND:
+                aspect_ratio = self._scheme.ind_aspectratio
+            elif ftype == FigureType.OBS:
+                aspect_ratio = self._scheme.obs_aspectratio
+            elif ftype == FigureType.VOL:
+                aspect_ratio = self._scheme.vol_aspectratio
+            elif ftype == FigureType.DATA:
+                aspect_ratio = self._scheme.data_aspectratio
+            else:
+                raise Exception(f'Unknown type "{ftype}"')
 
         f = figure(
-            width=1000,
+            width=self._scheme.plot_width,
+            height=self._scheme.plot_height,
+            sizing_mode=sizing_mode,
+            aspect_ratio=aspect_ratio,
             tools=Figure._tools,
-            x_axis_type='linear',
-            output_backend=self._scheme.output_backend,
-            aspect_ratio=aspectratio)
-
+            toolbar_inner=True,
+            output_backend=self._scheme.output_backend)
+        f.toolbar.logo = None
+        f.toolbar.autohide = True
         f.y_range.range_padding = self._scheme.y_range_padding
         # remove any spacing if there is no title, so there is no spacing
         # between plots
@@ -316,22 +322,23 @@ class Figure(CDSObject):
         formatter_code = pkgutil.get_data(
             __name__,
             'templates/js/tick_formatter.js').decode()
-        f.xaxis.formatter = FuncTickFormatter(
-            args=dict(
-                axis=f.xaxis[0],
-                formatter=DatetimeTickFormatter(
-                    microseconds=['%fus'],
-                    milliseconds=['%3Nms', '%S.%3Ns'],
-                    seconds=[self._scheme.axis_tickformat_seconds],
-                    minsec=[self._scheme.axis_tickformat_minsec],
-                    minutes=[self._scheme.axis_tickformat_minutes],
-                    hourmin=[self._scheme.axis_tickformat_hourmin],
-                    hours=[self._scheme.axis_tickformat_hours],
-                    days=[self._scheme.axis_tickformat_days],
-                    months=[self._scheme.axis_tickformat_months],
-                    years=[self._scheme.axis_tickformat_years]),
-                source=self._fp.cds,
-            ),
+        dt_formatter = DatetimeTickFormatter(
+                    microseconds='%fus',
+                    milliseconds='%3Nms',
+                    seconds=self._scheme.axis_tickformat_seconds,
+                    minsec=self._scheme.axis_tickformat_minsec,
+                    minutes=self._scheme.axis_tickformat_minutes,
+                    hourmin=self._scheme.axis_tickformat_hourmin,
+                    hours=self._scheme.axis_tickformat_hours,
+                    days=self._scheme.axis_tickformat_days,
+                    months=self._scheme.axis_tickformat_months,
+                    years=self._scheme.axis_tickformat_years
+        )
+
+        f.xaxis.formatter = CustomJSTickFormatter(
+            args=dict(axis=f.xaxis[0],
+                      source=self._fp.cds,
+                      formatter=dt_formatter),
             code=formatter_code)
 
         hover_code = pkgutil.get_data(
