@@ -406,12 +406,10 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             # create gridplot for tab panel
             plot_figures = [[x.figure] for x in tabs[tab]]
             g = gridplot(plot_figures,
+                         sizing_mode='stretch_width',
                          merge_tools=False,
                          toolbar_options={'logo': None, 'autohide': True},
                          toolbar_location=self.scheme.toolbar_location,)
-            g.sizing_mode = 'stretch_both'
-            if self.scheme.use_aspectratio:
-                g.sizing_mode = 'stretch_width'
             # append created tab panel
             tab_panels.append(TabPanel(title=tab, child=g))
 
@@ -505,6 +503,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         '''
         Plot either a strategy or an optimization result
         This method is called by backtrader
+
+        src:
+        https://stackoverflow.com/questions/44100477/how-to-check-if-you-are-in-a-jupyter-notebook
         '''
         if numfigs > 1:
             raise Exception('numfigs must be 1')
@@ -512,7 +513,6 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             raise Exception('Different backends by "use" not supported')
 
         if iplot:
-            # src: https://stackoverflow.com/questions/44100477/how-to-check-if-you-are-in-a-jupyter-notebook
             try:
                 get_ipython  # noqa: *
                 self._iplot = True

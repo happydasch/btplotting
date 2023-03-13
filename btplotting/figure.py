@@ -265,7 +265,7 @@ class Figure(CDSObject):
         Initializes the figure
         '''
         aspect_ratio = None
-        sizing_mode = self._scheme.plot_sizing_mode
+        sizing_mode = 'scale_both'
         if self._scheme.use_aspectratio:
             ftype = self.get_type()
             if ftype == FigureType.IND:
@@ -278,6 +278,9 @@ class Figure(CDSObject):
                 aspect_ratio = self._scheme.data_aspectratio
             else:
                 raise Exception(f'Unknown type "{ftype}"')
+        else:
+            if self._scheme.plot_sizing == 'stretch':
+                sizing_mode = 'stretch_width'
 
         f = figure(
             width=self._scheme.plot_width,

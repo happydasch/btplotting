@@ -217,8 +217,8 @@ class Scheme(PlotScheme):
         self.analyzer_tab_num_cols = 1
         # Number of columns on the metadata tab
         self.metadata_tab_num_cols = 3
-        # Sizing mode for plot figures
-        self.plot_sizing_mode = 'scale_width'
+        # Sizing mode for plot figures (scale or stretch)
+        self.plot_sizing = 'scale'
         self.plot_width = 1000
         self.plot_height = 300
         # Aspect ratios for different figure types
