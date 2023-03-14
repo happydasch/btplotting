@@ -3,7 +3,7 @@ import math
 import backtrader as bt
 
 from bokeh.layouts import column, row, gridplot, layout
-from bokeh.models import Paragraph, Spacer, Button
+from bokeh.models import Div, Spacer, Button
 
 from ..helper.params import get_params, paramval2str
 from ..helper.label import obj2label, obj2data
@@ -21,15 +21,18 @@ class MetadataTab(BacktraderPlottingTab):
         return True
 
     def _get_title(self, title):
-        return Paragraph(
+        return Div(
             text=title,
-            css_classes=['table-title'])
+            css_classes=['table-title'],
+            stylesheets=[self._app.stylesheet])
 
     def _get_no_params(self):
-        return Paragraph(text="No parameters", css_classes=['table-info'])
+        return Div(text="No parameters",
+                   css_classes=['table-info'],
+                   stylesheets=[self._app.stylesheet])
 
     def _get_parameter_table(self, params):
-        tablegen = TableGenerator()
+        tablegen = TableGenerator(self._app.stylesheet)
         params = get_params(params)
         if len(params) == 0:
             return self._get_no_params()
@@ -39,7 +42,7 @@ class MetadataTab(BacktraderPlottingTab):
         return tablegen.get_table(params)
 
     def _get_values_table(self, values):
-        tablegen = TableGenerator()
+        tablegen = TableGenerator(self._app.stylesheet)
         if len(values) == 0:
             values[''] = ''
         return tablegen.get_table(values)
@@ -115,9 +118,10 @@ class MetadataTab(BacktraderPlottingTab):
 
     def _create_content(self):
         title_area = []
-        title = Paragraph(
+        title = Div(
             text='Strategy Metadata Overview',
-            css_classes=['tab-panel-title'])
+            css_classes=['tab-panel-title'],
+            stylesheets=[self._app.stylesheet])
         title_area.append(row([title], width_policy='min'))
         if self._client:
             btn_refresh = Button(label='Refresh', width_policy='min')

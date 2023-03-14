@@ -14,6 +14,7 @@ class Blackly(Scheme):
 
         self.background_fill = '#2B2B2B'
         self.body_background_color = '#2B2B2B'
+        self.plot_background_color = '#333333'
         self.border_fill = '#3C3F41'
         self.legend_click = 'hide'  # or 'mute'
         self.axis_line_color = 'darkgrey'

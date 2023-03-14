@@ -1,4 +1,4 @@
-from bokeh.models.layouts import TabPanel
+from bokeh.models import TabPanel
 
 
 class BacktraderPlottingTab:

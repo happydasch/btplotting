@@ -1,5 +1,5 @@
 from bokeh.layouts import column, row, gridplot, layout
-from bokeh.models import Paragraph, Spacer, Button
+from bokeh.models import Div, Spacer, Button
 from ..helper.datatable import AnalysisTableGenerator
 from ..tab import BacktraderPlottingTab
 
@@ -14,7 +14,7 @@ class AnalyzerTab(BacktraderPlottingTab):
         return len(self._figurepage.analyzers) > 0
 
     def _get_analyzer_info(self):
-        tablegen = AnalysisTableGenerator(self._app.scheme)
+        tablegen = AnalysisTableGenerator(self._app.scheme, self._app.stylesheet)
         acolumns = []
         for analyzer in self._figurepage.analyzers:
             table_header, elements = tablegen.get_tables(analyzer)
@@ -32,9 +32,10 @@ class AnalyzerTab(BacktraderPlottingTab):
 
     def _create_content(self):
         title_area = []
-        title = Paragraph(
+        title = Div(
             text='Available Analyzer Results',
-            css_classes=['tab-panel-title'])
+            css_classes=['tab-panel-title'],
+            stylesheets=[self._app.stylesheet])
         title_area.append(row([title], width_policy='min'))
         if self._client:
             btn_refresh = Button(label='Refresh', width_policy='min')

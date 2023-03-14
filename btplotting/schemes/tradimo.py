@@ -27,8 +27,8 @@ class Tradimo(Blackly):
         self.legend_click = 'hide'  # or 'mute'
 
         self.loc = '#265371'
-        self.background_fill = '#FFFFFF'
         self.body_background_color = '#FFFFFF'
+        self.background_fill = '#FDFDFD'
         self.border_fill = '#FFFFFF'
         self.axis_line_color = '#222222'
         self.grid_line_color = '#EEEEEE'
@@ -37,9 +37,9 @@ class Tradimo(Blackly):
         self.plot_title_text_color = dark_text
         self.axis_label_text_color = dark_text
 
-        self.table_color_even = '#404040'
-        self.table_color_odd = '#333333'
-        self.table_header_color = '#7A7A7A'
+        self.table_color_even = '#F0F0F0'
+        self.table_color_odd = '#FFFFFF'
+        self.table_header_color = '#FFFFFF'
 
         self.tooltip_background_color = '#F5F5F5'
         self.tooltip_text_label_color = '#848EFF'
@@ -47,7 +47,3 @@ class Tradimo(Blackly):
 
         self.tab_active_background_color = '#CCCCCC'
         self.tab_active_color = '#111111'
-
-        self.table_color_even = '#FEFEFE'
-        self.table_color_odd = '#EEEEEE'
-        self.table_header_color = '#CCCCCC'

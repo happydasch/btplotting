@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import partial
 
 from bokeh.layouts import column
-from bokeh.models import Slider, Button, Paragraph, \
+from bokeh.models import Slider, Button, Div, \
     CheckboxButtonGroup, TextInput
 
 from ..figure import FigureType
@@ -30,7 +30,7 @@ class ConfigTab(BacktraderPlottingTab):
         self._client.refreshmodel()
 
     def _create_lookback_config(self):
-        title = Paragraph(
+        title = Div(
             text='Lookback period',
             css_classes=['config-title'])
         self.sld_lookback = Slider(
@@ -53,7 +53,7 @@ class ConfigTab(BacktraderPlottingTab):
                 return True
             return False
 
-        title = Paragraph(
+        title = Div(
             text='Plot Group',
             css_classes=['config-title'])
         options = []
@@ -115,7 +115,7 @@ class ConfigTab(BacktraderPlottingTab):
 
             # append title for master (this will also include strategy)
             if len(self.plotgroup_objs[d]):
-                options.append(Paragraph(text=f'{obj2label(d)}:'))
+                options.append(Div(text=f'{obj2label(d)}:'))
             # append master_chk and childs_chk to layout
             if master_chk:
                 master_chk.on_change(
@@ -133,7 +133,7 @@ class ConfigTab(BacktraderPlottingTab):
         self.plotgroup_text = TextInput(
             value=','.join(self.plotgroup),
             disabled=True)
-        options.append(Paragraph(text='Plot Group Selection:'))
+        options.append(Div(text='Plot Group Selection:'))
         options.append(self.plotgroup_text)
 
         return column([title] + options)
@@ -192,7 +192,7 @@ class ConfigTab(BacktraderPlottingTab):
         self.sld_data_ar = None
         self.sld_vol_ar = None
         self.sld_ind_ar = None
-        title = Paragraph(
+        title = Div(
             text='Aspect Ratios',
             css_classes=['config-title'])
         self.sld_obs_ar = Slider(
@@ -228,7 +228,7 @@ class ConfigTab(BacktraderPlottingTab):
         '''
         Returns the tab panel for tab
         '''
-        title = Paragraph(
+        title = Div(
             text='Client Configuration',
             css_classes=['tab-panel-title'])
         button = Button(

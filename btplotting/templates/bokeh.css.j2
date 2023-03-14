@@ -1,0 +1,93 @@
+:host(.config-title) {
+    padding-top: 1em;
+    padding-bottom: .6em;
+    font-weight: bold;
+    font-size: 1.1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:host(.table-title) {
+    font-weight: bold;
+    font-size: 1.1em;
+    line-height: 1.6em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:host(.tab-panel-title) {
+    font-weight: bold;
+    font-size: 1.5em;
+    line-height: 2.1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slick-row.even {
+    background-color: {{table_color_even}} !important;
+}
+
+.slick-row.odd {
+    background-color: {{table_color_odd}} !important;
+}
+
+.slick-header-column {
+    background-color: {{table_header_color}} !important;
+    background-image: none !important;
+    font-size: 130%;
+}
+
+.source-pre {
+    font-family: Courier, monospace;
+    white-space: -moz-pre-wrap; /* Mozilla, supported since 1999 */
+    white-space: -pre-wrap; /* Opera */
+    white-space: -o-pre-wrap; /* Opera */
+    white-space: pre-wrap; /* CSS3 - Text module (Candidate Recommendation) http://www.w3.org/TR/css3-text/#white-space */
+    word-wrap: break-word; /* IE 5.5+ */
+    background-color: {{tag_pre_background_color}};
+    color: {{tag_pre_text_color}};
+    padding: 1.2em !important;
+    font-size: 1.2em;
+}
+
+.label {
+    font-weight: bold;
+    line-height: 1.6em;
+}
+
+.table-info {
+    padding-bottom: .6em;
+}
+
+.bk-root .bk-bs-nav-tabs>li.bk-bs-active>span {
+    background-color: {{tab_active_background_color}} !important;
+    color: {{tab_active_color}} !important;
+    border-color: {{tab_active_background_color}} !important;
+}
+
+.bk-root .bk-bs-nav>li>span:hover {
+    background-color: {{tab_active_background_color}} !important;
+    border-color: {{tab_active_background_color}} !important;
+    color: {{tab_active_color}} !important;
+}
+
+.bk-tooltip > div > div:not(:first-child) {
+    display: none !important;
+}
+
+.bk-tooltip {
+    border-radius: 3px;
+    background-color: {{tooltip_background_color}} !important;
+    border-color: {{tooltip_background_color}} !important;
+}
+
+.bk-tooltip-row-label {
+    color: {{tooltip_text_color_label}} !important;
+}
+
+.bk-tooltip-row-value {
+    color: {{tooltip_text_color_value}} !important;
+}

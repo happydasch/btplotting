@@ -7,13 +7,10 @@ from enum import Enum
 
 import backtrader as bt
 
-from bokeh.models import Span
 from bokeh.plotting import figure
-from bokeh.models import HoverTool, CrosshairTool, Span
-from bokeh.models import LinearAxis, DataRange1d
-from bokeh.models.formatters import NumeralTickFormatter
-from bokeh.models import CustomJS, CustomJSTickFormatter, \
-    DatetimeTickFormatter
+from bokeh.models import HoverTool, CrosshairTool, Span, \
+    LinearAxis, DataRange1d, NumeralTickFormatter, \
+    DatetimeTickFormatter, CustomJSTickFormatter
 
 from .cds import CDSObject
 from .utils import get_source_id, get_clock_obj
@@ -348,18 +345,12 @@ class Figure(CDSObject):
                       formatter=dt_formatter),
             code=formatter_code)
 
-        hover_code = pkgutil.get_data(
-            __name__,
-            'templates/js/hover_tooltips.js').decode()
         h = HoverTool(
             tooltips=[
                 ('Time',
                  f'@datetime{{{self._scheme.hovertool_timeformat}}}')],
             mode='vline',
             formatters={'@datetime': 'datetime'},)
-        callback = CustomJS(
-            args=dict(source=self.cds, hover=h), code=hover_code)
-        h.callback = callback
         f.tools.append(h)
         self._hover = h
 

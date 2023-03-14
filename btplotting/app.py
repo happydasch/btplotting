@@ -11,11 +11,12 @@ import backtrader as bt
 
 import pandas as pd
 
-from bokeh.models.layouts import TabPanel, Tabs
+from bokeh.models import TabPanel, Tabs, InlineStyleSheet
 from bokeh.layouts import gridplot, column
 
 from bokeh.embed import file_html
 from bokeh.resources import CDN, Resources
+
 from bokeh.util.browser import view
 from bokeh.io import show
 from bokeh.io.export import get_screenshot_as_png
@@ -79,6 +80,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # set new scheme instance for app, so source scheme
         # remains untouched
         self.scheme = copy(self.p.scheme)
+        # store css stylesheet for bokeh styling
+        self.stylesheet = InlineStyleSheet(
+            css=generate_stylesheet(self.scheme, 'bokeh.css.j2'))
         # apply additional parameters to override / set scheme settings
         for pname, pvalue in kwargs.items():
             setattr(self.scheme, pname, pvalue)

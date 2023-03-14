@@ -1,6 +1,6 @@
 import inspect
 
-from bokeh.models import Div, Paragraph
+from bokeh.models import Div
 from bokeh.layouts import column
 
 from ..tab import BacktraderPlottingTab
@@ -20,7 +20,7 @@ class SourceTab(BacktraderPlottingTab):
         return text
 
     def _get_tab_panel(self):
-        title = Paragraph(
+        title = Div(
             text='Source Code',
             css_classes=['tab-panel-title'])
         child = column(

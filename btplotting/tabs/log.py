@@ -4,7 +4,7 @@ from functools import partial
 from tornado import gen
 
 from bokeh.io import curdoc
-from bokeh.models import DataTable, TableColumn, ColumnDataSource, Paragraph
+from bokeh.models import DataTable, TableColumn, ColumnDataSource, Div
 from bokeh.layouts import column
 
 from ..tab import BacktraderPlottingTab
@@ -92,9 +92,10 @@ class LogTab(BacktraderPlottingTab):
             field='message',
             title='Message',
             sortable=False)
-        title = Paragraph(
+        title = Div(
             text='Log Messages',
-            css_classes=['tab-panel-title'])
+            css_classes=['tab-panel-title'],
+            stylesheets=[self._app.stylesheet])
         table = DataTable(
             source=handler.get_cds(doc),
             columns=[message],
@@ -102,7 +103,8 @@ class LogTab(BacktraderPlottingTab):
             scroll_to_selection=True,
             sortable=False,
             reorderable=False,
-            fit_columns=True)
+            fit_columns=True,
+            stylesheets=[self._app.stylesheet])
         child = column(
             children=[title, table],
             sizing_mode='stretch_width')

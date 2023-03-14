@@ -3,7 +3,7 @@ from enum import Enum
 
 import backtrader as bt
 
-from bokeh.models import ColumnDataSource, Paragraph, TableColumn, DataTable, \
+from bokeh.models import ColumnDataSource, Div, TableColumn, DataTable, \
     DateFormatter, NumberFormatter, StringFormatter
 
 from .params import get_params_str
@@ -27,6 +27,9 @@ class TableGenerator:
     Table generator for key -> value tuples
     '''
 
+    def __init__(self, stylesheet):
+        self._stylesheet = stylesheet
+
     def get_table(self, data):
         table = [['Name'], ['Value']]
         cds = ColumnDataSource()
@@ -48,7 +51,8 @@ class TableGenerator:
             height=column_height,
             width=0,  # set width to 0 so there is no min_width
             sizing_mode='stretch_width',
-            fit_columns=True)
+            fit_columns=True,
+            stylesheets=[self._stylesheet])
         return dtable
 
 
@@ -58,8 +62,9 @@ class AnalysisTableGenerator:
     Table generator for analyzers
     '''
 
-    def __init__(self, scheme):
+    def __init__(self, scheme, stylesheet):
         self._scheme = scheme
+        self._stylesheet = stylesheet
 
     @staticmethod
     def _get_table_generic(analyzer):
@@ -137,7 +142,11 @@ class AnalysisTableGenerator:
                 height=column_height,
                 width=0,  # set width to 0 so there is no min_width
                 sizing_mode='stretch_width',
-                fit_columns=True))
-        return Paragraph(
+                fit_columns=True,
+                stylesheets=[self._stylesheet]))
+
+        table_title = Div(
             text=title,
-            css_classes=['table-title']), elems
+            css_classes=['table-title'],
+            stylesheets=[self._stylesheet])
+        return table_title, elems

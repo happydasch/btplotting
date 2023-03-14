@@ -24,7 +24,7 @@ that accepts these same parameters.
         <title>{{ title|e if title else "Bokeh Plot" }}</title>
         {{ bokeh_css }}
         {{ bokeh_js }}
-        {{ stylesheet }}
+        <style type="text/css">{{ stylesheet }}</style>
     </head>
     <body>
         {%if show_headline %}
@@ -33,6 +33,6 @@ that accepts these same parameters.
         {{ plot_div|indent(8) }}
         {{ plot_script|indent(8) }}
 
-        <div class="footer">Generated on: {{ now }}</div>
+        <div id="footer">Generated on: {{ now }}</div>
     </body>
 </html>
