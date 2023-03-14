@@ -519,8 +519,7 @@ class Figure(CDSObject):
                                            self._bar_width)
                 glyph_fnc = self.figure.vbar
                 # append renderer
-                self._figure_append_renderer(
-                    glyph_fnc, marker=None, **kwglyph)
+                self._figure_append_renderer(glyph_fnc, **kwglyph)
 
             elif style == 'line':
                 kwglyph = {'x': 'index', 'name': linealias + 'line',
@@ -537,18 +536,25 @@ class Figure(CDSObject):
                     kwglyph['line_width'] = linewidth
                 drawstyle = getattr(lineplotinfo, 'drawstyle', None)
                 if drawstyle:
+                    # workaround for missing tooltips, use invisible line
+                    # for tooltips
+                    self._figure_append_renderer(
+                        self.figure.line, x=kwglyph['x'], y=kwglyph['y'],
+                        alpha=0)
+                    # set mode of step based on drawstyle
                     if drawstyle == 'steps-mid':
                         kwglyph['mode'] = 'center'
                     elif drawstyle == 'steps-right':
                         kwglyph['mode'] = 'after'
                     else:
                         kwglyph['mode'] = 'before'
+                    # use step element as a replacement for lines
+                    # with drawstyle in matplotlib
                     glyph_fnc = self.figure.step
                 else:
                     glyph_fnc = self.figure.line
                 # append renderer
-                self._figure_append_renderer(
-                    glyph_fnc, marker=None, **kwglyph)
+                self._figure_append_renderer(glyph_fnc, **kwglyph)
 
             # chek for fill_between
             for ftype, fop in [
@@ -583,8 +589,7 @@ class Figure(CDSObject):
                         'color': fcolor,
                         'legend_label': label
                     }
-                    self._figure_append_renderer(
-                        self.figure.varea, **kwargs)
+                    self._figure_append_renderer(self.figure.varea, **kwargs)
 
             # set hover label
             hover_label = f'{obj2label(obj)} - {linealias}'
