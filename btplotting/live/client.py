@@ -174,9 +174,7 @@ class LiveClient:
             start=1, end=200, step=1)
 
         # tabs
-        tabs = Tabs(
-            id='tabs',
-            sizing_mode='stretch_width')
+        tabs = Tabs(sizing_mode='stretch_width')
 
         # model
         model = layout(
@@ -203,7 +201,7 @@ class LiveClient:
         return res
 
     def _get_tabs(self):
-        return self.model.select_one({'id': 'tabs'})
+        return self.model.select_one({'type': Tabs})
 
     def _set_data_by_idx(self, idx=None):
         # if a index is provided, ensure that index is within data range
