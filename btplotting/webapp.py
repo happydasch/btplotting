@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 
 from bokeh.application.handlers.function import FunctionHandler
 from bokeh.application import Application
@@ -86,8 +87,14 @@ class Webapp:
         server = Server(apps, port=port, io_loop=ioloop,
                         allow_websocket_origin=origin)
         if autostart:
+            time.sleep(1.0)
+
             print('Browser is launching at'
                   f' http://{display_address}:{port}')
+
+            # wait for a while, the data might have not been loaded
+            time.sleep(4.0)
+
             view(f'http://{display_address}:{port}')
         else:
             print(f'Open browser at http://{display_address}:{port}')

@@ -592,7 +592,7 @@ class Figure(CDSObject):
                     self._figure_append_renderer(self.figure.varea, **kwargs)
 
             # set hover label
-            hover_label = f'{obj2label(obj)} - {linealias}'
+            hover_label = f'{obj2label(obj, True)} - {linealias}'
             hover_data = f'@{source_id}{{{self._scheme.number_format}}}'
             if hover_label:
                 self._fp.hover.add_hovertip(hover_label, hover_data, obj)

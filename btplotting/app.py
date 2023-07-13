@@ -442,19 +442,27 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         all_figures = [x.figure for x in sorted_figs]
         return column(all_figures)
 
-    def get_data(self, figid=0, start=None, end=None, back=None):
+    def get_data(self, figid=0, startidx=None, start=None, end=None, back=None):
         '''
         Returns data for given figurepage
         '''
         fp = self.get_figurepage(figid)
-        data_clock = fp.data_clock
+        data_clock: DataClockHandler = fp.data_clock
+        data_clock.init_clk()
+
+        if startidx:
+            assert start is None, "wrong"
+            start = data_clock.get_dt_at_idx(startidx)
+
         # only start_idx, end_idx should be used so all data
         # is aligned to the same clock length.
+        # clk = data_clock._get_clk()
         startidx, endidx = data_clock.get_start_end_idx(start, end, back)
         # create datetime column
         dt_idx = data_clock.get_dt_list(startidx, endidx)
         # create index column
         int_idx = data_clock.get_idx_list(startidx, endidx)
+        assert startidx == int_idx[0] and endidx == int_idx[-1], "wrong"
         # create dataframe with datetime and prepared index
         # the index will be applied at the end after data is
         # set
@@ -475,6 +483,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
                 df_objs.append(df_data)
         df = df.join(df_objs)
         # set index and return dataframe
+        data_clock.uinit_clk(endidx)
         return df
 
     def get_last_idx(self, figid=0):
@@ -482,7 +491,8 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         Returns the last index of figurepage data
         '''
         fp = self.get_figurepage(figid)
-        return len(fp.data_clock) - 1
+        # return len(fp.data_clock) - 1
+        return fp.data_clock.last_endidx
 
     def is_iplot(self):
         '''

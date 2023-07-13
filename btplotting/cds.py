@@ -153,6 +153,7 @@ class CDSObject:
             c_df[a[0]] = col
 
         res = ColumnDataSource.from_df(c_df)
+        del res["level_0"]
         return res
 
     def get_cds_patchdata_from_series(self, idx, series, fillnan=[]):
