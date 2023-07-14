@@ -71,7 +71,8 @@ class DataClockHandler:
         if last_one != last_one:
             last_index -= 1
 
-        self._clk_cache = sorted(set(self._clk.array[-len(self._clk) + 1: last_index]))
+        # self._clk_cache = sorted(set(self._clk.array[-len(self._clk) + 1: last_index]))
+        self._clk_cache = sorted(set(self._clk.array[: last_index]))
 
     def uinit_clk(self, last_endidx):
         assert self._clk_cache, "init_clk should have been called"
