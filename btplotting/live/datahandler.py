@@ -3,6 +3,8 @@ from tornado import gen
 
 import pandas as pd
 
+from ..clock import DataClockHandler
+
 _logger = logging.getLogger(__name__)
 
 
@@ -135,6 +137,9 @@ class LiveDataHandler:
             else:
                 self._set_data(row)
 
+        # if self._datastore is not None:
+        #     self._datastore.drop_duplicates("datetime", keep='last', inplace=True) 
+
         self._push()
 
     def _get_data_stream_length(self):
@@ -160,11 +165,12 @@ class LiveDataHandler:
 
     def update(self):
         data = None
-        fp = self._client.get_figurepage()
+        # fp = self._client.get_figurepage()
         app = self._client.get_app()
         figid = self._client.get_figid()
         lookback = self._client.lookback
-        data_clock = fp.data_clock
+        # data_clock: DataClockHandler = fp.data_clock
+        # clk = data_clock._get_clk()
         lastidx = self._lastidx
         lastavailidx = app.get_last_idx(figid)
         # if there is more new data then lookback length
@@ -175,8 +181,8 @@ class LiveDataHandler:
         # load from last index, so no data is skipped
         elif lastidx <= lastavailidx:
             startidx = max(0, lastidx - 2)
-            start = data_clock.get_dt_at_idx(startidx)
-            data = app.get_data(start=start)
+            # start = data_clock.get_dt_at_idx(startidx)
+            data = app.get_data(startidx=startidx)
         # if any new data was loaded
         if data is not None:
             self._process_data(data)

@@ -21,7 +21,7 @@ class LiveClient:
 
     NAV_BUTTON_WIDTH = 35
 
-    def __init__(self, doc, app, strategy, lookback, interval=0.5):
+    def __init__(self, doc, app, strategy, lookback, paused_at_beginning, interval=0.5):
         self._app = app
         self._doc = doc
         self._strategy = strategy
@@ -31,7 +31,7 @@ class LiveClient:
         self._datahandler = None
         self._figurepage = None
         self._running = True
-        self._paused = True
+        self._paused = paused_at_beginning
         self._lastlen = -1
         self._filterdata = ''
         # plotgroup for filter
@@ -174,7 +174,8 @@ class LiveClient:
             start=1, end=200, step=1)
 
         # tabs
-        tabs = Tabs(sizing_mode='stretch_width')
+        tabs = Tabs(
+            sizing_mode='stretch_width')
 
         # model
         model = layout(
@@ -201,6 +202,7 @@ class LiveClient:
         return res
 
     def _get_tabs(self):
+        # return self.model.select_one({'id': 'tabs'})
         return self.model.select_one({'type': Tabs})
 
     def _set_data_by_idx(self, idx=None):
@@ -211,8 +213,10 @@ class LiveClient:
             # don't allow idx to be bigger than max idx
             last_avail_idx = self._app.get_last_idx(self._figid)
             idx = min(idx, last_avail_idx)
+
+        clk = self._figurepage.data_clock._get_clk()
         # create DataFrame based on last index with length of lookback
-        end = self._figurepage.data_clock.get_dt_at_idx(idx)
+        end = self._figurepage.data_clock.get_dt_at_idx(clk, idx)
         df = self._app.get_data(
             end=end,
             figid=self._figid,

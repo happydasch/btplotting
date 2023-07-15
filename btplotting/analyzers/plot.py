@@ -23,6 +23,8 @@ class LivePlotAnalyzer(bt.Analyzer):
         ('address', 'localhost'),
         ('port', 80),
         ('title', None),
+        ('interval', 0.2),
+        ('paused_at_beginning', False),
     )
 
     def __init__(self, iplot=True, autostart=False, **kwargs):
@@ -64,7 +66,9 @@ class LivePlotAnalyzer(bt.Analyzer):
         client = LiveClient(doc,
                             self._create_app(),
                             self.strategy,
-                            self.p.lookback)
+                            self.p.lookback,
+                            self.p.paused_at_beginning,
+                            self.p.interval)
         with self._lock:
             self._clients[doc.session_context.id] = client
         return client.model

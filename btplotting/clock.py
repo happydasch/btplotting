@@ -39,12 +39,21 @@ class DataClockHandler:
             data = strategy.getdatabyname(dataname)
         self._rightedge = data.p._get('rightedge', True)
 
+        self._clk_cache = None
+        self.last_endidx = -1
+
     def __len__(self):
         '''
         Length of the clock
         '''
+        if not self._clk_cache:
+            return len(self._clk)
+
         offset = 0
-        clk = self._get_clk()
+
+        # clk = self._get_clk()
+        clk = self._clk_cache
+
         idx = len(clk) - 1
         while True:
             if idx < 0:
@@ -55,13 +64,29 @@ class DataClockHandler:
             offset += 1
         return (idx - offset) + 1  # last valid index + 1
 
-    def _get_clk(self):
-        '''
-        Returns the clock to use
-        '''
-        # ensure clk has unique values also use only reported len
-        # of data from clock
-        return sorted(set(self._clk.array[-len(self._clk)+1:]))
+    def init_clk(self):
+        # for live data, self._clk might change so we cache it
+        last_index = len(self._clk)
+        last_one = self._clk.array[-1]
+        if last_one != last_one:
+            last_index -= 1
+
+        # self._clk_cache = sorted(set(self._clk.array[-len(self._clk) + 1: last_index]))
+        self._clk_cache = sorted(set(self._clk.array[: last_index]))
+
+    def uinit_clk(self, last_endidx):
+        assert self._clk_cache, "init_clk should have been called"
+        self._clk_cache = None
+        self.last_endidx = last_endidx
+
+    # def _get_clk(self):
+    #     '''
+    #     Returns the clock to use
+    #     '''
+    #     # ensure clk has unique values also use only reported len
+    #     # of data from clock
+    #     # return sorted(set(self._clk.array[-len(self._clk)+1:]))
+    #     return self.clk_cache
 
     def _get_clk_details(self, strategy, dataname):
         '''
@@ -93,7 +118,7 @@ class DataClockHandler:
                 t_start = t_end
                 if len(dtlist) > 1:
                     if i == 0:
-                        t_start = t_end - dtlist[1] - dtlist[0]
+                        t_start = t_end - (dtlist[1] - dtlist[0])
                     else:
                         t_start = dtlist[i - 1]
             else:
@@ -154,29 +179,31 @@ class DataClockHandler:
         return res
 
     def get_idx_for_dt(self, dt):
-        clk = self._get_clk()
+        clk = self._clk_cache
+        assert clk, "wrong"
         return bisect_left(clk, bt.date2num(dt, tz=self._tz))
 
     def get_start_end_idx(self, startdt=None, enddt=None, back=None):
         '''
         Returns the startidx and endidx for a given datetime
         '''
-        clk = self._get_clk()
+        clk = self._clk_cache
+        assert clk, "wrong"
         startidx = (
             0
             if startdt is None
             else bisect_left(clk, bt.date2num(startdt, tz=self._tz)))
-        if startidx is not None and startidx >= len(self):
+        if startidx is not None and startidx >= len(clk):
             startidx = 0
         endidx = (
-            len(self) - 1
+            len(clk) - 1
             if enddt is None
             else bisect_left(clk, bt.date2num(enddt, tz=self._tz)))
-        if endidx is not None and endidx >= len(self):
-            endidx = len(self) - 1
+        if endidx is not None and endidx >= len(clk):
+            endidx = len(clk) - 1
         if back:
             if endidx is None:
-                endidx = len(self) - 1
+                endidx = len(clk) - 1
             startidx = max(0, endidx - back + 1)
         return startidx, endidx
 
@@ -184,7 +211,8 @@ class DataClockHandler:
         '''
         Returns a datetime object for given index
         '''
-        clk = self._get_clk()
+        clk = self._clk_cache
+        assert clk, "wrong"
         return bt.num2date(
             clk[idx],
             tz=None if not localized else self._tz)
@@ -193,10 +221,12 @@ class DataClockHandler:
         '''
         Returns a list with int indexes for the clock
         '''
+        clk = self._clk_cache
+        assert clk, "wrong"
         if startidx is not None:
             startidx = max(0, startidx)
         if endidx is not None:
-            endidx = min(len(self), endidx)
+            endidx = min(len(clk), endidx)
         if preserveidx:
             return [int(x) for x in range(startidx, endidx + 1)]
         return [int(x) for x in range(endidx - startidx + 1)]
@@ -206,7 +236,8 @@ class DataClockHandler:
         '''
         Returns a list with datetime/float indexes for the clock
         '''
-        clk = self._get_clk()
+        clk = self._clk_cache
+        assert clk, "wrong"
         dtlist = []
         for i in self.get_idx_list(startidx, endidx):
             val = clk[i]
@@ -222,7 +253,8 @@ class DataClockHandler:
         This method is used to slice something from another clock for later
         alignment in another clock.
         '''
-        clk = self._get_clk()
+        clk = self._clk_cache
+        assert clk, "wrong"
         res = {'float': [], 'value': []}
         startidx, endidx = self.get_start_end_idx(startdt, enddt)
         for i in self.get_idx_list(startidx, endidx):
@@ -238,14 +270,16 @@ class DataClockHandler:
         '''
         Returns data from object aligned to clock
         '''
+        clk = self._clk_cache
+        assert clk, "wrong"
         slice_startdt = self.get_dt_at_idx(startidx)
-        if endidx < len(self) - 1:
+        if endidx < len(clk) - 1:
             slice_enddt = (
-                self.get_dt_at_idx(endidx + 1) - timedelta(microseconds=1))
+                self.get_dt_at_idx(clk, endidx + 1) - timedelta(microseconds=1))
         else:
             slice_enddt = None
-        dataname = get_dataname(obj)
-        tmpclk = DataClockHandler(self._strategy, dataname)
+        # dataname = get_dataname(obj)
+        # tmpclk = DataClockHandler(self._strategy, dataname)
         df = pd.DataFrame()
         source_id = get_source_id(obj)
         for lineidx, line in enumerate(obj.lines):
@@ -256,7 +290,7 @@ class DataClockHandler:
                 name = source_id + alias
             else:
                 name = get_source_id(line)
-            slicedata = tmpclk.get_slice(line, slice_startdt, slice_enddt)
+            slicedata = self.get_slice(line, slice_startdt, slice_enddt)
             data = self._align_slice(
                 slicedata, startidx, endidx, rightedge=self._rightedge)
             df[name] = data
