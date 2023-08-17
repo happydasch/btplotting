@@ -5,7 +5,9 @@ import pkgutil
 from functools import partial
 from enum import Enum
 
+from typing import List
 import backtrader as bt
+import pandas as pd
 
 from bokeh.plotting import figure
 from bokeh.models import HoverTool, CrosshairTool, Span, \
@@ -19,6 +21,7 @@ from .helper.cds_ops import cds_op_gt, cds_op_lt, cds_op_non, \
 from .helper.plot import convert_color, sanitize_source_name
 from .helper.label import obj2label, obj2data
 from .helper.marker import get_marker_info
+from .clock import DataClockHandler
 
 
 class FigureType(Enum):
@@ -109,6 +112,7 @@ class HoverContainer(metaclass=bt.MetaParams):
                 break
 
 
+# class FigurePage(CDSObject):
 class FigurePage(CDSObject):
 
     '''
@@ -156,15 +160,15 @@ class FigurePage(CDSObject):
             crosshair = CrosshairTool(overlay=width)
             f.figure.add_tools(crosshair, crosshair_shared)
 
-    def set_cds_columns_from_df(self, df):
-        '''
-        Setup the FigurePage and Figures from DataFrame
-        Note: this needs to be done at least once to prepare
-        all cds with columns
-        '''
-        super(FigurePage, self).set_cds_columns_from_df(df)
-        for f in self.figures:
-            f.set_cds_columns_from_df(df)
+    # def set_cds_columns_from_df(self, df):
+    #     '''
+    #     Setup the FigurePage and Figures from DataFrame
+    #     Note: this needs to be done at least once to prepare
+    #     all cds with columns
+    #     '''
+    #     super(FigurePage, self).set_cds_columns_from_df(df)
+    #     for f in self.figures:
+    #         f.set_cds_columns_from_df(df)
 
     def apply(self):
         '''
@@ -327,21 +331,21 @@ class Figure(CDSObject):
             __name__,
             'templates/js/tick_formatter.js').decode()
         dt_formatter = DatetimeTickFormatter(
-                    microseconds='%fus',
-                    milliseconds='%3Nms',
-                    seconds=self._scheme.axis_tickformat_seconds,
-                    minsec=self._scheme.axis_tickformat_minsec,
-                    minutes=self._scheme.axis_tickformat_minutes,
-                    hourmin=self._scheme.axis_tickformat_hourmin,
-                    hours=self._scheme.axis_tickformat_hours,
-                    days=self._scheme.axis_tickformat_days,
-                    months=self._scheme.axis_tickformat_months,
-                    years=self._scheme.axis_tickformat_years
+            microseconds='%fus',
+            milliseconds='%3Nms',
+            seconds=self._scheme.axis_tickformat_seconds,
+            minsec=self._scheme.axis_tickformat_minsec,
+            minutes=self._scheme.axis_tickformat_minutes,
+            hourmin=self._scheme.axis_tickformat_hourmin,
+            hours=self._scheme.axis_tickformat_hours,
+            days=self._scheme.axis_tickformat_days,
+            months=self._scheme.axis_tickformat_months,
+            years=self._scheme.axis_tickformat_years
         )
 
         f.xaxis.formatter = CustomJSTickFormatter(
             args=dict(axis=f.xaxis[0],
-                      source=self._fp.cds,
+                      source=self.cds,
                       formatter=dt_formatter),
             code=formatter_code)
 
@@ -353,6 +357,8 @@ class Figure(CDSObject):
             formatters={'@datetime': 'datetime'},)
         f.tools.append(h)
         self._hover = h
+
+        self.data_clock = None
 
         # set figure
         self.figure = f
@@ -487,6 +493,7 @@ class Figure(CDSObject):
                     elif v in ['text_font_size']:
                         val = {'value': '%spx' % markersize}
                     elif v in ['text']:
+                        assert marker is not None, "wrong"
                         val = {'value': marker[1:-1]}
                     if val is not None:
                         kwglyph[v] = val
@@ -913,3 +920,34 @@ class Figure(CDSObject):
         legend.background_fill_color = self._scheme.legend_background_color
         legend.label_text_color = self._scheme.legend_text_color
         legend.orientation = self._scheme.legend_orientation
+
+    def set_cds(self, data_clock, startidx, endidx, dt_idx, int_idx) -> List[pd.DataFrame]:
+        fillnan = self.fillnan()
+        skipnan = self.skipnan()
+
+        obj_clk = None
+        if len(data_clock) != len(self.master) and issubclass(type(self.master), bt.AbstractDataBase):
+            obj_clk = self.master.datetime
+
+        df_objs = []
+        for obj in [self.master] + self.childs:
+            df_data = data_clock.get_data(
+                obj, startidx, endidx,
+                fillnan=fillnan,
+                skipnan=skipnan, obj_clk=obj_clk)
+
+            df_objs.append(df_data)
+
+            # create dataframe with datetime and prepared index
+            # the index will be applied at the end after data is
+            # set
+        f_df = pd.DataFrame(
+            data={
+                'index': pd.Series(int_idx, dtype='int64'),
+                'datetime': pd.Series(dt_idx, dtype='datetime64[ns]')})
+
+        # set index and return dataframe
+        f_df = f_df.join(df_objs)
+        self.set_cds_columns_from_df(f_df)
+
+        return df_objs
