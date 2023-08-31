@@ -176,6 +176,8 @@ class CDSObject:
             # ensure datetime is checked for changes
             if 'datetime' not in columns:
                 columns.append('datetime')
+
+            cds_val = None
             for c in columns:
                 val = series[c]
                 if c == 'datetime':

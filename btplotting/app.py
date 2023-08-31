@@ -309,8 +309,9 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
             self._configure_plotting(figid)
             self._blueprint_strategy(figid, filterdata)
             if filldata:
-                df = self.get_data(figid, start=start, end=end)
-                fp.set_cds_columns_from_df(df)
+                self.get_data(figid, start=start, end=end)
+
+                # fp.set_cds_columns_from_df(df)
         elif isinstance(obj, bt.OptReturn):
             self._blueprint_optreturn(figid)
         else:
@@ -442,7 +443,7 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         all_figures = [x.figure for x in sorted_figs]
         return column(all_figures)
 
-    def get_data(self, figid=0, startidx=None, start=None, end=None, back=None):
+    def get_data(self, figid=0, startidx=None, start=None, end=None, back=None) -> pd.DataFrame:
         '''
         Returns data for given figurepage
         '''
@@ -463,27 +464,24 @@ class BacktraderPlotting(metaclass=bt.MetaParams):
         # create index column
         int_idx = data_clock.get_idx_list(startidx, endidx)
         assert startidx == int_idx[0] and endidx == int_idx[-1], "wrong"
-        # create dataframe with datetime and prepared index
-        # the index will be applied at the end after data is
-        # set
+
         df = pd.DataFrame(
             data={
                 'index': pd.Series(int_idx, dtype='int64'),
                 'datetime': pd.Series(dt_idx, dtype='datetime64[ns]')})
+
         # generate data for all figurepage objects
         df_objs = []
+
         for f in fp.figures:
-            fillnan = f.fillnan()
-            skipnan = f.skipnan()
-            for obj in [f.master] + f.childs:
-                df_data = data_clock.get_data(
-                    obj, startidx, endidx,
-                    fillnan=fillnan,
-                    skipnan=skipnan)
-                df_objs.append(df_data)
+            f_df_objs = f.set_cds(data_clock, startidx, endidx, dt_idx, int_idx)
+            if f_df_objs:
+                df_objs.extend(f_df_objs)
+
         df = df.join(df_objs)
-        # set index and return dataframe
+
         data_clock.uinit_clk(endidx)
+
         return df
 
     def get_last_idx(self, figid=0):
