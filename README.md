@@ -35,7 +35,7 @@ Plotting:
 * _skipnan, fill_gt, fill_lt, fill support
 * Plot objects can be filtered by one or more datanames or by plot group
 * Custom plot group, which can be configured in app or in live client by providing all
-  plotids in a comma-seperated list or by selecting the parts of the plot to display
+  plotids in a comma-separated list or by selecting the parts of the plot to display
 
 Tabs:
 
