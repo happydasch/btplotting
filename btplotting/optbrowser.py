@@ -9,17 +9,30 @@ from pandas import DataFrame
 
 from bokeh.models import ColumnDataSource
 from bokeh.layouts import column
-from bokeh.models.widgets import DataTable, TableColumn, \
-    NumberFormatter, StringFormatter
+from bokeh.models.widgets import (
+    DataTable,
+    TableColumn,
+    NumberFormatter,
+    StringFormatter,
+)
 
 from .webapp import Webapp
 
 
 class OptBrowser:
-    def __init__(self, app, optresults, usercolumns=None,
-                 num_result_limit=None, sortcolumn=None,
-                 sortasc=True, address='localhost', port=81,
-                 autostart=False, iplot=True):
+    def __init__(
+        self,
+        app,
+        optresults,
+        usercolumns=None,
+        num_result_limit=None,
+        sortcolumn=None,
+        sortasc=True,
+        address="localhost",
+        port=81,
+        autostart=False,
+        iplot=True,
+    ):
         self._usercolumns = {} if usercolumns is None else usercolumns
         self._num_result_limit = num_result_limit
         self._app = app
@@ -33,14 +46,15 @@ class OptBrowser:
 
     def start(self, ioloop=None):
         webapp = Webapp(
-            'Backtrader Optimization Result',
-            'basic.html.j2',
+            "Backtrader Optimization Result",
+            "basic.html.j2",
             self._app.params.scheme,
             self.build_optresult_model,
             address=self._address,
             port=self._port,
             autostart=self._autostart,
-            iplot=self._iplot)
+            iplot=self._iplot,
+        )
         webapp.start(ioloop)
 
     def _build_optresult_selector(self, optresults):
@@ -68,18 +82,19 @@ class OptBrowser:
         tab_columns = []
 
         for colname in data_dict.keys():
-            formatter = NumberFormatter(format='0.000')
+            formatter = NumberFormatter(format="0.000")
 
-            if (len(data_dict[colname]) > 0
-                    and isinstance(data_dict[colname][0], int)):
+            if len(data_dict[colname]) > 0 and isinstance(data_dict[colname][0], int):
                 formatter = StringFormatter()
 
             tab_columns.append(
                 TableColumn(
                     field=colname,
-                    title=f'{colname}',
+                    title=f"{colname}",
                     sortable=False,
-                    formatter=formatter))
+                    formatter=formatter,
+                )
+            )
 
         cds = ColumnDataSource(df)
         selector = DataTable(
@@ -87,21 +102,21 @@ class OptBrowser:
             columns=tab_columns,
             height=150,  # fixed height for selector
             width=0,  # set width to 0 so there is no min_width
-            sizing_mode='stretch_width',
-            fit_columns=True)
+            sizing_mode="stretch_width",
+            fit_columns=True,
+        )
         return selector, cds
 
     def build_optresult_model(self, doc):
-        '''
+        """
         Generates and returns an interactive model for an OptResult
         or an OrderedOptResult
-        '''
+        """
 
         def _get_model(selector_cds, idx: int):
             selector_cds.selected.indices = [idx]
-            selected = selector_cds.data['index'][idx]
-            return self._app.plot_optmodel(
-                self._optresults[selected][0])
+            selected = selector_cds.data["index"][idx]
+            return self._app.plot_optmodel(self._optresults[selected][0])
 
         def update_model_new(selector_cds, stratidx):
             new_model = _get_model(selector_cds, stratidx)
@@ -111,27 +126,27 @@ class OptBrowser:
             if len(new) == 0:
                 return
             stratidx = new[0]
-            del(model.children[-1])
+            del model.children[-1]
             doc.add_next_tick_callback(
-                partial(update_model_new, selector_cds, stratidx))
-
+                partial(update_model_new, selector_cds, stratidx)
+            )
 
         # we have list of results, each result contains the result for
         # one strategy. we don't support having more than one strategy!
         if len(self._optresults) > 0 and len(self._optresults[0]) > 1:
             raise RuntimeError(
-                'You passed on optimization result based on more than'
-                ' one strategy which is not supported!')
+                "You passed on optimization result based on more than"
+                " one strategy which is not supported!"
+            )
 
         selector, selector_cds = self._build_optresult_selector(self._optresults)
 
         # show the first result in list as default
         model = column(
-            [selector, _get_model(selector_cds, 0)],
-            sizing_mode='stretch_width')
+            [selector, _get_model(selector_cds, 0)], sizing_mode="stretch_width"
+        )
         model.background = self._app.params.scheme.background_fill
 
-        selector_cds.selected.on_change(
-            'indices', partial(update_model, selector_cds))
+        selector_cds.selected.on_change("indices", partial(update_model, selector_cds))
 
         return model

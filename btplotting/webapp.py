@@ -17,9 +17,18 @@ def check_origin_overwrite(self, origin):
 
 
 class Webapp:
-    def __init__(self, title, html_template, scheme, model_factory_fnc,
-                 on_session_destroyed=None, address="localhost", port=81,
-                 autostart=False, iplot=True):
+    def __init__(
+        self,
+        title,
+        html_template,
+        scheme,
+        model_factory_fnc,
+        on_session_destroyed=None,
+        address="localhost",
+        port=81,
+        autostart=False,
+        iplot=True,
+    ):
         self._title = title
         self._html_template = html_template
         self._scheme = scheme
@@ -31,10 +40,10 @@ class Webapp:
         self._iplot = iplot
 
     def start(self, ioloop=None):
-        '''
+        """
         Serves a backtrader result as a Bokeh application running on
         a web server
-        '''
+        """
 
         def make_document(doc: Document):
             if self._on_session_destroyed is not None:
@@ -45,26 +54,36 @@ class Webapp:
 
             # set document template
             now = datetime.now()
-            env = Environment(loader=PackageLoader('btplotting', 'templates'))
+            env = Environment(loader=PackageLoader("btplotting", "templates"))
             templ = env.get_template(self._html_template)
-            templ.globals['now'] = now.strftime('%Y-%m-%d %H:%M:%S')
+            templ.globals["now"] = now.strftime("%Y-%m-%d %H:%M:%S")
             doc.template = templ
-            doc.template_variables['stylesheet'] = generate_stylesheet(
-                self._scheme)
+            doc.template_variables["stylesheet"] = generate_stylesheet(self._scheme)
             model = self._model_factory_fnc(doc)
             doc.add_root(model)
 
-        self._run_server(make_document, ioloop=ioloop, address=self._address,
-                         port=self._port, autostart=self._autostart,
-                         iplot=self._iplot)
+        self._run_server(
+            make_document,
+            ioloop=ioloop,
+            address=self._address,
+            port=self._port,
+            autostart=self._autostart,
+            iplot=self._iplot,
+        )
 
     @staticmethod
-    def _run_server(fnc_make_document, ioloop=None, address='localhost',
-                    port=81, autostart=False, iplot=True):
-        '''
+    def _run_server(
+        fnc_make_document,
+        ioloop=None,
+        address="localhost",
+        port=81,
+        autostart=False,
+        iplot=True,
+    ):
+        """
         Runs a Bokeh webserver application. Documents will be created using
         fnc_make_document
-        '''
+        """
         handler = FunctionHandler(fnc_make_document)
         app = Application(handler)
 
@@ -80,17 +99,15 @@ class Webapp:
             except NameError:
                 pass
 
-        apps = {'/': app}
-        display_address = address if address != '*' else 'localhost'
-        origin = [f'{address}:{port}' if address != '*' else address]
-        server = Server(apps, port=port, io_loop=ioloop,
-                        allow_websocket_origin=origin)
+        apps = {"/": app}
+        display_address = address if address != "*" else "localhost"
+        origin = [f"{address}:{port}" if address != "*" else address]
+        server = Server(apps, port=port, io_loop=ioloop, allow_websocket_origin=origin)
         if autostart:
-            print('Browser is launching at'
-                  f' http://{display_address}:{port}')
-            view(f'http://{display_address}:{port}')
+            print("Browser is launching at" f" http://{display_address}:{port}")
+            view(f"http://{display_address}:{port}")
         else:
-            print(f'Open browser at http://{display_address}:{port}')
+            print(f"Open browser at http://{display_address}:{port}")
         if ioloop is None:
             server.run_until_shutdown()
         else:

@@ -4,15 +4,14 @@ from collections import defaultdict
 import backtrader as bt
 
 
-def get_plotobjs(strategy, include_non_plotable=False,
-                 order_by_plotmaster=False):
-    '''
+def get_plotobjs(strategy, include_non_plotable=False, order_by_plotmaster=False):
+    """
     Returns all plotable objects of a strategy
 
     By default the result will be ordered by the
     data the object is aligned to. If order_by_plotmaster
     is True, objects will be aligned to their plotmaster.
-    '''
+    """
     datas = strategy.datas
     inds = strategy.getindicators()
     obs = strategy.getobservers()
@@ -21,28 +20,26 @@ def get_plotobjs(strategy, include_non_plotable=False,
     objs[strategy] = []
     # first loop through datas
     for d in datas:
-        if (not include_non_plotable
-                and not d.plotinfo._get('plot', True)):
+        if not include_non_plotable and not d.plotinfo._get("plot", True):
             continue
         objs[d] = []
     # next loop through all ind and obs and set them to
     # the corresponding data clock
     for obj in itertools.chain(inds, obs):
         # check for base classes
-        if not isinstance(obj, (bt.IndicatorBase,
-                                bt.MultiCoupler,
-                                bt.ObserverBase)):
+        if not isinstance(obj, (bt.IndicatorBase, bt.MultiCoupler, bt.ObserverBase)):
             continue
         # check for plotinfos
-        if not hasattr(obj, 'plotinfo'):
+        if not hasattr(obj, "plotinfo"):
             # no plotting support cause no plotinfo attribute
             # available - so far LineSingle derived classes
             continue
         # should this indicator be plotted?
-        if (not include_non_plotable
-                and (not obj.plotinfo._get('plot', True)
-                     or obj.plotinfo._get('plotskip', False)
-                     or obj.plotinfo._get('_plotskip', False))):
+        if not include_non_plotable and (
+            not obj.plotinfo._get("plot", True)
+            or obj.plotinfo._get("plotskip", False)
+            or obj.plotinfo._get("_plotskip", False)
+        ):
             continue
         # append object to the data object
         pltmaster = get_plotmaster(obj)
@@ -89,9 +86,9 @@ def get_plotobjs(strategy, include_non_plotable=False,
 
 
 def get_plotmaster(obj):
-    '''
+    """
     Resolves the plotmaster of the given object
-    '''
+    """
     if obj is None:
         return None
 
@@ -107,9 +104,9 @@ def get_plotmaster(obj):
 
 
 def get_last_avail_idx(strategy, dataname=False):
-    '''
+    """
     Returns the last available index of a data source
-    '''
+    """
     if dataname is not False:
         data = strategy.getdatabyname(dataname)
     else:
@@ -118,11 +115,11 @@ def get_last_avail_idx(strategy, dataname=False):
 
 
 def filter_obj(obj, filterdata):
-    '''
+    """
     Returns if the given object should be filtered.
     False if object should not be filtered out,
     True if object should be filtered out.
-    '''
+    """
 
     if filterdata is None:
         return False
@@ -131,20 +128,20 @@ def filter_obj(obj, filterdata):
     plotid = obj.plotinfo.plotid
 
     # filter by dataname
-    if 'dataname' in filterdata:
+    if "dataname" in filterdata:
         if dataname is not False:
-            if isinstance(filterdata['dataname'], str):
-                if dataname != filterdata['dataname']:
+            if isinstance(filterdata["dataname"], str):
+                if dataname != filterdata["dataname"]:
                     return True
-            elif isinstance(filterdata['dataname', list]):
-                if dataname not in filterdata['dataname']:
+            elif isinstance(filterdata["dataname", list]):
+                if dataname not in filterdata["dataname"]:
                     return True
         else:
             return True
-    if 'group' in filterdata:
-        if isinstance(filterdata['group'], str):
-            if filterdata['group'] != '':
-                plotids = filterdata['group'].split(',')
+    if "group" in filterdata:
+        if isinstance(filterdata["group"], str):
+            if filterdata["group"] != "":
+                plotids = filterdata["group"].split(",")
                 if plotid not in plotids:
                     return True
 
@@ -152,9 +149,9 @@ def filter_obj(obj, filterdata):
 
 
 def get_datanames(strategy, onlyplotable=True):
-    '''
+    """
     Returns the names of all data sources
-    '''
+    """
     datanames = []
     for d in strategy.datas:
         if not onlyplotable or d.plotinfo.plot is not False:
@@ -163,11 +160,11 @@ def get_datanames(strategy, onlyplotable=True):
 
 
 def get_dataname(obj):
-    '''
+    """
     Returns the name of the data for the given object
     If the data for a object is a strategy then False will
     be returned.
-    '''
+    """
     data = get_clock_obj(obj, True)
     if isinstance(data, bt.Strategy):
         # strategy will have no dataname
@@ -178,7 +175,7 @@ def get_dataname(obj):
         # _name: user assigned value upon instantiation
         # _dataname: underlying bt dataname (is always available)
         # if that fails, use str
-        for n in ['_name', '_dataname']:
+        for n in ["_name", "_dataname"]:
             val = getattr(data, n)
             if val is not None:
                 break
@@ -186,24 +183,27 @@ def get_dataname(obj):
             val = str(data)
         return val
     else:
-        raise Exception(
-            f'Unsupported data: {obj.__class__}')
+        raise Exception(f"Unsupported data: {obj.__class__}")
 
 
 def get_smallest_dataname(strategy, datanames):
-    '''
+    """
     Returns the smallest dataname from a list of
     datanames
-    '''
+    """
     data = False
     for d in datanames:
         if not d:
             continue
         tmp = strategy.getdatabyname(d)
-        if (data is False
+        if (
+            data is False
             or (tmp._timeframe < data._timeframe)
-            or (tmp._timeframe == data._timeframe
-                and tmp._compression < data._compression)):
+            or (
+                tmp._timeframe == data._timeframe
+                and tmp._compression < data._compression
+            )
+        ):
             data = tmp
     if data is False:
         return data
@@ -211,11 +211,11 @@ def get_smallest_dataname(strategy, datanames):
 
 
 def get_clock_obj(obj, resolve_to_data=False):
-    '''
+    """
     Returns a clock object to use for building data
     A clock object can be either a strategy, data source,
     indicator or a observer.
-    '''
+    """
     if isinstance(obj, bt.LinesOperation):
         # indicators can be created to run on a line
         # (instead of e.g. a data object) in that case grab
@@ -241,24 +241,23 @@ def get_clock_obj(obj, resolve_to_data=False):
     elif isinstance(obj, bt.AbstractDataBase):
         clk = obj
     else:
-        raise Exception(
-            f'Unsupported clock: {obj.__class__}')
+        raise Exception(f"Unsupported clock: {obj.__class__}")
     return clk
 
 
 def get_clock_line(obj):
-    '''
+    """
     Find the corresponding clock for an object.
     A clock is a datetime line that holds timestamps
     for the line in question.
-    '''
+    """
     clk = get_clock_obj(obj)
     return clk.lines.datetime
 
 
 def get_source_id(source):
-    '''
+    """
     Returns a unique source id for given source.
     This is used for unique column names.
-    '''
+    """
     return str(id(source))
